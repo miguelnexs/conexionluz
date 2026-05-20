@@ -23,6 +23,7 @@ import RegisterPage from "./pages/Register";
 import ProfilePage from "./pages/Profile";
 import MiCalendarioPage from "./pages/MiCalendario";
 import NotFound from "./pages/NotFound";
+import MembresiaPage from "./pages/Membresia";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/foro" element={<ForumPage />} />
           <Route path="/foro/:id" element={<ForumDetailPage />} />
           <Route path="/contacto" element={<ContactPage />} />
+          <Route path="/membresia" element={<MembresiaPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

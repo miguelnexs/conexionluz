@@ -7,14 +7,14 @@ from django.http.multipartparser import MultiPartParser, MultiPartParserError
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import IntegrityError, transaction
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, ProtectedError, Sum
 from django.utils.dateparse import parse_date
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import Appointment, Course, CourseMedia, ForumReply, ForumTopic, Patient, PatientCourseProgress, Service, Story, Talk, TalkRegistration, Testimonial, TestimonialLike, Therapist
+from .models import Appointment, Course, CourseMedia, ForumReply, ForumTopic, MembershipPlan, MembershipSubscription, Patient, PatientCourseProgress, Service, SiteSettings, Story, Talk, TalkRegistration, Testimonial, TestimonialLike, Therapist
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -136,6 +136,7 @@ def _service_to_dict(service: Service) -> dict[str, Any]:
         "id": service.id,
         "title": service.title,
         "description": service.description,
+        "descriptionHtml": service.description_html,
         "priceCOP": service.price_cop,
         "durationMinutes": service.duration_minutes,
         "modality": service.modality,
@@ -277,6 +278,7 @@ def _patient_to_dict(patient: Patient) -> dict[str, Any]:
 
 
 def _patient_portal_to_dict(patient: Patient) -> dict[str, Any]:
+    has_sub = patient.memberships.filter(status=MembershipSubscription.Status.ACTIVE).exists()
     return {
         "id": patient.id,
         "firstName": patient.first_name,
@@ -288,6 +290,7 @@ def _patient_portal_to_dict(patient: Patient) -> dict[str, Any]:
         "portalAccentColor": patient.portal_accent_color,
         "intakeCompleted": patient.intake_completed,
         "intakeSummary": patient.intake_summary,
+        "hasActiveSubscription": has_sub,
     }
 
 
@@ -402,6 +405,48 @@ def health(_: HttpRequest) -> JsonResponse:
     return JsonResponse({"ok": True})
 
 
+def _admin_signer() -> TimestampSigner:
+    return TimestampSigner(salt="admin-auth")
+
+
+def _issue_admin_token() -> str:
+    return _admin_signer().sign("admin")
+
+
+def _get_admin_from_token(request: HttpRequest) -> bool:
+    header = request.headers.get("Authorization", "")
+    if not header:
+        header = request.META.get("HTTP_AUTHORIZATION", "")
+    if not header.lower().startswith("bearer "):
+        return False
+    token = header.split(" ", 1)[1].strip()
+    if not token:
+        return False
+    try:
+        value = _admin_signer().unsign(token, max_age=60 * 60 * 24 * 30)
+        return value == "admin"
+    except (BadSignature, SignatureExpired, ValueError):
+        return False
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def admin_login(request: HttpRequest) -> JsonResponse:
+    import os
+    body = _parse_json_body(request)
+    username = str(body.get("username", "")).strip()
+    password = str(body.get("password", "")).strip()
+
+    valid_username = os.environ.get("ADMIN_USERNAME", "conexionluz")
+    valid_password = os.environ.get("ADMIN_PASSWORD", "Govinda09")
+
+    if username != valid_username or password != valid_password:
+        return _json_error("Credenciales incorrectas", status=401)
+
+    token = _issue_admin_token()
+    return JsonResponse({"ok": True, "data": {"token": token, "username": valid_username}})
+
+
 @csrf_exempt
 @require_http_methods(["GET"])
 def dashboard(_: HttpRequest) -> JsonResponse:
@@ -423,14 +468,41 @@ def dashboard(_: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["GET"])
 def analytics(_: HttpRequest) -> JsonResponse:
+    # Basic counts
+    sessions_total = Appointment.objects.count()
+    patients_total = Patient.objects.filter(is_active=True).count()
+    requests_total = TalkRegistration.objects.count()
+    satisfaction = Testimonial.objects.filter(is_active=True).aggregate(Avg("rating")).get("rating__avg") or 0
+    
+    # Appointments by service
+    by_service = Service.objects.annotate(count=Count("appointments")).values("title", "count").order_by("-count")[:5]
+    service_distribution = {item["title"]: item["count"] for item in by_service}
+    
+    # Growth (last 6 months)
+    now = timezone.now()
+    growth_labels = []
+    growth_data = []
+    for i in range(5, -1, -1):
+        month_start = (now - timedelta(days=i * 30)).replace(day=1, hour=0, minute=0, second=0)
+        # simplistic month calculation
+        next_month = (month_start + timedelta(days=32)).replace(day=1)
+        count = Patient.objects.filter(created_at__gte=month_start, created_at__lt=next_month).count()
+        growth_labels.append(month_start.strftime("%b"))
+        growth_data.append(count)
+
     return JsonResponse(
         {
             "ok": True,
             "data": {
-                "sessions": 0,
-                "patients": 0,
-                "requests": 0,
-                "satisfaction": 0,
+                "sessions": sessions_total,
+                "patients": patients_total,
+                "requests": requests_total,
+                "satisfaction": round(float(satisfaction), 1),
+                "serviceDistribution": service_distribution,
+                "growth": {
+                    "labels": growth_labels,
+                    "data": growth_data
+                }
             },
         }
     )
@@ -1143,6 +1215,7 @@ def services(request: HttpRequest) -> JsonResponse:
     service = Service.objects.create(
         title=title,
         description=str(body.get("description", "")).strip(),
+        description_html=str(body.get("descriptionHtml", "")).strip(),
         price_cop=max(0, int(body.get("priceCOP", 0) or 0)),
         duration_minutes=max(0, int(body.get("durationMinutes", 0) or 0)),
         modality=str(body.get("modality", "")).strip(),
@@ -1175,6 +1248,8 @@ def service_detail(request: HttpRequest, service_id: int) -> JsonResponse:
         service.title = str(body.get("title", "")).strip()
     if "description" in body:
         service.description = str(body.get("description", "")).strip()
+    if "descriptionHtml" in body:
+        service.description_html = str(body.get("descriptionHtml", "")).strip()
     if "priceCOP" in body:
         service.price_cop = max(0, int(body.get("priceCOP", 0) or 0))
     if "durationMinutes" in body:
@@ -1470,20 +1545,31 @@ def public_appointments_occupied(request: HttpRequest) -> JsonResponse:
     start_dt = timezone.make_aware(datetime(d.year, d.month, d.day, 0, 0, 0), tz)
     end_dt = start_dt + timedelta(days=1)
 
-    qs = Appointment.objects.filter(status=Appointment.Status.SCHEDULED, start_at__lt=end_dt, end_at__gt=start_dt)
-    service_id = request.GET.get("serviceId")
-    if service_id not in (None, ""):
-        try:
-            qs = qs.filter(service_id=int(service_id))
-        except Exception:
-            return _json_error("invalid serviceId")
+    # Broaden search: include everything not cancelled to be safe, and add a small buffer
+    qs = Appointment.objects.filter(
+        start_at__lt=end_dt + timedelta(minutes=1), 
+        end_at__gt=start_dt - timedelta(minutes=1)
+    ).exclude(status=Appointment.Status.CANCELLED)
+    
+    print(f"DEBUG: Querying from {start_dt} to {end_dt}. Found {qs.count()} appointments.")
 
     times: list[str] = []
     for a in qs:
-        local = timezone.localtime(a.start_at, tz)
-        times.append(f"{local.hour:02d}:{local.minute:02d}")
+        start = timezone.localtime(a.start_at, tz)
+        end = timezone.localtime(a.end_at, tz)
+        
+        # Mark all 30-minute slots that overlap with this appointment
+        # We start at the beginning of the slot containing the start time
+        curr = start.replace(minute=(start.minute // 30) * 30, second=0, microsecond=0)
+        while curr < end:
+            times.append(f"{curr.hour:02d}:{curr.minute:02d}")
+            curr += timedelta(minutes=30)
+    
     times = sorted(list(set(times)))
-    return JsonResponse({"ok": True, "data": {"times": times}})
+    print(f"DEBUG: Occupied times for {date_raw}: {times}")
+    response = JsonResponse({"ok": True, "data": {"times": times}})
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 
 @csrf_exempt
@@ -2433,6 +2519,7 @@ def _forum_topic_to_dict(request: HttpRequest, topic: ForumTopic) -> dict[str, A
         "id": topic.id,
         "title": topic.title,
         "description": topic.description,
+        "descriptionHtml": topic.description_html,
         "category": topic.category,
         "imageUrl": _file_to_url(request, topic.image_file),
         "isPinned": topic.is_pinned,
@@ -2450,6 +2537,7 @@ def _forum_reply_to_dict(reply: ForumReply) -> dict[str, Any]:
         "id": reply.id,
         "topicId": reply.topic_id,
         "content": reply.content,
+        "contentHtml": reply.content_html,
         "authorName": reply.author_name,
         "patientId": reply.patient_id,
         "isActive": reply.is_active,
@@ -2478,6 +2566,7 @@ def forum_topics(request: HttpRequest) -> JsonResponse:
     if not title:
         return _json_error("title is required")
     description = str(body.get("description", "")).strip()
+    description_html = str(body.get("descriptionHtml", "")).strip()
     category = str(body.get("category", "")).strip()
     is_pinned = _parse_bool(body.get("isPinned"), False)
     is_locked = _parse_bool(body.get("isLocked"), False)
@@ -2486,6 +2575,7 @@ def forum_topics(request: HttpRequest) -> JsonResponse:
     topic = ForumTopic.objects.create(
         title=title,
         description=description,
+        description_html=description_html,
         category=category,
         image_file=image_file,
         is_pinned=is_pinned,
@@ -2529,6 +2619,8 @@ def forum_topic_detail(request: HttpRequest, topic_id: int) -> JsonResponse:
         topic.title = str(body["title"]).strip()
     if "description" in body:
         topic.description = str(body["description"]).strip()
+    if "descriptionHtml" in body:
+        topic.description_html = str(body["descriptionHtml"]).strip()
     if "category" in body:
         topic.category = str(body["category"]).strip()
     if "isPinned" in body:
@@ -2560,6 +2652,7 @@ def forum_topic_replies(request: HttpRequest, topic_id: int) -> JsonResponse:
 
     body = _parse_json_body(request)
     content = str(body.get("content", "")).strip()
+    content_html = str(body.get("contentHtml", "")).strip()
     author_name = str(body.get("authorName", "")).strip()
     if not content:
         return _json_error("content is required")
@@ -2569,6 +2662,7 @@ def forum_topic_replies(request: HttpRequest, topic_id: int) -> JsonResponse:
     reply = ForumReply.objects.create(
         topic=topic,
         content=content,
+        content_html=content_html,
         author_name=author_name,
     )
     topic.save()  # update updated_at
@@ -2625,6 +2719,7 @@ def public_forum_topic_reply(request: HttpRequest, topic_id: int) -> JsonRespons
 
     body = _parse_json_body(request)
     content = str(body.get("content", "")).strip()
+    content_html = str(body.get("contentHtml", "")).strip()
     if not content:
         return _json_error("content is required")
 
@@ -2633,6 +2728,7 @@ def public_forum_topic_reply(request: HttpRequest, topic_id: int) -> JsonRespons
     reply = ForumReply.objects.create(
         topic=topic,
         content=content,
+        content_html=content_html,
         author_name=author_name,
         patient=patient,
     )
@@ -2656,3 +2752,577 @@ class DevCorsMiddleware:
             response["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Client-Id"
 
         return response
+
+
+# ─── Membership Plans ─────────────────────────────────────────────────────────
+
+def _plan_to_dict(plan: MembershipPlan) -> dict[str, Any]:
+    return {
+        "id": plan.id,
+        "name": plan.name,
+        "slug": plan.slug,
+        "description": plan.description,
+        "priceCOP": plan.price_cop,
+        "priceUSD": plan.price_usd,
+        "priceEUR": plan.price_eur,
+        "annualPriceCOP": plan.annual_price_cop,
+        "annualPriceUSD": plan.annual_price_usd,
+        "annualPriceEUR": plan.annual_price_eur,
+        "monthlyDiscountPercent": plan.monthly_discount_percent,
+        "annualDiscountPercent": plan.annual_discount_percent,
+        "sessionsPerMonth": plan.sessions_per_month,
+        "sessionsBreakdown": plan.sessions_breakdown or [],
+        "benefits": plan.benefits or [],
+        "isActive": plan.is_active,
+        "isFeatured": plan.is_featured,
+        "createdAt": _dt_to_iso(plan.created_at),
+        "updatedAt": _dt_to_iso(plan.updated_at),
+    }
+
+
+def _subscription_to_dict(sub: MembershipSubscription) -> dict[str, Any]:
+    return {
+        "id": sub.id,
+        "patientId": sub.patient_id,
+        "patientName": f"{sub.patient.first_name} {sub.patient.last_name}".strip() if sub.patient_id else None,
+        "planId": sub.plan_id,
+        "planName": sub.plan.name if sub.plan_id else None,
+        "status": sub.status,
+        "paymentMethod": sub.payment_method,
+        "startsAt": sub.starts_at.isoformat() if sub.starts_at else None,
+        "endsAt": sub.ends_at.isoformat() if sub.ends_at else None,
+        "sessionsUsed": sub.sessions_used,
+        "notes": sub.notes,
+        "createdAt": _dt_to_iso(sub.created_at),
+        "updatedAt": _dt_to_iso(sub.updated_at),
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def membership_plans(request: HttpRequest) -> JsonResponse:
+    if request.method == "GET":
+        items = MembershipPlan.objects.all().order_by("-is_featured", "-updated_at")
+        return JsonResponse({"ok": True, "data": [_plan_to_dict(p) for p in items]})
+
+    body = _parse_json_body(request)
+    name = str(body.get("name", "")).strip()
+    slug = str(body.get("slug", "")).strip()
+    if not name or not slug:
+        return _json_error("name and slug are required")
+
+    sessions_breakdown = body.get("sessionsBreakdown")
+    if not isinstance(sessions_breakdown, list):
+        sessions_breakdown = []
+    benefits = body.get("benefits")
+    if not isinstance(benefits, list):
+        benefits = []
+
+    plan = MembershipPlan.objects.create(
+        name=name,
+        slug=slug,
+        description=str(body.get("description", "")).strip(),
+        price_cop=int(body.get("priceCOP", 280000) or 280000),
+        price_usd=int(body.get("priceUSD", 70) or 70),
+        price_eur=int(body.get("priceEUR", 70) or 70),
+        annual_price_cop=int(body.get("annualPriceCOP", 2800000) or 2800000),
+        annual_price_usd=int(body.get("annualPriceUSD", 700) or 700),
+        annual_price_eur=int(body.get("annualPriceEUR", 700) or 700),
+        monthly_discount_percent=int(body.get("monthlyDiscountPercent", 0) or 0),
+        annual_discount_percent=int(body.get("annualDiscountPercent", 0) or 0),
+        sessions_per_month=int(body.get("sessionsPerMonth", 3) or 3),
+        sessions_breakdown=sessions_breakdown,
+        benefits=benefits,
+        is_active=_parse_bool(body.get("isActive", True), True),
+        is_featured=_parse_bool(body.get("isFeatured", False), False),
+    )
+    return JsonResponse({"ok": True, "data": _plan_to_dict(plan)}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "PATCH", "DELETE"])
+def membership_plan_detail(request: HttpRequest, plan_id: int) -> JsonResponse:
+    try:
+        plan = MembershipPlan.objects.get(id=plan_id)
+    except MembershipPlan.DoesNotExist:
+        return _json_error("not found", status=404)
+
+    if request.method == "GET":
+        return JsonResponse({"ok": True, "data": _plan_to_dict(plan)})
+
+    if request.method == "DELETE":
+        try:
+            plan.delete()
+            return JsonResponse({"ok": True})
+        except ProtectedError:
+            return _json_error("No se puede eliminar el plan porque tiene suscripciones activas vinculadas.", status=400)
+
+    body = _parse_json_body(request)
+    if "name" in body:
+        plan.name = str(body["name"]).strip()
+    if "slug" in body:
+        plan.slug = str(body["slug"]).strip()
+    if "description" in body:
+        plan.description = str(body["description"]).strip()
+    if "priceCOP" in body:
+        plan.price_cop = int(body["priceCOP"] or 0)
+    if "priceUSD" in body:
+        plan.price_usd = int(body["priceUSD"] or 0)
+    if "priceEUR" in body:
+        plan.price_eur = int(body["priceEUR"] or 0)
+    if "annualPriceCOP" in body:
+        plan.annual_price_cop = int(body["annualPriceCOP"] or 0)
+    if "annualPriceUSD" in body:
+        plan.annual_price_usd = int(body["annualPriceUSD"] or 0)
+    if "annualPriceEUR" in body:
+        plan.annual_price_eur = int(body["annualPriceEUR"] or 0)
+    if "monthlyDiscountPercent" in body:
+        plan.monthly_discount_percent = int(body["monthlyDiscountPercent"] or 0)
+    if "annualDiscountPercent" in body:
+        plan.annual_discount_percent = int(body["annualDiscountPercent"] or 0)
+    if "sessionsPerMonth" in body:
+        plan.sessions_per_month = int(body["sessionsPerMonth"] or 3)
+    if "sessionsBreakdown" in body and isinstance(body["sessionsBreakdown"], list):
+        plan.sessions_breakdown = body["sessionsBreakdown"]
+    if "benefits" in body and isinstance(body["benefits"], list):
+        plan.benefits = body["benefits"]
+    if "isActive" in body:
+        plan.is_active = _parse_bool(body["isActive"], plan.is_active)
+    if "isFeatured" in body:
+        plan.is_featured = _parse_bool(body["isFeatured"], plan.is_featured)
+
+    if not plan.name or not plan.slug:
+        return _json_error("name and slug are required")
+    plan.save()
+    return JsonResponse({"ok": True, "data": _plan_to_dict(plan)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def membership_subscriptions(request: HttpRequest) -> JsonResponse:
+    if request.method == "GET":
+        qs = MembershipSubscription.objects.select_related("patient", "plan").all().order_by("-updated_at")
+        status_filter = request.GET.get("status")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        patient_filter = request.GET.get("patientId")
+        if patient_filter:
+            try:
+                qs = qs.filter(patient_id=int(patient_filter))
+            except ValueError:
+                pass
+        return JsonResponse({"ok": True, "data": [_subscription_to_dict(s) for s in qs]})
+
+    body = _parse_json_body(request)
+    patient_id = body.get("patientId")
+    plan_id = body.get("planId")
+    starts_at_raw = str(body.get("startsAt", "")).strip()
+
+    if not patient_id:
+        return _json_error("patientId is required")
+    if not plan_id:
+        return _json_error("planId is required")
+    if not starts_at_raw:
+        return _json_error("startsAt is required (YYYY-MM-DD)")
+
+    try:
+        patient = Patient.objects.get(id=int(patient_id))
+    except (ValueError, Patient.DoesNotExist):
+        return _json_error("invalid patientId")
+    try:
+        plan = MembershipPlan.objects.get(id=int(plan_id))
+    except (ValueError, MembershipPlan.DoesNotExist):
+        return _json_error("invalid planId")
+
+    starts_at = parse_date(starts_at_raw)
+    if not starts_at:
+        return _json_error("invalid startsAt date")
+
+    ends_at_raw = str(body.get("endsAt", "")).strip()
+    ends_at = parse_date(ends_at_raw) if ends_at_raw else None
+
+    sub = MembershipSubscription.objects.create(
+        patient=patient,
+        plan=plan,
+        status=str(body.get("status", MembershipSubscription.Status.ACTIVE)),
+        payment_method=str(body.get("paymentMethod", MembershipSubscription.PaymentMethod.TRANSFER)),
+        starts_at=starts_at,
+        ends_at=ends_at,
+        sessions_used=int(body.get("sessionsUsed", 0) or 0),
+        notes=str(body.get("notes", "")).strip(),
+    )
+    return JsonResponse({"ok": True, "data": _subscription_to_dict(sub)}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "PATCH", "DELETE"])
+def membership_subscription_detail(request: HttpRequest, sub_id: int) -> JsonResponse:
+    try:
+        sub = MembershipSubscription.objects.select_related("patient", "plan").get(id=sub_id)
+    except MembershipSubscription.DoesNotExist:
+        return _json_error("not found", status=404)
+
+    if request.method == "GET":
+        return JsonResponse({"ok": True, "data": _subscription_to_dict(sub)})
+
+    if request.method == "DELETE":
+        sub.delete()
+        return JsonResponse({"ok": True})
+
+    body = _parse_json_body(request)
+    if "status" in body:
+        sub.status = str(body["status"])
+    if "paymentMethod" in body:
+        sub.payment_method = str(body["paymentMethod"])
+    if "startsAt" in body:
+        d = parse_date(str(body["startsAt"]))
+        if d:
+            sub.starts_at = d
+    if "endsAt" in body:
+        raw = str(body["endsAt"]).strip() if body["endsAt"] else ""
+        sub.ends_at = parse_date(raw) if raw else None
+    if "sessionsUsed" in body:
+        sub.sessions_used = int(body["sessionsUsed"] or 0)
+    if "notes" in body:
+        sub.notes = str(body["notes"]).strip()
+    if "planId" in body:
+        try:
+            sub.plan = MembershipPlan.objects.get(id=int(body["planId"]))
+        except (ValueError, MembershipPlan.DoesNotExist):
+            return _json_error("invalid planId")
+
+    sub.save()
+    return JsonResponse({"ok": True, "data": _subscription_to_dict(sub)})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def public_membership_plans(request: HttpRequest) -> JsonResponse:
+    """Public endpoint - returns active plans for the website."""
+    items = MembershipPlan.objects.filter(is_active=True).order_by("-is_featured", "price_cop")
+    return JsonResponse({"ok": True, "data": [_plan_to_dict(p) for p in items]})
+
+
+def _settings_to_dict(s: SiteSettings) -> dict[str, Any]:
+    return {
+        "mercadopagoPublicKey": s.mercadopago_public_key,
+        "mercadopagoAccessToken": s.mercadopago_access_token,
+        "mercadopagoEnabled": s.mercadopago_enabled,
+        "siteName": s.site_name,
+        "supportEmail": s.support_email,
+        "supportWhatsapp": s.support_whatsapp,
+        "updatedAt": _dt_to_iso(s.updated_at),
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def mercadopago_test_connection(request: HttpRequest) -> JsonResponse:
+    """Test MercadoPago credentials by calling their users/me endpoint."""
+    settings_obj = SiteSettings.get()
+    if not settings_obj.mercadopago_access_token:
+        return JsonResponse({
+            "ok": False,
+            "connected": False,
+            "error": "No hay Access Token configurado. Ingresa tus credenciales primero.",
+        })
+    try:
+        import urllib.request as ureq
+        req = ureq.Request(
+            "https://api.mercadopago.com/users/me",
+            headers={"Authorization": f"Bearer {settings_obj.mercadopago_access_token}"},
+            method="GET",
+        )
+        with ureq.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return JsonResponse({
+            "ok": True,
+            "connected": True,
+            "account": {
+                "id": data.get("id"),
+                "email": data.get("email"),
+                "nickname": data.get("nickname"),
+                "countryId": data.get("country_id"),
+                "siteId": data.get("site_id"),
+                "isSandbox": "TEST" in str(settings_obj.mercadopago_access_token).upper(),
+            },
+        })
+    except Exception as e:
+        msg = str(e)
+        if "401" in msg or "403" in msg:
+            friendly = "Credenciales inválidas. Verifica tu Access Token en el panel de MercadoPago."
+        elif "timeout" in msg.lower():
+            friendly = "Tiempo de espera agotado. Verifica tu conexión a internet."
+        else:
+            friendly = f"Error de conexión: {msg}"
+        return JsonResponse({"ok": False, "connected": False, "error": friendly})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "PATCH"])
+def site_settings(request: HttpRequest) -> JsonResponse:
+    settings = SiteSettings.get()
+
+    if request.method == "GET":
+        return JsonResponse({"ok": True, "data": _settings_to_dict(settings)})
+
+    body = _parse_json_body(request)
+    if "mercadopagoPublicKey" in body:
+        settings.mercadopago_public_key = str(body["mercadopagoPublicKey"]).strip()
+    if "mercadopagoAccessToken" in body:
+        settings.mercadopago_access_token = str(body["mercadopagoAccessToken"]).strip()
+    if "mercadopagoEnabled" in body:
+        settings.mercadopago_enabled = _parse_bool(body["mercadopagoEnabled"], settings.mercadopago_enabled)
+    if "siteName" in body:
+        settings.site_name = str(body["siteName"]).strip()
+    if "supportEmail" in body:
+        settings.support_email = str(body["supportEmail"]).strip()
+    if "supportWhatsapp" in body:
+        settings.support_whatsapp = str(body["supportWhatsapp"]).strip()
+    settings.save()
+    return JsonResponse({"ok": True, "data": _settings_to_dict(settings)})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def mercadopago_create_preference(request: HttpRequest) -> JsonResponse:
+    """Create a MercadoPago payment preference and return init_point URL."""
+    settings = SiteSettings.get()
+    if not settings.mercadopago_enabled or not settings.mercadopago_access_token:
+        return _json_error("MercadoPago no está configurado en este momento.", status=503)
+
+    body = _parse_json_body(request)
+    plan_id = body.get("planId")
+    is_annual = bool(body.get("isAnnual", False))
+    currency = str(body.get("currency", "COP")).upper()
+    payer_email = str(body.get("payerEmail", "")).strip()
+    selected_method = str(body.get("method", "card")).lower()
+
+    # Configure specific payment methods based on selection to skip selection screen
+    payment_methods_cfg = {}
+    if selected_method == "credit_card":
+        payment_methods_cfg = {
+            "default_payment_type_id": "credit_card",
+            "excluded_payment_types": [
+                {"id": "debit_card"},
+                {"id": "bank_transfer"},
+                {"id": "ticket"}
+            ]
+        }
+    elif selected_method == "debit_card":
+        payment_methods_cfg = {
+            "default_payment_type_id": "debit_card",
+            "excluded_payment_types": [
+                {"id": "credit_card"},
+                {"id": "bank_transfer"},
+                {"id": "ticket"}
+            ]
+        }
+    # Default fallback
+    else:
+        payment_methods_cfg = {}
+    try:
+        plan = MembershipPlan.objects.get(id=int(plan_id), is_active=True)
+    except (TypeError, ValueError, MembershipPlan.DoesNotExist):
+        return _json_error("Plan no encontrado", status=404)
+
+    # Determine price based on currency and billing cycle
+    if currency == "USD":
+        unit_price = float(plan.annual_price_usd if is_annual else plan.price_usd)
+        mp_currency = "USD"
+    elif currency == "EUR":
+        unit_price = float(plan.annual_price_eur if is_annual else plan.price_eur)
+        mp_currency = "USD"  # MercadoPago typically processes in USD or local; use USD fallback
+    else:
+        unit_price = float(plan.annual_price_cop if is_annual else plan.price_cop)
+        mp_currency = "COP"
+
+    period_label = "anual" if is_annual else "mensual"
+    title = f"{plan.name} – {period_label}"
+
+    try:
+        import urllib.request as ureq
+        payload_data = {
+            "items": [{
+                "id": str(plan.id),
+                "title": title,
+                "quantity": 1,
+                "unit_price": unit_price,
+                "currency_id": mp_currency,
+            }],
+            "payer": {"email": payer_email} if payer_email else {},
+            "back_urls": {
+                "success": "https://conexionluz.com/pago-exitoso",
+                "failure": "https://conexionluz.com/pago-fallido",
+                "pending": "https://conexionluz.com/pago-pendiente",
+            },
+            "auto_return": "approved",
+            "external_reference": f"plan_{plan.id}_{period_label}",
+            "statement_descriptor": "CONEXIONLUZ",
+            "binary_mode": True,
+        }
+        
+        if payment_methods_cfg:
+            payload_data["payment_methods"] = payment_methods_cfg
+
+        payload = json.dumps(payload_data).encode("utf-8")
+
+        req = ureq.Request(
+            "https://api.mercadopago.com/checkout/preferences",
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {settings.mercadopago_access_token}",
+            },
+            method="POST",
+        )
+        with ureq.urlopen(req, timeout=10) as resp:
+            mp_data = json.loads(resp.read().decode("utf-8"))
+
+        return JsonResponse({
+            "ok": True,
+            "data": {
+                "initPoint": mp_data.get("init_point"),
+                "sandboxInitPoint": mp_data.get("sandbox_init_point"),
+                "preferenceId": mp_data.get("id"),
+            }
+        })
+    except ureq.HTTPError as e:
+        # Capture the body of the error response from MP
+        error_body = e.read().decode("utf-8")
+        try:
+            mp_error = json.loads(error_body)
+            msg = mp_error.get("message") or mp_error.get("error") or error_body
+        except Exception:
+            msg = error_body
+        return _json_error(f"Error de MercadoPago (HTTP {e.code}): {msg}", status=400)
+    except Exception as e:
+        return _json_error(f"Error al crear preferencia de MercadoPago: {str(e)}", status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def mercadopago_pay(request: HttpRequest) -> JsonResponse:
+    """Process a direct card payment via MercadoPago Payments API (no redirect)."""
+    settings = SiteSettings.get()
+    if not settings.mercadopago_enabled or not settings.mercadopago_access_token:
+        return _json_error("MercadoPago no está configurado en este momento.", status=503)
+
+    body = _parse_json_body(request)
+    plan_id = body.get("planId")
+    is_annual = bool(body.get("isAnnual", False))
+    currency = str(body.get("currency", "COP")).upper()
+    payer_email = str(body.get("payerEmail", "")).strip()
+    form_data = body.get("formData", {})  # Data from the MP Brick (token + card details)
+
+    if not form_data or not isinstance(form_data, dict):
+        return _json_error("Datos de pago inválidos.", status=400)
+
+    try:
+        plan = MembershipPlan.objects.get(id=int(plan_id), is_active=True)
+    except (TypeError, ValueError, MembershipPlan.DoesNotExist):
+        return _json_error("Plan no encontrado.", status=404)
+
+    # Determine price
+    if currency == "USD":
+        unit_price = float(plan.annual_price_usd if is_annual else plan.price_usd)
+        mp_currency = "USD"
+    elif currency == "EUR":
+        unit_price = float(plan.annual_price_eur if is_annual else plan.price_eur)
+        mp_currency = "USD"
+    else:
+        unit_price = float(plan.annual_price_cop if is_annual else plan.price_cop)
+        mp_currency = "COP"
+
+    period_label = "anual" if is_annual else "mensual"
+
+    # Build payment payload using the tokenized data from the Brick
+    payment_payload = {
+        "transaction_amount": unit_price,
+        "token": form_data.get("token"),
+        "description": f"{plan.name} – {period_label}",
+        "installments": int(form_data.get("installments", 1)),
+        "payment_method_id": form_data.get("payment_method_id"),
+        "issuer_id": form_data.get("issuer_id"),
+        "payer": {
+            "email": payer_email or form_data.get("payer", {}).get("email", ""),
+            "identification": form_data.get("payer", {}).get("identification", {}),
+        },
+        "external_reference": f"plan_{plan.id}_{period_label}",
+        "statement_descriptor": "CONEXIONLUZ",
+        "currency_id": mp_currency,
+    }
+
+    # Remove None values to avoid MP API errors
+    payment_payload = {k: v for k, v in payment_payload.items() if v is not None}
+
+    try:
+        import urllib.request as ureq
+        payload = json.dumps(payment_payload).encode("utf-8")
+        req = ureq.Request(
+            "https://api.mercadopago.com/v1/payments",
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {settings.mercadopago_access_token}",
+                "X-Idempotency-Key": f"conexionluz-plan-{plan.id}-{payer_email}-{period_label}",
+            },
+            method="POST",
+        )
+        with ureq.urlopen(req, timeout=15) as resp:
+            mp_data = json.loads(resp.read().decode("utf-8"))
+
+        status = mp_data.get("status")
+        status_detail = mp_data.get("status_detail", "")
+
+        # If payment approved, create the subscription
+        if status == "approved":
+            patient = _get_patient_from_token(request)
+            if patient:
+                from datetime import date
+                from dateutil.relativedelta import relativedelta
+                today = date.today()
+                ends_at = today + relativedelta(years=1) if is_annual else today + relativedelta(months=1)
+                MembershipSubscription.objects.create(
+                    patient=patient,
+                    plan=plan,
+                    status=MembershipSubscription.Status.ACTIVE,
+                    started_at=today,
+                    ends_at=ends_at,
+                    payment_reference=str(mp_data.get("id", "")),
+                )
+
+        return JsonResponse({
+            "ok": True,
+            "data": {
+                "status": status,
+                "statusDetail": status_detail,
+                "paymentId": mp_data.get("id"),
+            }
+        })
+    except ureq.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        try:
+            mp_error = json.loads(error_body)
+            msg = mp_error.get("message") or mp_error.get("error") or error_body
+        except Exception:
+            msg = error_body
+        return _json_error(f"Error al procesar el pago: {msg}", status=400)
+    except Exception as e:
+        return _json_error(f"Error interno al procesar el pago: {str(e)}", status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def public_site_settings(request: HttpRequest) -> JsonResponse:
+    """Public endpoint - returns safe site settings (no secret tokens)."""
+    settings = SiteSettings.get()
+    return JsonResponse({
+        "ok": True,
+        "data": {
+            "mercadopagoPublicKey": settings.mercadopago_public_key if settings.mercadopago_enabled else "",
+            "mercadopagoEnabled": settings.mercadopago_enabled,
+            "siteName": settings.site_name,
+            "supportWhatsapp": settings.support_whatsapp,
+        }
+    })

@@ -23,6 +23,7 @@ export type Service = {
   includes?: string;
   benefits?: string;
   bookingUrl?: string;
+  descriptionHtml?: string;
   isActive?: boolean;
 };
 

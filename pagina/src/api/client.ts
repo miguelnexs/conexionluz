@@ -6,7 +6,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function getBaseUrl(): string {
   const value = import.meta.env.VITE_API_URL
-  return (value && value.trim()) || 'https://conexionluz.com'
+  return (value && value.trim()) || 'http://127.0.0.1:8000'
 }
 
 function getToken(): string | null {

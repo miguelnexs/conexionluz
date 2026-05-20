@@ -1,8 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PublicLayout from '../components/PublicLayout';
 import { Link, Navigate, useLocation } from 'react-router-dom';
-import { BookOpen, Lock, PlayCircle, Sparkles } from 'lucide-react';
+import { 
+  BookOpen, 
+  Lock, 
+  PlayCircle, 
+  Sparkles, 
+  Settings, 
+  LogOut, 
+  User, 
+  Activity, 
+  CreditCard,
+  ChevronRight,
+  CheckCircle2,
+  Clock
+} from 'lucide-react';
 import { api } from '../api/client';
+import { cn } from '@/lib/utils';
 
 const getTokenKey = () => 'conexionluz:token';
 const getPurchaseKey = (slug: string) => `conexionluz:purchased:${slug}`;
@@ -18,6 +32,7 @@ type PortalMe = {
   portalAccentColor?: string;
   intakeCompleted?: boolean;
   intakeSummary?: string;
+  hasActiveSubscription?: boolean;
 };
 
 type IntakeAnswers = {
@@ -33,10 +48,10 @@ type IntakeAnswers = {
 type IntakeScaleKey = Exclude<keyof IntakeAnswers, 'goal'>;
 
 const scaleOptions = [
-  { value: 0, label: 'Nunca' },
-  { value: 1, label: 'A veces' },
-  { value: 2, label: 'Frecuente' },
-  { value: 3, label: 'Casi siempre' }
+  { value: 0, label: 'Nunca', color: 'bg-emerald-500' },
+  { value: 1, label: 'A veces', color: 'bg-yellow-500' },
+  { value: 2, label: 'Frecuente', color: 'bg-orange-500' },
+  { value: 3, label: 'Casi siempre', color: 'bg-red-500' }
 ];
 
 const IntakeScreen = ({ onCompleted }: { onCompleted: () => void }) => {
@@ -54,41 +69,13 @@ const IntakeScreen = ({ onCompleted }: { onCompleted: () => void }) => {
   });
 
   const steps = [
-    {
-      key: 'stress',
-      title: 'Estrés',
-      subtitle: 'En la última semana, ¿qué tan a menudo te has sentido estresado(a)?'
-    },
-    {
-      key: 'anxiety',
-      title: 'Ansiedad',
-      subtitle: 'En la última semana, ¿qué tan a menudo te has sentido ansioso(a) o con preocupación excesiva?'
-    },
-    {
-      key: 'mood',
-      title: 'Ánimo',
-      subtitle: 'En la última semana, ¿qué tan a menudo te has sentido desanimado(a) o sin motivación?'
-    },
-    {
-      key: 'sleep',
-      title: 'Sueño',
-      subtitle: 'En la última semana, ¿qué tan a menudo has tenido problemas para dormir o descansar?'
-    },
-    {
-      key: 'energy',
-      title: 'Energía',
-      subtitle: 'En la última semana, ¿qué tan a menudo has sentido poca energía?'
-    },
-    {
-      key: 'focus',
-      title: 'Concentración',
-      subtitle: 'En la última semana, ¿qué tan a menudo te ha costado concentrarte?'
-    },
-    {
-      key: 'goal',
-      title: 'Objetivo',
-      subtitle: '¿Qué te gustaría lograr con tu proceso?'
-    }
+    { key: 'stress', title: 'Nivel de Estrés', subtitle: '¿Qué tan a menudo te has sentido estresado(a) esta semana?' },
+    { key: 'anxiety', title: 'Ansiedad', subtitle: '¿Has sentido preocupación excesiva o inquietud?' },
+    { key: 'mood', title: 'Estado de Ánimo', subtitle: '¿Te has sentido desanimado(a) o sin motivación?' },
+    { key: 'sleep', title: 'Calidad del Sueño', subtitle: '¿Has tenido dificultades para descansar bien?' },
+    { key: 'energy', title: 'Nivel de Energía', subtitle: '¿Sientes fatiga o falta de vitalidad?' },
+    { key: 'focus', title: 'Concentración', subtitle: '¿Te ha costado mantener el foco en tus tareas?' },
+    { key: 'goal', title: 'Tu Propósito', subtitle: '¿Cuál es tu principal objetivo para este proceso?' }
   ] as const;
 
   const current = steps[step];
@@ -111,91 +98,85 @@ const IntakeScreen = ({ onCompleted }: { onCompleted: () => void }) => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="w-full max-w-2xl">
-        <div className="rounded-3xl border border-gray-100 shadow-lg p-8 bg-white">
-          <div className="flex items-center justify-between gap-4">
-            <div className="inline-flex items-center gap-2 bg-gray-50 rounded-full px-5 py-2 border border-gray-100">
-              <span className="text-xs font-semibold text-gray-600">Evaluación inicial</span>
-            </div>
-            <div className="text-xs font-semibold text-gray-500">{progress}%</div>
-          </div>
-
-          <h1 className="mt-5 text-3xl font-bold text-gray-800">{current.title}</h1>
-          <p className="mt-2 text-gray-600">{current.subtitle}</p>
-
-          {error && (
-            <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
-            </div>
-          )}
-
-          <div className="mt-8">
-            {current.key === 'goal' ? (
-              <textarea
-                value={answers.goal}
-                onChange={(e) => setAnswers((p) => ({ ...p, goal: e.target.value }))}
-                className="w-full min-h-[140px] rounded-2xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="Ej. Reducir ansiedad, mejorar autoestima, manejar estrés..."
-              />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {scaleOptions.map((opt) => {
-                  const key = current.key as IntakeScaleKey;
-                  const active = answers[key] === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setAnswers((p) => ({ ...p, [key]: opt.value } as IntakeAnswers))}
-                      className={`rounded-2xl border px-5 py-4 text-left transition-all ${
-                        active
-                          ? 'border-primary/40 bg-primary/10 shadow-sm'
-                          : 'border-gray-200 bg-white hover:shadow-sm'
-                      }`}
-                    >
-                      <div className="text-sm font-bold text-gray-800">{opt.label}</div>
-                      <div className="mt-1 text-xs text-gray-500">Seleccionar</div>
-                    </button>
-                  );
-                })}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50/50 via-white to-emerald-50/50 flex items-center justify-center px-4">
+      <div className="w-full max-w-xl animate-in fade-in zoom-in duration-700">
+        <div className="rounded-[2.5rem] border border-white/40 bg-white/70 backdrop-blur-xl shadow-2xl overflow-hidden">
+          <div className="p-8 md:p-12">
+            <div className="mb-12">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Paso {step + 1} de {steps.length}</span>
+                <span className="text-xs font-bold text-primary">{progress}%</span>
               </div>
-            )}
-          </div>
+              <div className="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 ease-out" 
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={back}
-              disabled={step === 0 || saving}
-              className="bg-white text-gray-700 px-8 py-3 rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              Atrás
-            </button>
+            <h1 className="text-3xl font-black tracking-tight text-gray-900 mb-2">{current.title}</h1>
+            <p className="text-gray-500 text-lg leading-relaxed mb-10">{current.subtitle}</p>
 
-            {step < steps.length - 1 ? (
+            {error && <div className="mb-6 p-4 rounded-2xl bg-red-50 text-red-500 text-sm font-medium border border-red-100">{error}</div>}
+
+            <div className="space-y-3">
+              {current.key === 'goal' ? (
+                <textarea
+                  value={answers.goal}
+                  onChange={(e) => setAnswers((p) => ({ ...p, goal: e.target.value }))}
+                  className="w-full min-h-[160px] rounded-3xl border border-gray-100 bg-white/50 px-6 py-5 text-lg outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-gray-300"
+                  placeholder="Escribe aquí tu intención..."
+                  autoFocus
+                />
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {scaleOptions.map((opt) => {
+                    const key = current.key as IntakeScaleKey;
+                    const active = answers[key] === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setAnswers((p) => ({ ...p, [key]: opt.value } as IntakeAnswers));
+                          if (step < steps.length - 1) setTimeout(next, 300);
+                        }}
+                        className={cn(
+                          "group relative flex items-center justify-between rounded-2xl border-2 p-5 transition-all duration-300",
+                          active 
+                            ? "border-primary bg-primary/5 shadow-md scale-[1.02]" 
+                            : "border-gray-50 bg-white/50 hover:border-gray-200 hover:bg-white"
+                        )}
+                      >
+                        <span className={cn("font-bold text-lg", active ? "text-primary" : "text-gray-700")}>{opt.label}</span>
+                        <div className={cn("h-3 w-3 rounded-full transition-all duration-500", active ? opt.color : "bg-gray-100 group-hover:bg-gray-200")} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-12 flex items-center justify-between gap-4">
               <button
                 type="button"
-                onClick={next}
-                disabled={saving}
-                className="bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.01] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                onClick={back}
+                disabled={step === 0 || saving}
+                className="text-gray-400 font-bold hover:text-gray-600 disabled:opacity-0 transition-all"
               >
-                Continuar
+                Atrás
               </button>
-            ) : (
+
               <button
                 type="button"
-                onClick={() => void submit()}
+                onClick={step === steps.length - 1 ? () => void submit() : next}
                 disabled={saving}
-                className="bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.01] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="bg-gray-900 text-white px-10 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl hover:scale-[1.05] active:scale-95 transition-all disabled:opacity-50"
               >
-                {saving ? 'Guardando...' : 'Finalizar'}
+                {saving ? 'Guardando...' : step === steps.length - 1 ? 'Empezar mi viaje' : 'Siguiente'}
               </button>
-            )}
-          </div>
-
-          <div className="mt-6 text-xs text-gray-500">
-            Esta evaluación es un autorreporte y no constituye un diagnóstico clínico.
+            </div>
           </div>
         </div>
       </div>
@@ -209,6 +190,7 @@ const ProfilePage = () => {
   const isAuthed = Boolean(token);
   const [me, setMe] = useState<PortalMe | null>(null);
   const [loadingMe, setLoadingMe] = useState(true);
+  const [activeTab, setActiveTab] = useState<'wellbeing' | 'courses' | 'settings'>('wellbeing');
   const [prefs, setPrefs] = useState({ title: '', message: '', color: '' });
   const [savingPrefs, setSavingPrefs] = useState(false);
 
@@ -239,31 +221,12 @@ const ProfilePage = () => {
     void loadMe();
   }, [isAuthed]);
 
-  const welcomeTitle = useMemo(() => {
-    if (me?.portalWelcomeTitle) return me.portalWelcomeTitle;
-    const name = `${me?.firstName || ''}${me?.lastName ? ` ${me.lastName}` : ''}`.trim();
-    return name ? `Hola, ${name}` : 'Mi perfil';
-  }, [me]);
-
-  const welcomeMessage = useMemo(() => {
-    return me?.portalWelcomeMessage || 'Bienvenido(a) a tu espacio personal.';
-  }, [me]);
-
   const accent = me?.portalAccentColor || '#22c55e';
-
-  if (!isAuthed) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  }
-
-  if (loadingMe) {
-    return <div className="min-h-screen bg-white" />;
-  }
-
-  if (me && me.intakeCompleted === false) {
-    return <IntakeScreen onCompleted={() => void loadMe()} />;
-  }
-
   const hasHipnosis = localStorage.getItem(getPurchaseKey('hipnosis-interdimencional')) === '1';
+
+  if (!isAuthed) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (loadingMe) return <div className="min-h-screen bg-white" />;
+  if (me && me.intakeCompleted === false) return <IntakeScreen onCompleted={() => void loadMe()} />;
 
   const logout = () => {
     localStorage.removeItem(getTokenKey());
@@ -280,185 +243,241 @@ const ProfilePage = () => {
     if (res.ok) {
       setMe(res.data);
       setSavingPrefs(false);
-      return;
     }
     setSavingPrefs(false);
   };
 
+  const initials = `${me?.firstName?.[0] || ''}${me?.lastName?.[0] || ''}`.toUpperCase();
+
   return (
     <PublicLayout contentClassName="p-0">
-      <section
-        className="py-12"
-        style={{
-          background: `linear-gradient(135deg, ${accent}22 0%, rgba(255,255,255,1) 45%, ${accent}14 100%)`
-        }}
-      >
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto space-y-6">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-gray-700">Mi perfil</span>
+      <div className="min-h-screen bg-[#fcfcfc]">
+        {/* Header Section */}
+        <header 
+          className="relative py-20 overflow-hidden"
+          style={{ background: `linear-gradient(135deg, ${accent}15 0%, rgba(255,255,255,1) 50%, ${accent}08 100%)` }}
+        >
+          <div className="container mx-auto px-6 relative z-10">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+                <div className="relative group">
+                  <div className="h-32 w-32 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center text-4xl font-black text-gray-800 ring-4 ring-white border border-gray-100 transform group-hover:rotate-6 transition-transform duration-500">
+                    {initials || <User className="h-12 w-12 text-gray-300" />}
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 h-10 w-10 rounded-2xl bg-white shadow-lg flex items-center justify-center border border-gray-50">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-800">{welcomeTitle}</h1>
-                <p className="text-gray-600">{welcomeMessage}</p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link
-                  to="/cursos"
-                  className="bg-white text-gray-700 px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border border-gray-200"
-                >
-                  Explorar cursos
-                </Link>
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="bg-white/60 text-gray-700 px-8 py-3 rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200"
-                >
-                  Cerrar sesión
-                </button>
+
+                <div className="flex-1 text-center md:text-left">
+                  <h1 className="text-4xl md:text-6xl font-black tracking-tight text-gray-900 mb-4">
+                    {me?.portalWelcomeTitle || `Hola, ${me?.firstName}`}
+                  </h1>
+                  <p className="text-lg text-gray-500 max-w-2xl leading-relaxed mb-8">
+                    {me?.portalWelcomeMessage || 'Bienvenido(a) a tu espacio personal de sanación y crecimiento.'}
+                  </p>
+                  
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                    {me?.hasActiveSubscription && (
+                      <div className="px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-black uppercase tracking-widest border border-emerald-500/20">
+                        Membresía Activa
+                      </div>
+                    )}
+                    <button 
+                      onClick={logout}
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white border border-gray-100 text-gray-600 text-sm font-bold shadow-sm hover:shadow-md hover:bg-gray-50 transition-all"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Cerrar sesión
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-
-            {me?.intakeSummary ? (
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-                <div className="text-xl font-bold text-gray-800">Evaluación inicial</div>
-                <div className="mt-2 text-gray-600">{me.intakeSummary}</div>
-              </div>
-            ) : null}
-
-            {!me ? null : (
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-                <div className="text-xl font-bold text-gray-800">Personaliza tu espacio</div>
-                <div className="mt-2 text-gray-600">Ajusta el mensaje de bienvenida y el color principal de tu perfil.</div>
-
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700">Título de bienvenida</label>
-                    <input
-                      value={prefs.title}
-                      onChange={(e) => setPrefs((p) => ({ ...p, title: e.target.value }))}
-                      className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      placeholder="Ej. Hola, María"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700">Color principal</label>
-                    <input
-                      value={prefs.color}
-                      onChange={(e) => setPrefs((p) => ({ ...p, color: e.target.value }))}
-                      className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      placeholder="#22c55e"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-semibold text-gray-700">Mensaje de bienvenida</label>
-                    <textarea
-                      value={prefs.message}
-                      onChange={(e) => setPrefs((p) => ({ ...p, message: e.target.value }))}
-                      className="mt-2 w-full min-h-[110px] rounded-2xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      placeholder="Escribe un mensaje para ti..."
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                  <button
-                    type="button"
-                    onClick={() => void savePreferences()}
-                    disabled={savingPrefs}
-                    className="bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {savingPrefs ? 'Guardando...' : 'Guardar cambios'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {!hasHipnosis && (
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-gray-50 px-4 py-2 border border-gray-100">
-                    <Lock className="h-4 w-4 text-primary" />
-                    <span className="text-xs font-semibold text-gray-700">Sin compras</span>
-                  </div>
-                  <div className="text-xl font-bold text-gray-800">Aún no tienes cursos comprados</div>
-                  <div className="text-gray-600">Compra un curso para que aparezca aquí y puedas acceder al contenido.</div>
-                </div>
-                <Link
-                  to="/cursos"
-                  className="bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                >
-                  Ver cursos
-                </Link>
-              </div>
-            )}
-
-            {hasHipnosis && (
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden">
-                <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-accent/5">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm border border-gray-100">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        <span className="text-xs font-semibold text-gray-700">Curso</span>
-                      </div>
-                      <h2 className="text-3xl font-bold text-gray-800">Hipnosis Interdimencional</h2>
-                      <p className="text-gray-600">Acceso completo a las lecciones en video.</p>
-                    </div>
-                    <Link
-                      to="/cursos/hipnosis-interdimencional"
-                      className="bg-white text-gray-700 px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border border-gray-200"
-                    >
-                      Ver ficha del curso
-                    </Link>
-                  </div>
-                </div>
-
-                <div className="p-8">
-                  <div className="text-center mb-10">
-                    <div className="inline-flex items-center space-x-2 bg-gray-50 rounded-full px-6 py-3 mb-4 border border-gray-100">
-                      <PlayCircle className="h-5 w-5 text-primary" />
-                      <span className="text-sm font-medium text-gray-700">Lecciones en video</span>
-                    </div>
-                    <h3 className="text-3xl font-bold text-gray-800">Contenido</h3>
-                    <p className="text-gray-600 max-w-3xl mx-auto">Reproduce los videos y avanza a tu ritmo.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="bg-gray-50 rounded-3xl shadow-sm overflow-hidden border border-gray-100">
-                      <div className="p-6 border-b border-gray-100 bg-white">
-                        <h4 className="text-xl font-bold text-gray-800">Juan David</h4>
-                        <p className="text-sm text-gray-500">Hipnosis Interdimencional</p>
-                      </div>
-                      <div className="aspect-video bg-black">
-                        <video controls className="w-full h-full object-contain" preload="metadata">
-                          <source src="/videos/juandavid.mp4" type="video/mp4" />
-                          Tu navegador no soporta la reproducción de videos.
-                        </video>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-3xl shadow-sm overflow-hidden border border-gray-100">
-                      <div className="p-6 border-b border-gray-100 bg-white">
-                        <h4 className="text-xl font-bold text-gray-800">Laura</h4>
-                        <p className="text-sm text-gray-500">Hipnosis Interdimencional</p>
-                      </div>
-                      <div className="aspect-video bg-black">
-                        <video controls className="w-full h-full object-contain" preload="metadata">
-                          <source src="/videos/laura.mp4" type="video/mp4" />
-                          Tu navegador no soporta la reproducción de videos.
-                        </video>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-        </div>
-      </section>
+        </header>
+
+        {/* Dashboard Content */}
+        <main className="container mx-auto px-6 pb-20">
+          <div className="max-w-6xl mx-auto">
+            {/* Tabs Navigation */}
+            <div className="flex items-center gap-1 p-1.5 bg-gray-100/50 rounded-2xl mb-12 w-fit mx-auto md:mx-0">
+              {[
+                { id: 'wellbeing', label: 'Mi Bienestar', icon: Activity },
+                { id: 'courses', label: 'Mis Cursos', icon: BookOpen },
+                { id: 'settings', label: 'Ajustes', icon: Settings },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id as any)}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300",
+                    activeTab === t.id 
+                      ? "bg-white shadow-md text-gray-900 scale-[1.02]" 
+                      : "text-gray-500 hover:text-gray-800"
+                  )}
+                >
+                  <t.icon className={cn("h-4 w-4", activeTab === t.id ? "text-primary" : "text-gray-400")} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Panels */}
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {activeTab === 'wellbeing' && (
+                <div className="space-y-8">
+                  {me?.intakeSummary ? (
+                    <div className="group relative rounded-[2.5rem] bg-white border border-gray-100 p-8 md:p-12 shadow-sm hover:shadow-xl transition-all duration-500">
+                      <div className="absolute top-8 right-8 h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center">
+                        <Activity className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-2xl font-black text-gray-900 mb-6">Tu resumen de bienestar</h3>
+                      <div className="prose prose-gray max-w-none">
+                        <p className="text-gray-600 text-lg leading-relaxed whitespace-pre-line italic">
+                          "{me.intakeSummary}"
+                        </p>
+                      </div>
+                      <div className="mt-10 flex flex-wrap gap-4 pt-10 border-t border-gray-50">
+                        <Link to="/agenda" className="px-8 py-3 rounded-2xl bg-gray-900 text-white font-bold hover:scale-105 transition-all">
+                          Agendar sesión de apoyo
+                        </Link>
+                        <Link to="/mi-calendario" className="px-8 py-3 rounded-2xl bg-white border border-gray-200 text-gray-700 font-bold hover:bg-gray-50 transition-all">
+                          Ver mi calendario
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100">
+                      <p className="text-gray-400 font-medium">Completa tu evaluación para ver tu resumen aquí.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'courses' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {hasHipnosis ? (
+                    <Link to="/cursos/hipnosis-interdimencional" className="group block">
+                      <div className="h-full rounded-[2.5rem] bg-white border border-gray-100 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
+                        <div className="aspect-[16/10] bg-gray-900 relative overflow-hidden">
+                          <img 
+                            src="https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800&auto=format&fit=crop" 
+                            alt="Hipnosis"
+                            className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-1000"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent" />
+                          <div className="absolute bottom-6 left-6 right-6">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-2 block">Mis Cursos</span>
+                            <h4 className="text-xl font-black text-white">Hipnosis Interdimencional</h4>
+                          </div>
+                        </div>
+                        <div className="p-8">
+                          <p className="text-gray-500 text-sm line-clamp-2 mb-6">Accede a las herramientas de reprogramación subconsciente.</p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+                              <PlayCircle className="h-4 w-4" />
+                              Continuar viendo
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-gray-300 group-hover:text-primary transition-colors" />
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="md:col-span-3 text-center py-32 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
+                      <div className="h-20 w-20 rounded-3xl bg-gray-50 flex items-center justify-center mx-auto mb-6">
+                        <Lock className="h-8 w-8 text-gray-300" />
+                      </div>
+                      <h3 className="text-2xl font-black text-gray-900 mb-2">Aún no tienes cursos</h3>
+                      <p className="text-gray-500 mb-10 max-w-md mx-auto">Explora nuestra biblioteca y empieza tu transformación hoy mismo.</p>
+                      <Link to="/cursos" className="inline-flex items-center gap-2 px-10 py-4 rounded-2xl bg-primary text-white font-black shadow-xl hover:shadow-2xl hover:scale-105 transition-all">
+                        Explorar Biblioteca
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'settings' && (
+                <div className="max-w-3xl space-y-8">
+                  <div className="rounded-[2.5rem] bg-white border border-gray-100 p-8 md:p-12 shadow-sm">
+                    <h3 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
+                      <Sparkles className="h-6 w-6 text-primary" />
+                      Personalización del Portal
+                    </h3>
+                    
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Título Personalizado</label>
+                          <input
+                            value={prefs.title}
+                            onChange={(e) => setPrefs((p) => ({ ...p, title: e.target.value }))}
+                            className="w-full rounded-2xl border border-gray-100 bg-gray-50/50 px-6 py-4 text-gray-800 outline-none focus:ring-4 focus:ring-primary/10 transition-all font-bold"
+                            placeholder="Ej. Hola, María"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Color de Acento (HEX)</label>
+                          <div className="flex gap-3">
+                            <input
+                              value={prefs.color}
+                              onChange={(e) => setPrefs((p) => ({ ...p, color: e.target.value }))}
+                              className="flex-1 rounded-2xl border border-gray-100 bg-gray-50/50 px-6 py-4 text-gray-800 outline-none focus:ring-4 focus:ring-primary/10 transition-all font-mono font-bold"
+                              placeholder="#22c55e"
+                            />
+                            <div className="h-14 w-14 rounded-2xl border-4 border-white shadow-md shadow-inner shrink-0 transition-colors duration-500" style={{ backgroundColor: prefs.color || accent }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Mensaje Motivador</label>
+                        <textarea
+                          value={prefs.message}
+                          onChange={(e) => setPrefs((p) => ({ ...p, message: e.target.value }))}
+                          className="w-full min-h-[120px] rounded-2xl border border-gray-100 bg-gray-50/50 px-6 py-4 text-gray-800 outline-none focus:ring-4 focus:ring-primary/10 transition-all leading-relaxed"
+                          placeholder="Un mensaje para recordarte tu poder..."
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => void savePreferences()}
+                        disabled={savingPrefs}
+                        className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 mt-4"
+                      >
+                        {savingPrefs ? 'Guardando...' : 'Aplicar mis cambios'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[2.5rem] bg-gray-50 border border-gray-100 p-8 md:p-12">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Información de Cuenta</h3>
+                    <p className="text-gray-500 text-sm mb-6">Gestiona la seguridad y accesos de tu cuenta.</p>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-50">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                          <span className="text-sm font-bold text-gray-700">Email verificado: {me?.email}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-50">
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-5 w-5 text-blue-500" />
+                          <span className="text-sm font-bold text-gray-700">Última evaluación: {me?.intakeCompleted ? 'Completada' : 'Pendiente'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
     </PublicLayout>
   );
 };

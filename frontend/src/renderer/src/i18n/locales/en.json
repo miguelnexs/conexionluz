@@ -9,6 +9,10 @@
     "sidebar": {
       "brand": "Conexión Luz",
       "brand_subtitle": "Psychology & Wellbeing",
+      "section_overview": "Overview",
+      "section_management": "Management",
+      "section_content": "Content",
+      "section_system": "System",
       "control_panel": "Control Panel",
       "analytics": "Analytics",
       "therapists": "Therapists",
@@ -18,6 +22,10 @@
       "courses": "Courses",
       "talks": "Talks",
       "testimonials": "Testimonials",
+      "history": "History",
+      "forum": "Forum",
+      "memberships": "Memberships",
+      "settings": "Settings",
       "theme": "Theme",
       "language": "Language",
       "logout": "Log Out",
@@ -353,7 +361,11 @@
       "change_up": "{{value}} vs last month",
       "change_down": "{{value}} vs last month",
       "chart_placeholder": "Chart (coming soon)",
-      "activity_placeholder": "Recent activity (coming soon)"
+      "activity_placeholder": "Recent activity (coming soon)",
+      "weekly_sessions": "Weekly Sessions",
+      "service_distribution": "Service Distribution",
+      "recent_activity": "Recent Activity",
+      "patient_growth": "Patient Growth"
     },
     "therapists": {
       "title": "Therapists",

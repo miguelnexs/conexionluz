@@ -10,7 +10,7 @@ interface LayoutProps {
 export default function MainLayout({ children }: LayoutProps): JSX.Element {
   const location = useLocation()
 
-  if (location.pathname === '/') {
+  if (location.pathname === '/' || location.pathname === '/login') {
     return <div className="h-screen w-full bg-background overflow-auto text-foreground font-sans flex flex-col">{children}</div>
   }
 

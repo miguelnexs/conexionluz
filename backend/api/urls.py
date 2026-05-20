@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path("health/", views.health),
+    path("auth/admin/login/", views.admin_login),
     path("dashboard/", views.dashboard),
     path("analytics/", views.analytics),
     path("courses/", views.courses),
@@ -54,4 +55,16 @@ urlpatterns = [
     path("forum/<int:topic_id>/", views.forum_topic_detail),
     path("forum/<int:topic_id>/replies/", views.forum_topic_replies),
     path("forum/replies/<int:reply_id>/", views.forum_reply_detail),
+    # Membership
+    path("memberships/plans/", views.membership_plans),
+    path("memberships/plans/<int:plan_id>/", views.membership_plan_detail),
+    path("memberships/subscriptions/", views.membership_subscriptions),
+    path("memberships/subscriptions/<int:sub_id>/", views.membership_subscription_detail),
+    path("public/memberships/plans/", views.public_membership_plans),
+    # Site Settings & MercadoPago
+    path("settings/", views.site_settings),
+    path("settings/mercadopago/test/", views.mercadopago_test_connection),
+    path("payments/mercadopago/preference/", views.mercadopago_create_preference),
+    path("payments/mercadopago/pay/", views.mercadopago_pay),
+    path("public/settings/", views.public_site_settings),
 ]

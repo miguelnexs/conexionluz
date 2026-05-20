@@ -26,7 +26,8 @@ const Header = () => {
     { name: 'Historias', href: '/historias' },
     { name: 'Foro', href: '/foro' },
     { name: 'Testimonios', href: '/testimonios' },
-    { name: 'Contacto', href: '/contacto' }
+    { name: 'Contacto', href: '/contacto' },
+    { name: 'Membresía', href: '/membresia', special: true }
   ];
 
   const isActiveRoute = (href: string) => {
@@ -58,13 +59,15 @@ const Header = () => {
                 to={item.href}
                 className={`relative transition-colors duration-300 group ${
                   isActiveRoute(item.href) 
-                    ? 'text-primary font-semibold' 
-                    : 'text-gray-700 hover:text-primary'
+                    ? (item.special ? 'text-amber-600 font-bold' : 'text-primary font-semibold')
+                    : (item.special ? 'text-amber-500 font-bold hover:text-amber-600' : 'text-gray-700 hover:text-primary')
                 }`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 {item.name}
-                <span className={`absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-primary to-accent transition-all duration-300 ${
+                <span className={`absolute bottom-0 left-0 h-0.5 transition-all duration-300 ${
+                  item.special ? 'bg-amber-400' : 'bg-gradient-to-r from-primary to-accent'
+                } ${
                   isActiveRoute(item.href) ? 'w-full' : 'w-0 group-hover:w-full'
                 }`}></span>
               </Link>
@@ -99,8 +102,8 @@ const Header = () => {
                 to={item.href}
                 className={`block py-3 transition-colors duration-300 ${
                   isActiveRoute(item.href) 
-                    ? 'text-primary font-semibold' 
-                    : 'text-gray-700 hover:text-primary'
+                    ? (item.special ? 'text-amber-600 font-bold' : 'text-primary font-semibold')
+                    : (item.special ? 'text-amber-500 font-bold' : 'text-gray-700 hover:text-primary')
                 }`}
                 onClick={() => setIsMenuOpen(false)}
                 style={{ animationDelay: `${index * 0.1}s` }}

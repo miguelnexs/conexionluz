@@ -27,6 +27,7 @@ interface ForumReply {
   authorName: string
   patientId: number | null
   isActive: boolean
+  contentHtml?: string
   createdAt: string
   updatedAt: string
 }
@@ -40,6 +41,7 @@ interface ForumTopic {
   isPinned: boolean
   isLocked: boolean
   isActive: boolean
+  descriptionHtml?: string
   repliesCount: number
   createdAt: string
   updatedAt: string
@@ -59,8 +61,10 @@ export function ForumDetailPage(): React.ReactElement {
 
   // Admin reply form
   const [replyContent, setReplyContent] = useState('')
+  const [replyContentHtml, setReplyContentHtml] = useState('')
   const [replyAuthor, setReplyAuthor] = useState('Administrador')
   const [sendingReply, setSendingReply] = useState(false)
+  const [replyMode, setReplyMode] = useState<'text' | 'html'>('text')
 
   useEffect(() => {
     const load = async () => {
@@ -117,6 +121,7 @@ export function ForumDetailPage(): React.ReactElement {
     setSendingReply(true)
     const res = await api.post<ForumReply>(`/api/forum/${topic.id}/replies/`, {
       content: replyContent.trim(),
+      contentHtml: replyMode === 'html' ? replyContentHtml.trim() : '',
       authorName: replyAuthor.trim() || 'Administrador'
     })
     if (res.ok) {
@@ -126,6 +131,7 @@ export function ForumDetailPage(): React.ReactElement {
         repliesCount: topic.repliesCount + 1
       })
       setReplyContent('')
+      setReplyContentHtml('')
     }
     setSendingReply(false)
   }
@@ -238,9 +244,17 @@ export function ForumDetailPage(): React.ReactElement {
 
             <h1 className="text-2xl md:text-3xl font-bold leading-tight mb-3">{topic.title}</h1>
 
-            {topic.description && (
+            {topic.descriptionHtml ? (
+              <div className="bg-background/50 rounded-xl p-5 border border-primary/10 mb-6">
+                <div className="text-[10px] font-black uppercase tracking-widest text-primary/50 mb-3">Contenido HTML</div>
+                <div 
+                  className="prose prose-sm dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: topic.descriptionHtml }}
+                />
+              </div>
+            ) : topic.description ? (
               <p className="text-sm text-muted-foreground mb-4">{topic.description}</p>
-            )}
+            ) : null}
 
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               {topic.category && (
@@ -313,7 +327,16 @@ export function ForumDetailPage(): React.ReactElement {
                     )}
                   </button>
                 </div>
-                <p className="text-sm mt-3 whitespace-pre-wrap">{reply.content}</p>
+                {reply.contentHtml ? (
+                  <div className="mt-3 p-4 rounded-xl bg-muted/30 border border-border/50">
+                    <div 
+                      className="prose prose-xs dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: reply.contentHtml }}
+                    />
+                  </div>
+                ) : (
+                  <p className="text-sm mt-3 whitespace-pre-wrap">{reply.content}</p>
+                )}
               </motion.div>
             ))}
           </div>
@@ -328,21 +351,64 @@ export function ForumDetailPage(): React.ReactElement {
               <Send className="h-4 w-4 text-primary" />
               Responder como administrador
             </h3>
-            <input
-              type="text"
-              value={replyAuthor}
-              onChange={(e) => setReplyAuthor(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border bg-background/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-              placeholder="Nombre del autor"
-            />
-            <textarea
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border bg-background/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
-              placeholder="Escribe una respuesta..."
-              required
-            />
+            <div className="flex items-center justify-between gap-3">
+              <input
+                type="text"
+                value={replyAuthor}
+                onChange={(e) => setReplyAuthor(e.target.value)}
+                className="flex-1 px-4 py-2 rounded-xl border bg-background/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                placeholder="Nombre del autor"
+              />
+              <div className="flex bg-muted rounded-lg p-1 scale-90">
+                <button
+                  type="button"
+                  onClick={() => setReplyMode('text')}
+                  className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${
+                    replyMode === 'text' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  Texto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReplyMode('html')}
+                  className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${
+                    replyMode === 'html' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  HTML
+                </button>
+              </div>
+            </div>
+
+            {replyMode === 'text' ? (
+              <textarea
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2.5 rounded-xl border bg-background/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+                placeholder="Escribe una respuesta simple..."
+                required
+              />
+            ) : (
+              <div className="space-y-4">
+                <textarea
+                  value={replyContentHtml}
+                  onChange={(e) => setReplyContentHtml(e.target.value)}
+                  rows={6}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-background/80 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+                  placeholder="<p>Tu respuesta en HTML...</p>"
+                  required
+                />
+                <div className="p-4 rounded-xl border bg-background/50 min-h-[60px]">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 opacity-50">Vista Previa</div>
+                  <div 
+                    className="prose prose-xs dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: replyContentHtml }}
+                  />
+                </div>
+              </div>
+            )}
             <div className="flex justify-end">
               <button
                 type="submit"

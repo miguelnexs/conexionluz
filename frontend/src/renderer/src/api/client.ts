@@ -2,7 +2,7 @@ type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
 function getBaseUrl(): string {
   const value = (import.meta as any).env?.VITE_API_URL as string | undefined
-  return (value && value.trim()) || 'https://conexionluz.com'
+  return (value && value.trim()) || 'http://127.0.0.1:8000'
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {

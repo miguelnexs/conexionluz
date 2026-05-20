@@ -9,7 +9,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5434:5432"
+      - "5435:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U conexionluz"]
       interval: 5s
@@ -27,8 +27,9 @@ services:
       POSTGRES_PORT: "5432"
       DJANGO_SECRET_KEY: "django-insecure-9dsl44r-dq-joow-4bfnt-d-s6u-d6cc7do2re0id-ka-j7y"
       DJANGO_DEBUG: "1"
+      USE_SQLITE: "0"
     ports:
-      - "8001:8000"
+      - "8000:8000"
     volumes:
       - ./backend:/app
       - media_data:/app/media

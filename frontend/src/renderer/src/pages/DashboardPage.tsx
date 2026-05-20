@@ -14,6 +14,8 @@ type DashboardCounts = {
   talks: number
   testimonials: number
   stories: number
+  sessions?: number
+  patients?: number
 }
 
 export function DashboardPage(): JSX.Element {
@@ -22,11 +24,22 @@ export function DashboardPage(): JSX.Element {
 
   useEffect(() => {
     void (async () => {
-      const res = await api.get<{ courses: number; therapists: number; services: number; talks: number; testimonials: number; stories: number }>(
+      const res = await api.get<DashboardCounts>(
         '/api/dashboard/'
       )
       if (!res.ok) return
-      setCounts(res.data)
+      
+      // Also get analytics for the dashboard
+      const anaRes = await api.get<any>('/api/analytics/')
+      if (anaRes.ok) {
+        setCounts({
+          ...res.data,
+          sessions: anaRes.data.sessions,
+          patients: anaRes.data.patients
+        })
+      } else {
+        setCounts(res.data)
+      }
     })()
   }, [])
 
@@ -114,31 +127,31 @@ export function DashboardPage(): JSX.Element {
       <motion.div variants={container} className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {[
           {
-            title: t('dashboard.stat_1_title'),
-            desc: t('dashboard.stat_1_desc'),
+            title: 'Sesiones',
+            desc: 'Total agendadas',
+            icon: BarChart3,
+            color: "text-blue-500 bg-blue-500/10",
+            count: counts?.sessions ?? '—'
+          },
+          {
+            title: 'Pacientes',
+            desc: 'Activos en plataforma',
             icon: Users,
-            color: "text-primary bg-primary/10",
-            count: counts?.therapists ?? '—'
+            color: "text-emerald-500 bg-emerald-500/10",
+            count: counts?.patients ?? '—'
           },
           {
             title: t('dashboard.stat_2_title'),
             desc: t('dashboard.stat_2_desc'),
             icon: Video,
-            color: "text-primary bg-primary/10",
+            color: "text-purple-500 bg-purple-500/10",
             count: counts?.talks ?? '—'
           },
           {
-            title: t('dashboard.stat_3_title'),
-            desc: t('dashboard.stat_3_desc'),
-            icon: Star,
-            color: "text-primary bg-primary/10",
-            count: counts?.testimonials ?? '—'
-          },
-          {
             title: 'Historias',
-            desc: 'Historias compartidas',
+            desc: 'Compartidas',
             icon: BookOpen,
-            color: "text-primary bg-primary/10",
+            color: "text-amber-500 bg-amber-500/10",
             count: counts?.stories ?? '—'
           }
         ].map((feature, i) => (
@@ -157,7 +170,7 @@ export function DashboardPage(): JSX.Element {
               </div>
             </div>
             <h3 className="mt-4 font-semibold text-lg">{feature.title}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">{feature.desc}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{feature.desc}</p>
           </motion.div>
         ))}
       </motion.div>

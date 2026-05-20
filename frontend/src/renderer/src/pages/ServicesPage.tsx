@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import { Plus, Trash2, Pencil, Sparkles, AlertTriangle, X } from 'lucide-react'
+import { Plus, Trash2, Pencil, Sparkles, AlertTriangle, X, BarChart3, CheckCircle2, Wallet, TrendingUp } from 'lucide-react'
 import { api } from '@/api/client'
 import { Link } from 'react-router-dom'
 
@@ -52,6 +52,17 @@ export function ServicesPage(): JSX.Element {
     return value
   }
 
+  const stats = useMemo(() => {
+    const total = services.length
+    const active = services.filter((s) => s.isActive).length
+    const inactive = total - active
+    const totalPrice = services.reduce((acc, s) => acc + (s.priceCOP || 0), 0)
+    const avgPrice = total > 0 ? totalPrice / total : 0
+    const premium = services.filter((s) => s.priceCOP > 250000).length
+
+    return { total, active, inactive, avgPrice, premium }
+  }, [services])
+
   const sorted = useMemo(() => {
     const list = [...services]
     list.sort((a, b) => {
@@ -94,6 +105,80 @@ export function ServicesPage(): JSX.Element {
       </div>
 
       {error && <div className="text-sm text-red-500">{error}</div>}
+
+      {/* Statistics Section */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border bg-card/60 backdrop-blur-sm p-5 shadow-sm space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-50">Total</span>
+          </div>
+          <div>
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">Servicios registrados</p>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-2xl border bg-card/60 backdrop-blur-sm p-5 shadow-sm space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-50">Activos</span>
+          </div>
+          <div>
+            <div className="text-2xl font-bold">{stats.active}</div>
+            <p className="text-xs text-muted-foreground">{stats.inactive} servicios inactivos</p>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="rounded-2xl border bg-card/60 backdrop-blur-sm p-5 shadow-sm space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+              <Wallet className="h-5 w-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-50">Promedio</span>
+          </div>
+          <div>
+            <div className="text-2xl font-bold">{formatCOP(stats.avgPrice)}</div>
+            <p className="text-xs text-muted-foreground">Inversión promedio</p>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="rounded-2xl border bg-card/60 backdrop-blur-sm p-5 shadow-sm space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <div className="h-10 w-10 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-50">Premium</span>
+          </div>
+          <div>
+            <div className="text-2xl font-bold">{stats.premium}</div>
+            <p className="text-xs text-muted-foreground">{t('services_admin.premium_desc', 'Servicios de alta gama')}</p>
+          </div>
+        </motion.div>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {loading &&

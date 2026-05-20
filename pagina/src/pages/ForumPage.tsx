@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import PublicLayout from '../components/PublicLayout';
-import { MessageSquareText, Search, Sparkles, Calendar, MessageCircle, Pin, Lock } from 'lucide-react';
+import { MessageSquareText, Search, Sparkles, Calendar, MessageCircle, Pin, Lock, ChevronRight } from 'lucide-react';
 import { api } from '../api/client';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 type ForumTopic = {
   id: number;
   title: string;
   description: string;
+  descriptionHtml?: string;
   category: string;
   imageUrl: string | null;
   isPinned: boolean;
@@ -150,119 +152,135 @@ const ForumPage = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto space-y-8">
             {/* Search & Filters */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-6 bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-gray-100 shadow-sm">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Buscar por título, descripción o categoría..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                  className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white/80 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>
-              {categories.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => setSelectedCategory(null)}
-                    className={`px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
-                      !selectedCategory
-                        ? 'bg-primary text-white border-primary shadow-sm'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-primary/30 hover:text-primary'
-                    }`}
-                  >
-                    Todos
-                  </button>
-                  {categories.map((cat) => (
+              <div className="flex flex-wrap items-center gap-3">
+                {categories.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pr-4 border-r border-gray-200">
                     <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-                      className={`px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
-                        selectedCategory === cat
-                          ? 'bg-primary text-white border-primary shadow-sm'
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-primary/30 hover:text-primary'
+                      onClick={() => setSelectedCategory(null)}
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                        !selectedCategory
+                          ? 'bg-primary text-white shadow-md shadow-primary/20'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      {cat}
+                      Todos
                     </button>
-                  ))}
-                </div>
-              )}
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                          selectedCategory === cat
+                            ? 'bg-primary text-white shadow-md shadow-primary/20'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {/* New Topic Button (Placeholder for functionality as public API might not allow POST directly without specific auth handling) */}
+                {typeof window !== 'undefined' && localStorage.getItem('conexionluz:token') && (
+                  <Button 
+                    onClick={() => navigate('/mi-perfil')} // Redirect to profile or a future create topic page
+                    className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-200 hover:scale-[1.02] transition-all"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Nuevo Tema
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Result count */}
-            <p className="text-sm text-gray-500">
-              {filtered.length} tema{filtered.length !== 1 ? 's' : ''}
-              {search || selectedCategory ? ' encontrado' + (filtered.length !== 1 ? 's' : '') : ''}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-500">
+                Mostrando <span className="text-gray-900 font-bold">{filtered.length}</span> tema{filtered.length !== 1 ? 's' : ''}
+              </p>
+            </div>
 
-            {error ? <div className="text-sm text-red-600">{error}</div> : null}
+            {error ? <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-sm text-red-600">{error}</div> : null}
 
             {loading ? (
-              <div className="space-y-4">
+              <div className="grid gap-6 md:grid-cols-2">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-gray-100 bg-gray-50 p-6">
-                    <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse mb-3" />
-                    <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-2" />
-                    <div className="h-4 w-1/4 bg-gray-200 rounded animate-pulse" />
-                  </div>
+                  <div key={i} className="rounded-3xl border border-gray-100 bg-gray-50/50 p-6 h-48 animate-pulse" />
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 rounded-3xl border border-gray-100 bg-gray-50">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                  <MessageSquareText className="h-7 w-7 text-gray-400" />
+              <div className="flex flex-col items-center justify-center py-24 rounded-[2rem] border border-dashed border-gray-200 bg-gray-50/50">
+                <div className="w-20 h-20 rounded-3xl bg-white shadow-sm flex items-center justify-center mb-6">
+                  <MessageSquareText className="h-9 w-9 text-gray-300" />
                 </div>
-                <p className="text-lg font-medium text-gray-700 mb-1">
-                  {search || selectedCategory ? 'No se encontraron temas' : 'Aún no hay temas de discusión'}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {search ? 'Intenta con otros términos de búsqueda' : 'Pronto se abrirán nuevos espacios de conversación'}
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  {search || selectedCategory ? 'No hay resultados' : 'El foro está tranquilo'}
+                </h3>
+                <p className="text-sm text-gray-500 max-w-xs text-center leading-relaxed">
+                  {search ? 'Prueba con otros términos o limpia los filtros para ver todos los temas.' : '¡Sé el primero en iniciar una conversación compartiendo tus pensamientos!'}
                 </p>
               </div>
             ) : (
-              <div className="space-y-4 stagger-animation">
+              <div className="grid gap-6 md:grid-cols-2 stagger-animation">
                 {filtered.map((topic, index) => (
                   <div
                     key={topic.id}
                     onClick={() => navigate(`/foro/${topic.id}`)}
-                    className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-[1.01] animate-fade-in group cursor-pointer"
-                    style={{ animationDelay: `${index * 0.06}s` }}
+                    className={cn(
+                      "group cursor-pointer relative overflow-hidden rounded-[2rem] border transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 bg-white",
+                      topic.isPinned ? "border-amber-100 bg-amber-50/20" : "border-gray-100"
+                    )}
+                    style={{ animationDelay: `${index * 0.05}s` }}
                   >
-                    {topic.imageUrl && (
-                      <div className="-mx-6 -mt-6 mb-4 h-40 overflow-hidden rounded-t-2xl">
-                        <img src={topic.imageUrl} alt={topic.title} className="w-full h-full object-cover" />
+                    {topic.isPinned && (
+                      <div className="absolute top-0 right-0 px-4 py-1 bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest rounded-bl-2xl flex items-center gap-1.5 z-10">
+                        <Pin className="h-3 w-3" /> Destacado
                       </div>
                     )}
-                    <div className="flex items-start gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <MessageSquareText className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          {topic.isPinned && <Pin className="h-3.5 w-3.5 text-amber-500" />}
-                          {topic.isLocked && <Lock className="h-3.5 w-3.5 text-red-400" />}
-                          {topic.category && (
-                            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
-                              {topic.category}
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-800 group-hover:text-primary transition-colors line-clamp-1">
-                          {topic.title}
-                        </h3>
-                        {topic.description && (
-                          <p className="text-sm text-gray-500 line-clamp-2 mt-1">{topic.description}</p>
-                        )}
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-gray-400">
-                          <span className="inline-flex items-center gap-1">
-                            <MessageCircle className="h-3 w-3" />
-                            {topic.repliesCount} respuesta{topic.repliesCount !== 1 ? 's' : ''}
+                    
+                    <div className="p-8 h-full flex flex-col">
+                      <div className="flex items-center gap-3 mb-4">
+                        {topic.category && (
+                          <span className="inline-flex items-center rounded-xl bg-primary/5 px-3 py-1 text-[11px] font-bold text-primary border border-primary/10">
+                            {topic.category}
                           </span>
-                          <span className="inline-flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
+                        )}
+                        {topic.isLocked && <Lock className="h-3.5 w-3.5 text-rose-400" />}
+                      </div>
+
+                      <h3 className="text-xl font-bold text-gray-800 group-hover:text-primary transition-colors leading-tight mb-3">
+                        {topic.title}
+                      </h3>
+                      
+                      <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed mb-6 flex-1">
+                        {topic.description || (topic.descriptionHtml ? topic.descriptionHtml.replace(/<[^>]*>/g, '').slice(0, 160) + '...' : 'Sin descripción disponible para este tema.')}
+                      </p>
+
+                      <div className="flex items-center justify-between pt-6 border-t border-gray-50">
+                        <div className="flex items-center gap-4 text-xs font-bold text-gray-400">
+                          <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            {topic.repliesCount}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
                             {formatDate(topic.updatedAt)}
                           </span>
+                        </div>
+                        <div className="h-9 w-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary group-hover:text-white transition-all">
+                          <ChevronRight className="h-5 w-5" />
                         </div>
                       </div>
                     </div>

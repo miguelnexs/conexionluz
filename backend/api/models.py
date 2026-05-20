@@ -113,6 +113,7 @@ class Patient(TimestampedModel):
 class Service(TimestampedModel):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    description_html = models.TextField(blank=True)
     price_cop = models.PositiveIntegerField(default=0)
     duration_minutes = models.PositiveIntegerField(default=0)
     modality = models.CharField(max_length=40, blank=True)
@@ -238,6 +239,7 @@ class Story(TimestampedModel):
 class ForumTopic(TimestampedModel):
     title = models.CharField(max_length=300)
     description = models.TextField(blank=True)
+    description_html = models.TextField(blank=True)
     category = models.CharField(max_length=100, blank=True)
     image_file = models.FileField(upload_to="forum/images/", null=True, blank=True)
     is_pinned = models.BooleanField(default=False)
@@ -252,9 +254,84 @@ class ForumTopic(TimestampedModel):
 class ForumReply(TimestampedModel):
     topic = models.ForeignKey(ForumTopic, on_delete=models.CASCADE, related_name="replies")
     content = models.TextField()
+    content_html = models.TextField(blank=True)
     author_name = models.CharField(max_length=200)
     patient = models.ForeignKey(Patient, null=True, blank=True, on_delete=models.SET_NULL, related_name="forum_replies")
     is_active = models.BooleanField(default=True)
 
     def __str__(self) -> str:
         return f"Reply by {self.author_name} on {self.topic.title}"
+
+
+class MembershipPlan(TimestampedModel):
+    """Configurable membership plan (monthly, annual, etc.)"""
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    price_cop = models.PositiveIntegerField(default=280000, help_text="Monthly price COP")
+    price_usd = models.PositiveIntegerField(default=70, help_text="Monthly price USD")
+    price_eur = models.PositiveIntegerField(default=70, help_text="Monthly price EUR")
+    annual_price_cop = models.PositiveIntegerField(default=2800000, help_text="Annual price COP")
+    annual_price_usd = models.PositiveIntegerField(default=700, help_text="Annual price USD")
+    annual_price_eur = models.PositiveIntegerField(default=700, help_text="Annual price EUR")
+    monthly_discount_percent = models.PositiveSmallIntegerField(default=0)
+    annual_discount_percent = models.PositiveSmallIntegerField(default=0)
+    sessions_per_month = models.PositiveSmallIntegerField(default=3)
+    # Sessions breakdown stored as JSON: [{"name": "Hipnoanálisis", "count": 1, "description": "..."}]
+    sessions_breakdown = models.JSONField(default=list, blank=True)
+    # Benefits stored as JSON list of strings
+    benefits = models.JSONField(default=list, blank=True)
+    is_active = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class MembershipSubscription(TimestampedModel):
+    """A patient's active membership subscription."""
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        PAUSED = "paused", "Paused"
+        CANCELLED = "cancelled", "Cancelled"
+        EXPIRED = "expired", "Expired"
+
+    class PaymentMethod(models.TextChoices):
+        TRANSFER = "transfer", "Transferencia Bancaria"
+        CASH = "cash", "Efectivo"
+        OTHER = "other", "Otro"
+
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="memberships")
+    plan = models.ForeignKey(MembershipPlan, on_delete=models.PROTECT, related_name="subscriptions")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.TRANSFER)
+    starts_at = models.DateField()
+    ends_at = models.DateField(null=True, blank=True)
+    sessions_used = models.PositiveSmallIntegerField(default=0)
+    notes = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.patient} · {self.plan} ({self.status})"
+
+
+class SiteSettings(models.Model):
+    """Singleton model for site-wide configuration (MercadoPago, etc.)"""
+    mercadopago_public_key = models.CharField(max_length=512, blank=True, help_text="MercadoPago Public Key (starts with APP_USR-...)")
+    mercadopago_access_token = models.CharField(max_length=512, blank=True, help_text="MercadoPago Access Token")
+    mercadopago_enabled = models.BooleanField(default=False)
+    site_name = models.CharField(max_length=200, blank=True, default="ConexiónLuz")
+    support_email = models.EmailField(blank=True)
+    support_whatsapp = models.CharField(max_length=40, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Site Settings"
+        verbose_name_plural = "Site Settings"
+
+    def __str__(self) -> str:
+        return "Site Settings"
+
+    @classmethod
+    def get(cls) -> 'SiteSettings':
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj

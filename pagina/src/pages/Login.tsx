@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PublicLayout from '../components/PublicLayout';
-import { Link, useNavigate } from 'react-router-dom';
-import { Lock } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Lock, Crown } from 'lucide-react';
 import { api } from '../api/client';
 
 const getTokenKey = () => 'conexionluz:token';
@@ -20,6 +20,10 @@ type LoginResponse = {
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromPath = (location.state as any)?.from as string | undefined;
+  const fromMembresia = fromPath === '/membresia';
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +42,8 @@ const LoginPage = () => {
     }
     localStorage.setItem(getTokenKey(), res.data.token);
     setLoading(false);
-    navigate('/mi-perfil', { replace: true });
+    // Redirect back to where they came from, or to profile
+    navigate(fromPath || '/mi-perfil', { replace: true });
   };
 
   return (
@@ -50,6 +55,16 @@ const LoginPage = () => {
               <Lock className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-gray-700">Iniciar sesión</span>
             </div>
+
+            {fromMembresia && (
+              <div className="mt-4 flex items-start gap-3 rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3.5">
+                <Crown className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-amber-800">Inicia sesión para suscribirte</p>
+                  <p className="text-xs text-amber-700 mt-0.5">Una vez que inicies sesión, volverás directamente al proceso de pago de tu plan.</p>
+                </div>
+              </div>
+            )}
 
             <h1 className="mt-4 text-3xl font-bold text-gray-800">Bienvenido</h1>
             <p className="mt-2 text-gray-600">

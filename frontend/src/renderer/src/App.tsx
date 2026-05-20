@@ -1,7 +1,10 @@
 import React from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 import MainLayout from '@/layouts/MainLayout'
+import { LoginPage } from '@/pages/LoginPage'
 import { WelcomePage } from '@/pages/WelcomePage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { AnalyticsPage } from '@/pages/AnalyticsPage'
@@ -24,45 +27,58 @@ import { CalendarPage } from '@/pages/CalendarPage'
 import { ForumPage } from '@/pages/ForumPage'
 import { ForumFormPage } from '@/pages/ForumFormPage'
 import { ForumDetailPage } from '@/pages/ForumDetailPage'
-import './i18n/config' // Import i18n configuration
+import { MembershipsPage } from '@/pages/MembershipsPage'
+import { MembershipPlanFormPage } from '@/pages/MembershipPlanFormPage'
+import { SettingsPage } from '@/pages/SettingsPage'
+import './i18n/config'
 
 function App(): JSX.Element {
   return (
     <HashRouter>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <MainLayout>
-          <Routes>
-            <Route path="/" element={<WelcomePage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/analitica" element={<AnalyticsPage />} />
-            <Route path="/terapeutas" element={<TherapistsPage />} />
-            <Route path="/terapeutas/nuevo" element={<TherapistFormPage mode="create" />} />
-            <Route path="/terapeutas/:id" element={<TherapistFormPage mode="edit" />} />
-            <Route path="/servicios" element={<ServicesPage />} />
-            <Route path="/servicios/nuevo" element={<ServiceFormPage mode="create" />} />
-            <Route path="/servicios/:id" element={<ServiceFormPage mode="edit" />} />
-            <Route path="/conversatorios" element={<TalksPage />} />
-            <Route path="/conversatorios/nuevo" element={<TalkFormPage key="talk-create" mode="create" />} />
-            <Route path="/conversatorios/:id" element={<TalkFormPage key="talk-edit" mode="edit" />} />
-            <Route path="/conversatorios/:id/destacado" element={<TalkFeaturedVideoPage />} />
-            <Route path="/testimonios" element={<TestimonialsPage />} />
-            <Route path="/historia" element={<HistoriaPage />} />
-            <Route path="/historia/nueva" element={<HistoriaFormPage mode="create" />} />
-            <Route path="/historia/:id" element={<HistoriaDetailPage />} />
-            <Route path="/historia/:id/editar" element={<HistoriaFormPage mode="edit" />} />
-            <Route path="/foro" element={<ForumPage />} />
-            <Route path="/foro/nuevo" element={<ForumFormPage mode="create" />} />
-            <Route path="/foro/:id" element={<ForumDetailPage />} />
-            <Route path="/foro/:id/editar" element={<ForumFormPage mode="edit" />} />
-            <Route path="/cursos" element={<CoursesAdminPage />} />
-            <Route path="/cursos/nuevo" element={<CourseFormPage mode="create" />} />
-            <Route path="/cursos/:id" element={<CourseFormPage mode="edit" />} />
-            <Route path="/calendario" element={<CalendarPage />} />
-            <Route path="/pacientes" element={<PatientsPage />} />
-            <Route path="/pacientes/nuevo" element={<PatientFormPage mode="create" />} />
-            <Route path="/pacientes/:id" element={<PatientFormPage mode="edit" />} />
-          </Routes>
-        </MainLayout>
+        <AuthProvider>
+          <MainLayout>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
+
+              {/* Protected routes */}
+              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/analitica" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+              <Route path="/terapeutas" element={<ProtectedRoute><TherapistsPage /></ProtectedRoute>} />
+              <Route path="/terapeutas/nuevo" element={<ProtectedRoute><TherapistFormPage mode="create" /></ProtectedRoute>} />
+              <Route path="/terapeutas/:id" element={<ProtectedRoute><TherapistFormPage mode="edit" /></ProtectedRoute>} />
+              <Route path="/servicios" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
+              <Route path="/servicios/nuevo" element={<ProtectedRoute><ServiceFormPage mode="create" /></ProtectedRoute>} />
+              <Route path="/servicios/:id" element={<ProtectedRoute><ServiceFormPage mode="edit" /></ProtectedRoute>} />
+              <Route path="/conversatorios" element={<ProtectedRoute><TalksPage /></ProtectedRoute>} />
+              <Route path="/conversatorios/nuevo" element={<ProtectedRoute><TalkFormPage key="talk-create" mode="create" /></ProtectedRoute>} />
+              <Route path="/conversatorios/:id" element={<ProtectedRoute><TalkFormPage key="talk-edit" mode="edit" /></ProtectedRoute>} />
+              <Route path="/conversatorios/:id/destacado" element={<ProtectedRoute><TalkFeaturedVideoPage /></ProtectedRoute>} />
+              <Route path="/testimonios" element={<ProtectedRoute><TestimonialsPage /></ProtectedRoute>} />
+              <Route path="/historia" element={<ProtectedRoute><HistoriaPage /></ProtectedRoute>} />
+              <Route path="/historia/nueva" element={<ProtectedRoute><HistoriaFormPage mode="create" /></ProtectedRoute>} />
+              <Route path="/historia/:id" element={<ProtectedRoute><HistoriaDetailPage /></ProtectedRoute>} />
+              <Route path="/historia/:id/editar" element={<ProtectedRoute><HistoriaFormPage mode="edit" /></ProtectedRoute>} />
+              <Route path="/foro" element={<ProtectedRoute><ForumPage /></ProtectedRoute>} />
+              <Route path="/foro/nuevo" element={<ProtectedRoute><ForumFormPage mode="create" /></ProtectedRoute>} />
+              <Route path="/foro/:id" element={<ProtectedRoute><ForumDetailPage /></ProtectedRoute>} />
+              <Route path="/foro/:id/editar" element={<ProtectedRoute><ForumFormPage mode="edit" /></ProtectedRoute>} />
+              <Route path="/cursos" element={<ProtectedRoute><CoursesAdminPage /></ProtectedRoute>} />
+              <Route path="/cursos/nuevo" element={<ProtectedRoute><CourseFormPage mode="create" /></ProtectedRoute>} />
+              <Route path="/cursos/:id" element={<ProtectedRoute><CourseFormPage mode="edit" /></ProtectedRoute>} />
+              <Route path="/calendario" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+              <Route path="/membresias" element={<ProtectedRoute><MembershipsPage /></ProtectedRoute>} />
+              <Route path="/membresias/planes/nuevo" element={<ProtectedRoute><MembershipPlanFormPage mode="create" /></ProtectedRoute>} />
+              <Route path="/membresias/planes/:id/editar" element={<ProtectedRoute><MembershipPlanFormPage mode="edit" /></ProtectedRoute>} />
+              <Route path="/pacientes" element={<ProtectedRoute><PatientsPage /></ProtectedRoute>} />
+              <Route path="/pacientes/nuevo" element={<ProtectedRoute><PatientFormPage mode="create" /></ProtectedRoute>} />
+              <Route path="/pacientes/:id" element={<ProtectedRoute><PatientFormPage mode="edit" /></ProtectedRoute>} />
+              <Route path="/configuracion" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            </Routes>
+          </MainLayout>
+        </AuthProvider>
       </ThemeProvider>
     </HashRouter>
   )

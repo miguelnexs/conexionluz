@@ -35,7 +35,7 @@ db.sqlite3
 .DS_Store
 Thumbs.db
 .env
-.env.local
+.env.localb 
 .env.development.local
 .env.test.local
 .env.production.local

@@ -33,6 +33,7 @@ const TimeSlots: React.FC<TimeSlotsProps> = ({ selectedTime, onTimeSelect, selec
       return;
     }
     
+    setOccupiedTimes([]);
     setLoading(true);
     try {
       const yyyy = selectedDate.getFullYear();
@@ -41,8 +42,10 @@ const TimeSlots: React.FC<TimeSlotsProps> = ({ selectedTime, onTimeSelect, selec
       const date = `${yyyy}-${mm}-${dd}`;
       const qs = new URLSearchParams({ date });
       if (typeof serviceId === 'number') qs.set('serviceId', String(serviceId));
+      console.log(`[TimeSlots] Fetching for ${date}...`);
       const res = await api.get<{ times: string[] }>(`/api/public/appointments/occupied/?${qs.toString()}`);
       if (!res.ok) throw new Error(res.error);
+      console.log('[TimeSlots] Received occupied:', res.data.times);
       setOccupiedTimes(res.data.times || []);
     } catch (error) {
       console.error('Error fetching occupied times:', error);

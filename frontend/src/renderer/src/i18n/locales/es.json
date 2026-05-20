@@ -9,6 +9,10 @@
     "sidebar": {
       "brand": "Conexión Luz",
       "brand_subtitle": "Psicología & Bienestar",
+      "section_overview": "Resumen",
+      "section_management": "Gestión",
+      "section_content": "Contenido",
+      "section_system": "Sistema",
       "control_panel": "Panel de control",
       "analytics": "Analítica",
       "therapists": "Terapeutas",
@@ -18,6 +22,10 @@
       "courses": "Cursos",
       "talks": "Conversatorios",
       "testimonials": "Testimonios",
+      "history": "Historia",
+      "forum": "Foro",
+      "memberships": "Membresías",
+      "settings": "Configuración",
       "theme": "Tema",
       "language": "Idioma",
       "logout": "Cerrar Sesión",
@@ -353,7 +361,11 @@
       "change_up": "{{value}} vs. mes anterior",
       "change_down": "{{value}} vs. mes anterior",
       "chart_placeholder": "Gráfica (próximamente)",
-      "activity_placeholder": "Actividad reciente (próximamente)"
+      "activity_placeholder": "Actividad reciente (próximamente)",
+      "weekly_sessions": "Sesiones Semanales",
+      "service_distribution": "Distribución de Servicios",
+      "recent_activity": "Actividad Reciente",
+      "patient_growth": "Crecimiento de Pacientes"
     },
     "therapists": {
       "title": "Terapeutas",
