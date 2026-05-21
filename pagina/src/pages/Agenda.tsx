@@ -8,8 +8,9 @@ import PatientForm from '../components/PatientForm';
 import { useCreateAppointment } from '../hooks/useAppointments';
 import { useToast } from '../hooks/use-toast';
 import { useServices } from '../hooks/useServices';
+import { useTherapists } from '../hooks/useTherapists';
 import { api } from '../api/client';
-import type { Service } from '@/types/models';
+import type { Service, Therapist } from '@/types/models';
 
 interface AgendaStep {
   id: number;
@@ -33,6 +34,8 @@ const Agenda = () => {
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(
     typeof serviceIdFromUrl === 'number' && Number.isFinite(serviceIdFromUrl) ? serviceIdFromUrl : null
   );
+  const { data: therapists = [], isLoading: loadingTherapists } = useTherapists();
+  const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(null);
   const [me, setMe] = useState<{ firstName: string; lastName: string; email: string; phone: string } | null>(null);
   const [patientData, setPatientData] = useState({
     name: '',
@@ -68,18 +71,18 @@ const Agenda = () => {
   const steps: AgendaStep[] = useMemo(() => {
     if (isAuthed) {
       return [
-        { id: 1, title: 'Servicio y fecha', icon: Calendar, completed: !!selectedDate && !!selectedServiceId },
+        { id: 1, title: 'Servicio y fecha', icon: Calendar, completed: !!selectedDate && !!selectedServiceId && !!selectedTherapistId },
         { id: 2, title: 'Elegir Horario', icon: Clock, completed: !!selectedTime },
         { id: 3, title: 'Confirmación', icon: CheckCircle, completed: false }
       ];
     }
     return [
-      { id: 1, title: 'Servicio y fecha', icon: Calendar, completed: !!selectedDate && !!selectedServiceId },
+      { id: 1, title: 'Servicio y fecha', icon: Calendar, completed: !!selectedDate && !!selectedServiceId && !!selectedTherapistId },
       { id: 2, title: 'Elegir Horario', icon: Clock, completed: !!selectedTime },
       { id: 3, title: 'Datos Personales', icon: User, completed: false },
       { id: 4, title: 'Confirmación', icon: CheckCircle, completed: false }
     ];
-  }, [isAuthed, selectedDate, selectedServiceId, selectedTime]);
+  }, [isAuthed, selectedDate, selectedServiceId, selectedTherapistId, selectedTime]);
 
   const handleNext = async () => {
     const successStep = isAuthed ? 3 : 4;
@@ -96,12 +99,14 @@ const Agenda = () => {
         if (isAuthed) {
           await createAppointmentMutation.mutateAsync({
             startAt: start.toISOString(),
-            serviceId: selectedServiceId || undefined
+            serviceId: selectedServiceId || undefined,
+            therapistId: selectedTherapistId || undefined
           });
         } else {
           await createAppointmentMutation.mutateAsync({
             startAt: start.toISOString(),
             serviceId: selectedServiceId || undefined,
+            therapistId: selectedTherapistId || undefined,
             clientName: patientData.name,
             clientEmail: patientData.email,
             clientPhone: patientData.phone,
@@ -142,7 +147,7 @@ const Agenda = () => {
 
   const isStepValid = () => {
     switch (currentStep) {
-      case 1: return !!selectedDate && !!selectedServiceId;
+      case 1: return !!selectedDate && !!selectedServiceId && !!selectedTherapistId;
       case 2: return !!selectedTime;
       case 3: return isAuthed ? true : (patientData.name && patientData.email && patientData.phone);
       default: return true;
@@ -186,6 +191,38 @@ const Agenda = () => {
             </div>
 
             <div className="space-y-3">
+              <div className="text-sm font-semibold text-gray-800">Profesional (Terapeuta)</div>
+              {loadingTherapists ? (
+                <div className="text-sm text-gray-600">Cargando terapeutas...</div>
+              ) : therapists.length === 0 ? (
+                <div className="text-sm text-gray-600">No hay profesionales disponibles en este momento.</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(therapists as Therapist[]).map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setSelectedTherapistId(Number(t.id))}
+                      className={`rounded-2xl border p-4 text-left transition-all flex flex-col justify-between ${
+                        selectedTherapistId === Number(t.id) ? 'border-primary/40 bg-primary/10' : 'border-gray-200 bg-white hover:shadow-sm'
+                      }`}
+                    >
+                      <div>
+                        <div className="text-sm font-bold text-gray-800">{t.name}</div>
+                        <div className="text-xs text-primary font-medium mt-0.5">{t.specialty}</div>
+                        {t.description ? <div className="mt-1.5 text-xs text-gray-600 line-clamp-2">{t.description}</div> : null}
+                      </div>
+                      <div className="mt-3 text-[11px] text-gray-400">
+                        {t.session_duration ? `${t.session_duration} min` : ''} 
+                        {t.price_from ? ` · Desde $${t.price_from.toLocaleString('es-CO')}` : ''}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
               <div className="text-sm font-semibold text-gray-800">Fecha</div>
               <DatePicker selectedDate={selectedDate} onDateSelect={setSelectedDate} />
             </div>
@@ -205,6 +242,7 @@ const Agenda = () => {
             onTimeSelect={setSelectedTime}
             selectedDate={selectedDate}
             serviceId={selectedServiceId || undefined}
+            therapistId={selectedTherapistId || undefined}
           />
         );
       case 3:

@@ -227,6 +227,7 @@ def _appointment_to_dict(appt: Appointment) -> dict[str, Any]:
         "status": appt.status,
         "patientId": appt.patient_id,
         "serviceId": appt.service_id,
+        "therapistId": appt.therapist_id,
         "clientName": appt.client_name,
         "clientEmail": appt.client_email,
         "clientPhone": appt.client_phone,
@@ -490,6 +491,26 @@ def analytics(_: HttpRequest) -> JsonResponse:
         growth_labels.append(month_start.strftime("%b"))
         growth_data.append(count)
 
+    # Weekly sessions (last 7 days)
+    weekday_names = {
+        0: "Lun",
+        1: "Mar",
+        2: "Mié",
+        3: "Jue",
+        4: "Vie",
+        5: "Sáb",
+        6: "Dom"
+    }
+    sessions_labels = []
+    sessions_data = []
+    for i in range(6, -1, -1):
+        day = now - timedelta(days=i)
+        day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        count = Appointment.objects.filter(start_at__gte=day_start, start_at__lt=day_end).count()
+        sessions_labels.append(weekday_names[day_start.weekday()])
+        sessions_data.append(count)
+
     return JsonResponse(
         {
             "ok": True,
@@ -502,6 +523,10 @@ def analytics(_: HttpRequest) -> JsonResponse:
                 "growth": {
                     "labels": growth_labels,
                     "data": growth_data
+                },
+                "weeklySessions": {
+                    "labels": sessions_labels,
+                    "data": sessions_data
                 }
             },
         }
@@ -1310,7 +1335,20 @@ def appointments(request: HttpRequest) -> JsonResponse:
     if end_dt <= start_dt:
         return _json_error("endAt must be after startAt")
 
-    if Appointment.objects.filter(status=Appointment.Status.SCHEDULED, start_at__lt=end_dt, end_at__gt=start_dt).exists():
+    therapist_id = body.get("therapistId")
+    therapist = None
+    if therapist_id not in (None, ""):
+        try:
+            therapist = Therapist.objects.get(id=int(therapist_id))
+        except Exception:
+            return _json_error("invalid therapistId")
+
+    conflict_qs = Appointment.objects.filter(status=Appointment.Status.SCHEDULED, start_at__lt=end_dt, end_at__gt=start_dt)
+    if therapist is not None:
+        conflict_qs = conflict_qs.filter(therapist=therapist)
+    else:
+        conflict_qs = conflict_qs.filter(therapist__isnull=True)
+    if conflict_qs.exists():
         return _json_error("slot occupied", status=409)
 
     patient_id = body.get("patientId")
@@ -1356,6 +1394,7 @@ def appointments(request: HttpRequest) -> JsonResponse:
         end_at=end_dt,
         patient=patient,
         service=service,
+        therapist=therapist,
         client_name=client_name,
         client_email=client_email,
         client_phone=client_phone,
@@ -1441,12 +1480,27 @@ def appointment_detail(request: HttpRequest, appointment_id: int) -> JsonRespons
             except Exception:
                 return _json_error("invalid serviceId")
 
+    if "therapistId" in body:
+        tid = body.get("therapistId")
+        if tid in (None, ""):
+            appt.therapist = None
+        else:
+            try:
+                appt.therapist = Therapist.objects.get(id=int(tid))
+            except Exception:
+                return _json_error("invalid therapistId")
+
     if not appt.title:
         return _json_error("title is required")
     if appt.end_at <= appt.start_at:
         return _json_error("endAt must be after startAt")
 
-    if Appointment.objects.filter(status=Appointment.Status.SCHEDULED, start_at__lt=appt.end_at, end_at__gt=appt.start_at).exclude(id=appt.id).exists():
+    conflict_qs = Appointment.objects.filter(status=Appointment.Status.SCHEDULED, start_at__lt=appt.end_at, end_at__gt=appt.start_at).exclude(id=appt.id)
+    if appt.therapist_id is not None:
+        conflict_qs = conflict_qs.filter(therapist_id=appt.therapist_id)
+    else:
+        conflict_qs = conflict_qs.filter(therapist__isnull=True)
+    if conflict_qs.exists():
         return _json_error("slot occupied", status=409)
 
     appt.save()
@@ -1482,7 +1536,20 @@ def public_appointments(request: HttpRequest) -> JsonResponse:
     if end_dt <= start_dt:
         return _json_error("endAt must be after startAt")
 
-    if Appointment.objects.filter(status=Appointment.Status.SCHEDULED, start_at__lt=end_dt, end_at__gt=start_dt).exists():
+    therapist_id = body.get("therapistId")
+    therapist = None
+    if therapist_id not in (None, ""):
+        try:
+            therapist = Therapist.objects.get(id=int(therapist_id))
+        except Exception:
+            return _json_error("invalid therapistId")
+
+    conflict_qs = Appointment.objects.filter(status=Appointment.Status.SCHEDULED, start_at__lt=end_dt, end_at__gt=start_dt)
+    if therapist is not None:
+        conflict_qs = conflict_qs.filter(therapist=therapist)
+    else:
+        conflict_qs = conflict_qs.filter(therapist__isnull=True)
+    if conflict_qs.exists():
         return _json_error("slot occupied", status=409)
 
     patient = _get_patient_from_token(request)
@@ -1517,6 +1584,7 @@ def public_appointments(request: HttpRequest) -> JsonResponse:
         end_at=end_dt,
         patient=patient,
         service=service,
+        therapist=therapist,
         client_name=client_name,
         client_email=client_email,
         client_phone=client_phone,
@@ -1550,6 +1618,10 @@ def public_appointments_occupied(request: HttpRequest) -> JsonResponse:
         start_at__lt=end_dt + timedelta(minutes=1), 
         end_at__gt=start_dt - timedelta(minutes=1)
     ).exclude(status=Appointment.Status.CANCELLED)
+
+    therapist_id = request.GET.get("therapist") or request.GET.get("therapistId")
+    if therapist_id not in (None, ""):
+        qs = qs.filter(therapist_id=int(therapist_id))
     
     print(f"DEBUG: Querying from {start_dt} to {end_dt}. Found {qs.count()} appointments.")
 

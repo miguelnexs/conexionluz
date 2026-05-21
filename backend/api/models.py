@@ -138,6 +138,7 @@ class Appointment(TimestampedModel):
     end_at = models.DateTimeField()
     patient = models.ForeignKey(Patient, null=True, blank=True, on_delete=models.SET_NULL, related_name="appointments")
     service = models.ForeignKey(Service, null=True, blank=True, on_delete=models.SET_NULL, related_name="appointments")
+    therapist = models.ForeignKey(Therapist, null=True, blank=True, on_delete=models.SET_NULL, related_name="appointments")
     client_name = models.CharField(max_length=200, blank=True)
     client_email = models.EmailField(blank=True)
     client_phone = models.CharField(max_length=60, blank=True)

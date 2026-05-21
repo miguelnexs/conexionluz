@@ -6,6 +6,7 @@ interface CreateAppointmentData {
   startAt: string;
   endAt?: string;
   serviceId?: number;
+  therapistId?: number;
   clientName?: string;
   clientEmail?: string;
   clientPhone?: string;

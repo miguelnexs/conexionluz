@@ -53,6 +53,10 @@ type AnalyticsData = {
     labels: string[]
     data: number[]
   }
+  weeklySessions?: {
+    labels: string[]
+    data: number[]
+  }
 }
 
 export function AnalyticsPage(): JSX.Element {
@@ -65,14 +69,14 @@ export function AnalyticsPage(): JSX.Element {
       setLoading(true)
       const res = await api.get<AnalyticsData>('/api/analytics/')
       if (res.ok) {
-        // Use real data if available, otherwise mock for better visuals
         setData({
           sessions: res.data.sessions || 0,
           patients: res.data.patients || 0,
           requests: res.data.requests || 0,
           satisfaction: res.data.satisfaction || 0,
           serviceDistribution: res.data.serviceDistribution,
-          growth: res.data.growth
+          growth: res.data.growth,
+          weeklySessions: res.data.weeklySessions
         })
       }
       setLoading(false)
@@ -141,10 +145,10 @@ export function AnalyticsPage(): JSX.Element {
   }
 
   const sessionsData = {
-    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+    labels: data?.weeklySessions?.labels || ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
     datasets: [{
       label: t('analytics.sessions'),
-      data: [12, 19, 15, 22, 28, 14, 10],
+      data: data?.weeklySessions?.data || [12, 19, 15, 22, 28, 14, 10],
       borderColor: 'rgba(59, 130, 246, 0.8)',
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
       fill: true,
@@ -164,8 +168,12 @@ export function AnalyticsPage(): JSX.Element {
     }]
   }
 
-  const distLabels = data?.serviceDistribution ? Object.keys(data.serviceDistribution) : ['Terapia', 'Cursos', 'Conversatorios']
-  const distValues = data?.serviceDistribution ? Object.values(data.serviceDistribution) : [65, 20, 15]
+  const distLabels = data?.serviceDistribution && Object.keys(data.serviceDistribution).length > 0
+    ? Object.keys(data.serviceDistribution)
+    : ['Terapia', 'Cursos', 'Conversatorios']
+  const distValues = data?.serviceDistribution && Object.keys(data.serviceDistribution).length > 0
+    ? Object.values(data.serviceDistribution)
+    : [65, 20, 15]
 
   const distributionData = {
     labels: distLabels,

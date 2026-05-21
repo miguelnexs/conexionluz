@@ -8,9 +8,10 @@ interface TimeSlotsProps {
   onTimeSelect: (time: string) => void;
   selectedDate: Date | null;
   serviceId?: number | null;
+  therapistId?: number | null;
 }
 
-const TimeSlots: React.FC<TimeSlotsProps> = ({ selectedTime, onTimeSelect, selectedDate, serviceId }) => {
+const TimeSlots: React.FC<TimeSlotsProps> = ({ selectedTime, onTimeSelect, selectedDate, serviceId, therapistId }) => {
   const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +25,7 @@ const TimeSlots: React.FC<TimeSlotsProps> = ({ selectedTime, onTimeSelect, selec
     if (selectedDate) {
       fetchOccupiedTimes();
     }
-  }, [selectedDate]);
+  }, [selectedDate, therapistId]);
 
   const fetchOccupiedTimes = async () => {
     if (!selectedDate) return;
@@ -42,6 +43,7 @@ const TimeSlots: React.FC<TimeSlotsProps> = ({ selectedTime, onTimeSelect, selec
       const date = `${yyyy}-${mm}-${dd}`;
       const qs = new URLSearchParams({ date });
       if (typeof serviceId === 'number') qs.set('serviceId', String(serviceId));
+      if (typeof therapistId === 'number' && Number.isFinite(therapistId)) qs.set('therapist', String(therapistId));
       console.log(`[TimeSlots] Fetching for ${date}...`);
       const res = await api.get<{ times: string[] }>(`/api/public/appointments/occupied/?${qs.toString()}`);
       if (!res.ok) throw new Error(res.error);
