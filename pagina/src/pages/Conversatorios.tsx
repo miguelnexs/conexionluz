@@ -71,7 +71,10 @@ const ConversatoriosPage = () => {
         setLoading(false);
         return;
       }
-      setTalks(res.data);
+      const validTalks = (res.data || []).filter(
+        (t) => t && typeof t.startAt === 'string' && !isNaN(new Date(t.startAt).getTime())
+      );
+      setTalks(validTalks);
       setLoading(false);
     })();
   }, []);
@@ -81,7 +84,7 @@ const ConversatoriosPage = () => {
       const topic = t.topic || 'General';
       const speaker = t.speaker || '—';
       const start = parseISO(t.startAt);
-      const end = t.endAt ? parseISO(t.endAt) : null;
+      const end = t.endAt && typeof t.endAt === 'string' && !isNaN(new Date(t.endAt).getTime()) ? parseISO(t.endAt) : null;
       const time = `${format(start, 'h:mm a', { locale: es })}${end ? ` - ${format(end, 'h:mm a', { locale: es })}` : ''}`;
       const modality = t.modality || (t.format === 'presential' ? 'Presencial' : 'Online');
       return {
