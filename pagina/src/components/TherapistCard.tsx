@@ -32,7 +32,7 @@ const TherapistCard: React.FC<TherapistCardProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  const initials = name
+  const initials = (name || '')
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)

@@ -58,10 +58,10 @@ const StoriesPage = () => {
       const q = search.toLowerCase();
       list = list.filter(
         (s) =>
-          s.title.toLowerCase().includes(q) ||
-          s.author.toLowerCase().includes(q) ||
-          s.category.toLowerCase().includes(q) ||
-          s.tags.some((t) => t.toLowerCase().includes(q))
+          (s.title || '').toLowerCase().includes(q) ||
+          (s.author || '').toLowerCase().includes(q) ||
+          (s.category || '').toLowerCase().includes(q) ||
+          (s.tags || []).some((t) => (t || '').toLowerCase().includes(q))
       );
     }
     return list;
