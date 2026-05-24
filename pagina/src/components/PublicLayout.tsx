@@ -48,8 +48,7 @@ const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
       items: [
         { name: 'Inicio', href: '/', icon: Home },
         { name: 'Servicios', href: '/servicios', icon: Sparkles },
-        { name: 'Terapeutas', href: '/terapeutas', icon: Users },
-        ...(!hasSubscription ? [{ name: 'Membresía', href: '/membresia', icon: Crown, special: true }] : [])
+        { name: 'Terapeutas', href: '/terapeutas', icon: Users }
       ]
     },
     {

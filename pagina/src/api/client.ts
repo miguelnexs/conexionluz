@@ -6,7 +6,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function getBaseUrl(): string {
   const value = import.meta.env.VITE_API_URL
-  return (value && value.trim()) || 'http://127.0.0.1:8000'
+  return (value && value.trim()) || ''
 }
 
 function getToken(): string | null {
@@ -19,11 +19,9 @@ function getClientId(): string | null {
   const existing = localStorage.getItem('conexionluz:clientId')
   if (existing && existing.trim()) return existing
   const cryptoObj = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined
-  const randomUUID =
-    cryptoObj && 'randomUUID' in cryptoObj
-      ? (cryptoObj as Crypto & { randomUUID: () => string }).randomUUID
-      : null
-  const id = randomUUID ? randomUUID() : `cid_${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`
+  const id = cryptoObj && typeof cryptoObj.randomUUID === 'function'
+    ? cryptoObj.randomUUID()
+    : `cid_${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`
   localStorage.setItem('conexionluz:clientId', id)
   return id
 }
