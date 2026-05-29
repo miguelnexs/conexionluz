@@ -1,9 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PublicLayout from '../components/PublicLayout';
-import { ArrowLeft, BookOpen, Calendar, Clock, ImageIcon, Tag, User } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, Clock, ImageIcon, Tag, User, Heart, MessageCircle } from 'lucide-react';
 import { api } from '../api/client';
 import { Button } from '@/components/ui/button';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+
+type StoryComment = {
+  id: number;
+  storyId: number;
+  content: string;
+  authorName: string;
+  patientId: number | null;
+  clientId?: string | null;
+  parentId?: number | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
 
 type Story = {
   id: number;
@@ -17,6 +31,9 @@ type Story = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  likesCount?: number;
+  commentsCount?: number;
+  comments?: StoryComment[];
 };
 
 const StoryDetailPage = () => {
@@ -40,6 +57,460 @@ const StoryDetailPage = () => {
     };
     void load();
   }, [id]);
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('conexionluz:token') : null;
+  const isAuthed = Boolean(token);
+  
+  const [patientName, setPatientName] = useState<string | null>(null);
+  const [likedIds, setLikedIdsState] = useState<number[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const raw = localStorage.getItem('conexionluz:likedStories');
+    try {
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [commentText, setCommentText] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [editingError, setEditingError] = useState<string | null>(null);
+  const [savingComment, setSavingComment] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
+  const [clientId, setClientId] = useState<string | null>(null);
+  const [patientId, setPatientId] = useState<number | null>(null);
+
+  const [replyingCommentId, setReplyingCommentId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [replyGuestName, setReplyGuestName] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
+  const [collapsedCommentIds, setCollapsedCommentIds] = useState<number[]>([]);
+
+  const repliesByParentId = useMemo(() => {
+    const map: Record<number, StoryComment[]> = {};
+    story?.comments?.forEach((c) => {
+      if (c.parentId) {
+        if (!map[c.parentId]) map[c.parentId] = [];
+        map[c.parentId].push(c);
+      }
+    });
+    return map;
+  }, [story?.comments]);
+
+  const rootComments = useMemo(() => {
+    return story?.comments?.filter((c) => !c.parentId) || [];
+  }, [story?.comments]);
+
+  const toggleReplies = (commentId: number) => {
+    setCollapsedCommentIds((prev) =>
+      prev.includes(commentId) ? prev.filter((id) => id !== commentId) : [...prev, commentId]
+    );
+  };
+
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick(t => t + 1);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setClientId(localStorage.getItem('conexionluz:clientId'));
+    }
+  }, [story]);
+
+  useEffect(() => {
+    if (isAuthed) {
+      api.get<any>('/api/portal/me/').then(res => {
+        if (res.ok) {
+          setPatientName(`${res.data.firstName} ${res.data.lastName}`.trim() || res.data.firstName);
+          setPatientId(res.data.id);
+        }
+      });
+    }
+  }, [isAuthed]);
+
+  const isLiked = story ? likedIds.includes(story.id) : false;
+
+  const toggleLike = async () => {
+    if (!story) return;
+    const nextLiked = !isLiked;
+
+    setStory(prev => prev ? {
+      ...prev,
+      likesCount: (prev.likesCount || 0) + (nextLiked ? 1 : -1)
+    } : null);
+
+    const nextIds = nextLiked
+      ? [...likedIds, story.id]
+      : likedIds.filter(x => x !== story.id);
+    setLikedIdsState(nextIds);
+    localStorage.setItem('conexionluz:likedStories', JSON.stringify(Array.from(new Set(nextIds))));
+
+    const res = nextLiked
+      ? await api.post<{ storyId: number; likesCount: number; liked: boolean }>(`/api/public/stories/${story.id}/like/`, {})
+      : await api.del<{ storyId: number; likesCount: number; liked: boolean }>(`/api/public/stories/${story.id}/like/`);
+
+    if (res.ok) {
+      setStory(prev => prev ? {
+        ...prev,
+        likesCount: res.data.likesCount
+      } : null);
+      const updatedIds = res.data.liked
+        ? [...likedIds, story.id]
+        : likedIds.filter(x => x !== story.id);
+      setLikedIdsState(updatedIds);
+      localStorage.setItem('conexionluz:likedStories', JSON.stringify(Array.from(new Set(updatedIds))));
+    } else {
+      setStory(prev => prev ? {
+        ...prev,
+        likesCount: (prev.likesCount || 0) + (nextLiked ? -1 : 1)
+      } : null);
+      const revertedIds = !nextLiked
+        ? [...likedIds, story.id]
+        : likedIds.filter(x => x !== story.id);
+      setLikedIdsState(revertedIds);
+      localStorage.setItem('conexionluz:likedStories', JSON.stringify(Array.from(new Set(revertedIds))));
+    }
+  };
+
+  const submitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!story) return;
+    if (!commentText.trim()) return;
+    if (!isAuthed && !guestName.trim()) {
+      setCommentError('Por favor ingresa tu nombre para comentar.');
+      return;
+    }
+
+    setSubmittingComment(true);
+    setCommentError(null);
+
+    const res = await api.post<StoryComment>(`/api/public/stories/${story.id}/comment/`, {
+      content: commentText.trim(),
+      authorName: !isAuthed ? guestName.trim() : undefined,
+    });
+
+    if (res.ok === false) {
+      setCommentError(res.error);
+    } else {
+      const newComment = res.data;
+      setStory(prev => prev ? {
+        ...prev,
+        commentsCount: (prev.commentsCount || 0) + 1,
+        comments: [...(prev.comments || []), newComment]
+      } : null);
+      setCommentText('');
+      if (!isAuthed) {
+        setGuestName('');
+      }
+    }
+    setSubmittingComment(false);
+  };
+
+  const canModifyComment = (comment: StoryComment) => {
+    if (comment.patientId !== null && comment.patientId !== undefined) {
+      return isAuthed && comment.patientId === patientId;
+    }
+    return comment.clientId ? comment.clientId === clientId : false;
+  };
+
+  const isWithinEditWindow = (createdAtStr: string) => {
+    const createdAt = new Date(createdAtStr).getTime();
+    const now = new Date().getTime();
+    const diffMs = now - createdAt;
+    return diffMs < 30 * 60 * 1000;
+  };
+
+  const getEditTimeRemaining = (createdAtStr: string): string => {
+    const createdAt = new Date(createdAtStr).getTime();
+    const now = new Date().getTime();
+    const diffMs = now - createdAt;
+    const remainingMs = (30 * 60 * 1000) - diffMs;
+    if (remainingMs <= 0) return 'Tiempo de edición expirado';
+    const remainingMins = Math.ceil(remainingMs / (1000 * 60));
+    return `Editar (quedan ${remainingMins} min)`;
+  };
+
+  const startEditing = (comment: StoryComment) => {
+    setEditingCommentId(comment.id);
+    setEditContent(comment.content);
+    setEditingError(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingCommentId(null);
+    setEditContent('');
+    setEditingError(null);
+  };
+
+  const saveEdit = async (commentId: number) => {
+    if (!editContent.trim()) return;
+    setSavingComment(true);
+    setEditingError(null);
+    const res = await api.patch<StoryComment>(`/api/public/stories/comments/${commentId}/`, {
+      content: editContent.trim()
+    });
+    if (res.ok === false) {
+      setEditingError(res.error);
+    } else {
+      setStory(prev => prev ? {
+        ...prev,
+        comments: prev.comments?.map(c => c.id === commentId ? res.data : c)
+      } : null);
+      setEditingCommentId(null);
+      setEditContent('');
+    }
+    setSavingComment(false);
+  };
+
+  const executeDelete = async (commentId: number) => {
+    setEditingError(null);
+    const res = await api.del<{ ok: boolean }>(`/api/public/stories/comments/${commentId}/`);
+    if (res.ok === false) {
+      setEditingError(res.error);
+    } else {
+      setStory(prev => {
+        if (!prev) return null;
+        const removedComments = prev.comments?.filter(c => c.id === commentId || c.parentId === commentId) || [];
+        const removedCount = removedComments.length;
+        return {
+          ...prev,
+          commentsCount: Math.max(0, (prev.commentsCount || 0) - removedCount),
+          comments: prev.comments?.filter(c => c.id !== commentId && c.parentId !== commentId)
+        };
+      });
+      setDeletingCommentId(null);
+    }
+  };
+
+  const submitReply = async (e: React.FormEvent, parentId: number) => {
+    e.preventDefault();
+    if (!story) return;
+    if (!replyText.trim()) return;
+    if (!isAuthed && !replyGuestName.trim()) {
+      setCommentError('Por favor ingresa tu nombre para responder.');
+      return;
+    }
+
+    setSubmittingReply(true);
+    setCommentError(null);
+
+    const res = await api.post<StoryComment>(`/api/public/stories/${story.id}/comment/`, {
+      content: replyText.trim(),
+      authorName: !isAuthed ? replyGuestName.trim() : undefined,
+      parentId: parentId
+    });
+
+    if (res.ok === false) {
+      setCommentError(res.error);
+    } else {
+      const newComment = res.data;
+      setStory(prev => prev ? {
+        ...prev,
+        commentsCount: (prev.commentsCount || 0) + 1,
+        comments: [...(prev.comments || []), newComment]
+      } : null);
+      setReplyText('');
+      if (!isAuthed) {
+        setReplyGuestName('');
+      }
+      setReplyingCommentId(null);
+    }
+    setSubmittingReply(false);
+  };
+
+  const renderComment = (comment: StoryComment, isReply = false, rootCommentId: number) => {
+    const initial = comment.authorName ? comment.authorName.charAt(0).toUpperCase() : '?';
+    const isEditing = editingCommentId === comment.id;
+
+    return (
+      <div key={comment.id} className={cn(
+        "flex gap-4 p-5 bg-white border border-gray-100 rounded-2xl shadow-sm animate-fade-in",
+        isReply && "bg-gray-50/50"
+      )}>
+        <div className={cn(
+          "h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-bold text-base shrink-0",
+          isReply && "h-8 w-8 text-sm rounded-lg"
+        )}>
+          {initial}
+        </div>
+        <div className="space-y-1.5 flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-4">
+            <span className="font-bold text-gray-800 text-sm truncate">{comment.authorName}</span>
+            <span className="text-xs text-gray-400 whitespace-nowrap">{formatDate(comment.createdAt)}</span>
+          </div>
+          
+          {isEditing ? (
+            <div className="space-y-3 mt-1">
+              {editingError && (
+                <div className="p-2 bg-red-50 border border-red-100 text-red-600 rounded-lg text-xs font-medium">
+                  {editingError}
+                </div>
+              )}
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                rows={3}
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 leading-relaxed"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => void saveEdit(comment.id)}
+                  disabled={savingComment || !editContent.trim()}
+                  className="px-4 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/95 transition-colors disabled:opacity-50"
+                >
+                  {savingComment ? 'Guardando...' : 'Guardar'}
+                </button>
+                <button
+                  onClick={cancelEditing}
+                  disabled={savingComment}
+                  className="px-4 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-gray-700 text-sm leading-relaxed break-words">{comment.content}</p>
+              
+              <div className="flex flex-col gap-2 pt-2 border-t border-gray-50 mt-2">
+                <div className="flex items-center gap-4 text-xs font-semibold text-gray-500">
+                  <button
+                    onClick={() => {
+                      setReplyingCommentId(comment.id);
+                      setReplyText(isReply ? `@${comment.authorName} ` : '');
+                      setReplyGuestName('');
+                      setCommentError(null);
+                    }}
+                    className="text-primary hover:text-primary/80 transition-colors font-medium"
+                  >
+                    Responder
+                  </button>
+
+                  {canModifyComment(comment) && (
+                    <>
+                      {isWithinEditWindow(comment.createdAt) ? (
+                        <button
+                          onClick={() => startEditing(comment)}
+                          className="text-primary hover:text-primary/80 transition-colors font-medium"
+                        >
+                          {getEditTimeRemaining(comment.createdAt)}
+                        </button>
+                      ) : (
+                        <span className="text-gray-400 cursor-not-allowed">
+                          Tiempo de edición expirado
+                        </span>
+                      )}
+                      <button
+                        onClick={() => setDeletingCommentId(comment.id)}
+                        className="text-rose-600 hover:text-rose-700 transition-colors font-medium"
+                      >
+                        Eliminar
+                      </button>
+                    </>
+                  )}
+                </div>
+                
+                {deletingCommentId === comment.id && (
+                  <div className="flex flex-col gap-2 mt-2 p-3 bg-rose-50 rounded-xl border border-rose-100 text-xs animate-scale-in">
+                    {editingError && (
+                      <div className="p-2 bg-red-50 border border-red-100 text-red-600 rounded-lg text-xs font-medium w-full">
+                        {editingError}
+                      </div>
+                    )}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                      <span className="text-rose-700 font-medium">¿Estás seguro de que deseas eliminar este comentario?</span>
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          onClick={() => void executeDelete(comment.id)}
+                          className="px-3 py-1 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 transition-colors"
+                        >
+                          Sí, eliminar
+                        </button>
+                        <button
+                          onClick={() => setDeletingCommentId(null)}
+                          className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Reply Form (inline under the specific comment being replied to) */}
+          {replyingCommentId === comment.id && (
+            <form onSubmit={(e) => void submitReply(e, rootCommentId)} className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
+              <h5 className="text-xs font-bold text-gray-700">Responder a {comment.authorName}</h5>
+              {commentError && (
+                <div className="p-2 bg-red-50 border border-red-100 text-red-600 rounded-lg text-xs font-medium">
+                  {commentError}
+                </div>
+              )}
+              {!isAuthed ? (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Tu Nombre</label>
+                  <input
+                    type="text"
+                    value={replyGuestName}
+                    onChange={(e) => setReplyGuestName(e.target.value)}
+                    placeholder="Ej. María López"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              ) : (
+                <p className="text-[10px] font-bold text-gray-500">
+                  Respondiendo como <span className="text-primary">{patientName || 'Usuario Registrado'}</span>
+                </p>
+              )}
+              <div className="space-y-1">
+                <textarea
+                  rows={2}
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Escribe tu respuesta..."
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 leading-relaxed"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={submittingReply || !replyText.trim()}
+                  className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/95 transition-colors disabled:opacity-50"
+                >
+                  {submittingReply ? 'Enviando...' : 'Enviar respuesta'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplyingCommentId(null);
+                    setReplyText('');
+                    setReplyGuestName('');
+                    setCommentError(null);
+                  }}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('es-CO', {
@@ -143,18 +614,20 @@ const StoryDetailPage = () => {
 
       {/* Content area */}
       <section className="py-10 md:py-14 bg-white">
-        <div className="max-w-4xl mx-auto px-4 space-y-8">
+        <div className="max-w-4xl mx-auto px-0 sm:px-4 space-y-8">
           {/* Back link */}
-          <button
-            onClick={() => navigate('/historias')}
-            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver a historias
-          </button>
+          <div className="px-4 sm:px-0">
+            <button
+              onClick={() => navigate('/historias')}
+              className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver a historias
+            </button>
+          </div>
 
           {/* Meta info cards */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 px-4 sm:px-0">
             {story.author && (
               <div className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5">
                 <User className="h-4 w-4 text-primary" />
@@ -168,14 +641,27 @@ const StoryDetailPage = () => {
             {story.updatedAt !== story.createdAt && (
               <div className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5">
                 <Clock className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-500">Actualizada el {formatDate(story.updatedAt)} a las {formatTime(story.updatedAt)}</span>
+                <span className="text-sm text-gray-500">Actualizada el {formatDate(story.updatedAt)}</span>
               </div>
             )}
+            {/* Like Button */}
+            <button
+              onClick={() => void toggleLike()}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 font-semibold transition-all duration-300 transform active:scale-95",
+                isLiked 
+                  ? "bg-rose-50 border-rose-200 text-rose-600 shadow-sm" 
+                  : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+              )}
+            >
+              <Heart className={cn("h-4 w-4 transition-transform", isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-gray-400")} />
+              <span className="text-sm">{story.likesCount || 0}</span>
+            </button>
           </div>
 
           {/* Tags */}
           {story.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 px-4 sm:px-0">
               {story.tags.map((tag, i) => (
                 <span
                   key={i}
@@ -188,15 +674,122 @@ const StoryDetailPage = () => {
           )}
 
           {/* Story content */}
-          <div className="rounded-3xl border border-gray-100 bg-gray-50 p-6 md:p-10">
+          <div className="rounded-none sm:rounded-3xl border-0 sm:border border-gray-100 bg-transparent sm:bg-gray-50 p-0 sm:p-6 md:p-10">
             <div
-              className="prose prose-base md:prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-xl prose-p:text-gray-700 prose-p:leading-relaxed"
+              className="prose prose-base md:prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-xl prose-p:text-gray-700 prose-p:leading-relaxed w-full max-w-full break-words [word-break:break-word]"
               dangerouslySetInnerHTML={{ __html: story.content }}
             />
           </div>
 
+          {/* Comments Section */}
+          <div className="px-4 sm:px-0 space-y-6">
+            <h3 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+              <MessageCircle className="h-6 w-6 text-primary" />
+              Comentarios ({story.comments?.length || 0})
+            </h3>
+
+            {/* Comments List */}
+            {rootComments.length > 0 ? (
+              <div className="space-y-6">
+                {rootComments.map((rootComment) => {
+                  const replies = repliesByParentId[rootComment.id] || [];
+                  const hasReplies = replies.length > 0;
+                  const isCollapsed = collapsedCommentIds.includes(rootComment.id);
+
+                  return (
+                    <div key={rootComment.id} className="space-y-4">
+                      {/* Render Root Comment */}
+                      {renderComment(rootComment, false, rootComment.id)}
+
+                      {/* Render Replies Toggle */}
+                      {hasReplies && (
+                        <div className="pl-4 md:pl-10">
+                          <button
+                            onClick={() => toggleReplies(rootComment.id)}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+                          >
+                            {isCollapsed ? (
+                              <span>Mostrar respuestas ({replies.length})</span>
+                            ) : (
+                              <span>Ocultar respuestas</span>
+                            )}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Render Replies List */}
+                      {hasReplies && !isCollapsed && (
+                        <div className="pl-6 md:pl-12 space-y-4 border-l-2 border-gray-100/80 ml-5 md:ml-10">
+                          {replies.map((reply) => renderComment(reply, true, rootComment.id))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-10 rounded-2xl border-2 border-dashed border-gray-100 bg-gray-50/50">
+                <p className="text-sm text-gray-500 font-medium">Aún no hay comentarios. ¡Sé el primero en compartir tu opinión!</p>
+              </div>
+            )}
+
+            {/* Comment Form */}
+            <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6 sm:p-8 space-y-4">
+              <h4 className="font-bold text-gray-800 text-lg">Escribir un comentario</h4>
+              {commentError && (
+                <div className="p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm font-medium">
+                  {commentError}
+                </div>
+              )}
+              <form onSubmit={(e) => void submitComment(e)} className="space-y-4">
+                {!isAuthed ? (
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Tu Nombre</label>
+                    <input
+                      type="text"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      placeholder="Ej. María López"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <p className="text-xs text-gray-500 ml-1">
+                      O{' '}
+                      <Link to="/login" state={{ from: `/historias/${story.id}` }} className="text-primary font-semibold hover:underline">
+                        inicia sesión
+                      </Link>{' '}
+                      para comentar con tu cuenta verificada.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs font-bold text-gray-500 ml-1">
+                    Comentando como <span className="text-primary">{patientName || 'Usuario Registrado'}</span>
+                  </p>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Mensaje</label>
+                  <textarea
+                    rows={4}
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Escribe tu comentario aquí..."
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 leading-relaxed"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={submittingComment || !commentText.trim()}
+                  className="bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-xl font-bold transition-all animate-scale-in"
+                >
+                  {submittingComment ? 'Enviando...' : 'Publicar Comentario'}
+                </Button>
+              </form>
+            </div>
+          </div>
+
           {/* CTA */}
-          <div className="rounded-3xl border border-gray-100 bg-gradient-to-br from-primary/5 to-accent/5 p-8 text-center space-y-4">
+          <div className="mx-4 sm:mx-0 rounded-3xl border border-gray-100 bg-gradient-to-br from-primary/5 to-accent/5 p-8 text-center space-y-4">
             <h3 className="text-xl font-bold text-gray-800">¿Te identificas con esta historia?</h3>
             <p className="text-sm text-gray-600 max-w-lg mx-auto">
               Cada paso hacia el bienestar comienza con una decisión. Si sientes que es tu momento, estamos aquí para acompañarte.

@@ -211,3 +211,65 @@
 .stagger-animation > *:nth-child(8) { animation-delay: 0.8s; }
 .stagger-animation > *:nth-child(9) { animation-delay: 0.9s; }
 .stagger-animation > *:nth-child(10) { animation-delay: 1.0s; }
+
+/* Responsive utility styles for HTML content in .prose */
+.prose table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-collapse: collapse;
+}
+
+.prose img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.prose iframe,
+.prose video,
+.prose embed {
+  max-width: 100% !important;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.prose * {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Add padding to text-based children in .prose on mobile only, allowing images/tables/videos to remain 100% full width */
+.prose > p,
+.prose > h1,
+.prose > h2,
+.prose > h3,
+.prose > h4,
+.prose > h5,
+.prose > h6,
+.prose > ul,
+.prose > ol,
+.prose > blockquote,
+.prose > pre {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .prose > p,
+  .prose > h1,
+  .prose > h2,
+  .prose > h3,
+  .prose > h4,
+  .prose > h5,
+  .prose > h6,
+  .prose > ul,
+  .prose > ol,
+  .prose > blockquote,
+  .prose > pre {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+

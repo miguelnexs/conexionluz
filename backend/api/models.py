@@ -104,10 +104,33 @@ class Patient(TimestampedModel):
     intake_summary = models.TextField(blank=True)
     intake_submitted_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    
+    profile_picture_file = models.ImageField(upload_to="patients/profile/", null=True, blank=True)
+    profile_picture_url = models.CharField(max_length=500, blank=True)
 
     def __str__(self) -> str:
         full = f"{self.first_name} {self.last_name}".strip()
         return full or self.first_name
+
+
+class DailyCheckin(TimestampedModel):
+    class EnergyLevel(models.TextChoices):
+        HIGH = "high", "Excelente"
+        GOOD = "good", "Bien"
+        TIRED = "tired", "Agotado"
+        LOW = "low", "Difícil"
+
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="daily_checkins")
+    energy_level = models.CharField(max_length=20, choices=EnergyLevel.choices)
+    date = models.DateField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["patient", "date"], name="uniq_daily_checkin_patient_date"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.patient} - {self.date} ({self.energy_level})"
 
 
 class Service(TimestampedModel):
@@ -237,6 +260,35 @@ class Story(TimestampedModel):
         return self.title
 
 
+class StoryLike(TimestampedModel):
+    story = models.ForeignKey(Story, on_delete=models.CASCADE, related_name="likes")
+    patient = models.ForeignKey(Patient, null=True, blank=True, on_delete=models.SET_NULL, related_name="story_likes")
+    client_id = models.CharField(max_length=64, null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["story", "client_id"], condition=Q(client_id__isnull=False), name="uniq_story_client_like"),
+            models.UniqueConstraint(fields=["story", "patient"], condition=Q(patient__isnull=False), name="uniq_story_patient_like"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.story_id}:{self.patient_id or self.client_id}"
+
+
+class StoryComment(TimestampedModel):
+    story = models.ForeignKey(Story, on_delete=models.CASCADE, related_name="comments")
+    content = models.TextField()
+    author_name = models.CharField(max_length=200)
+    patient = models.ForeignKey(Patient, null=True, blank=True, on_delete=models.SET_NULL, related_name="story_comments")
+    client_id = models.CharField(max_length=64, null=True, blank=True)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies")
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self) -> str:
+        return f"Comment by {self.author_name} on {self.story.title}"
+
+
+
 class ForumTopic(TimestampedModel):
     title = models.CharField(max_length=300)
     description = models.TextField(blank=True)
@@ -252,12 +304,28 @@ class ForumTopic(TimestampedModel):
         return self.title
 
 
+class ForumTopicLike(TimestampedModel):
+    topic = models.ForeignKey(ForumTopic, on_delete=models.CASCADE, related_name="likes")
+    patient = models.ForeignKey(Patient, null=True, blank=True, on_delete=models.SET_NULL, related_name="forum_topic_likes")
+    client_id = models.CharField(max_length=64, null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["topic", "client_id"], condition=Q(client_id__isnull=False), name="uniq_forum_topic_client_like"),
+            models.UniqueConstraint(fields=["topic", "patient"], condition=Q(patient__isnull=False), name="uniq_forum_topic_patient_like"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.topic_id}:{self.patient_id or self.client_id}"
+
+
 class ForumReply(TimestampedModel):
     topic = models.ForeignKey(ForumTopic, on_delete=models.CASCADE, related_name="replies")
     content = models.TextField()
     content_html = models.TextField(blank=True)
     author_name = models.CharField(max_length=200)
     patient = models.ForeignKey(Patient, null=True, blank=True, on_delete=models.SET_NULL, related_name="forum_replies")
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies")
     is_active = models.BooleanField(default=True)
 
     def __str__(self) -> str:
@@ -320,10 +388,13 @@ class SiteSettings(models.Model):
     mercadopago_public_key = models.CharField(max_length=512, blank=True, help_text="MercadoPago Public Key (starts with APP_USR-...)")
     mercadopago_access_token = models.CharField(max_length=512, blank=True, help_text="MercadoPago Access Token")
     mercadopago_enabled = models.BooleanField(default=False)
+    google_client_id = models.CharField(max_length=512, blank=True, help_text="Google OAuth Client ID")
+    google_enabled = models.BooleanField(default=False)
     site_name = models.CharField(max_length=200, blank=True, default="ConexiónLuz")
     support_email = models.EmailField(blank=True)
     support_whatsapp = models.CharField(max_length=40, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+
 
     class Meta:
         verbose_name = "Site Settings"
@@ -336,3 +407,16 @@ class SiteSettings(models.Model):
     def get(cls) -> 'SiteSettings':
         obj, _ = cls.objects.get_or_create(id=1)
         return obj
+
+
+class UserNotification(TimestampedModel):
+    recipient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="notifications")
+    notification_type = models.CharField(max_length=50)  # 'like_topic', 'reply_topic', 'reply_comment', 'like_story', 'comment_story'
+    sender_name = models.CharField(max_length=200)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    target_url = models.CharField(max_length=255)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return f"Notification for {self.recipient_id} - {self.notification_type}"

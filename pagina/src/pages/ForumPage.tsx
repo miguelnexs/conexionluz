@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import PublicLayout from '../components/PublicLayout';
-import { MessageSquareText, Search, Sparkles, Calendar, MessageCircle, Pin, Lock, ChevronRight } from 'lucide-react';
+import { MessageSquareText, Search, Sparkles, Calendar, MessageCircle, Pin, Lock, ChevronRight, PenSquare, Heart } from 'lucide-react';
 import { api } from '../api/client';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,7 @@ type ForumTopic = {
   isLocked: boolean;
   isActive: boolean;
   repliesCount: number;
+  likesCount?: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -28,6 +29,7 @@ const ForumPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const isAuthed = typeof window !== 'undefined' && Boolean(localStorage.getItem('conexionluz:token'));
 
   const load = async () => {
     setLoading(true);
@@ -78,6 +80,31 @@ const ForumPage = () => {
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const stripHtml = (html?: string) => {
+    if (!html) return '';
+    if (typeof window === 'undefined') return '';
+    try {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      doc.querySelectorAll('style, script').forEach((el) => el.remove());
+      return doc.body.textContent || '';
+    } catch {
+      return html.replace(/<[^>]*>/g, '');
+    }
+  };
+
+  const getTopicDescription = (topic: ForumTopic) => {
+    if (topic.description && topic.description.trim()) {
+      return topic.description;
+    }
+    if (topic.descriptionHtml) {
+      const plain = stripHtml(topic.descriptionHtml).trim();
+      if (plain) {
+        return plain.length > 160 ? plain.slice(0, 160) + '...' : plain;
+      }
+    }
+    return 'Sin descripción disponible para este tema.';
+  };
 
   return (
     <PublicLayout contentClassName="p-0">
@@ -165,7 +192,7 @@ const ForumPage = () => {
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 {categories.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2 pr-4 border-r border-gray-200">
+                  <div className="flex flex-wrap items-center gap-2 pr-0 sm:pr-4 border-r-0 sm:border-r border-gray-200">
                     <button
                       onClick={() => setSelectedCategory(null)}
                       className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
@@ -192,16 +219,16 @@ const ForumPage = () => {
                   </div>
                 )}
                 
-                {/* New Topic Button (Placeholder for functionality as public API might not allow POST directly without specific auth handling) */}
-                {typeof window !== 'undefined' && localStorage.getItem('conexionluz:token') && (
-                  <Button 
-                    onClick={() => navigate('/mi-perfil')} // Redirect to profile or a future create topic page
-                    className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-200 hover:scale-[1.02] transition-all"
+                {isAuthed && (
+                  <Button
+                    onClick={() => navigate('/foro/nuevo')}
+                    className="bg-white text-primary border border-primary/30 rounded-2xl font-bold flex items-center gap-2 shadow-sm hover:shadow-md hover:bg-primary/5 transition-all"
                   >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Nuevo Tema
+                    <PenSquare className="h-4 w-4" />
+                    Crear Tema
                   </Button>
                 )}
+
               </div>
             </div>
 
@@ -228,9 +255,18 @@ const ForumPage = () => {
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                   {search || selectedCategory ? 'No hay resultados' : 'El foro está tranquilo'}
                 </h3>
-                <p className="text-sm text-gray-500 max-w-xs text-center leading-relaxed">
+                <p className="text-sm text-gray-500 max-w-xs text-center leading-relaxed mb-6">
                   {search ? 'Prueba con otros términos o limpia los filtros para ver todos los temas.' : '¡Sé el primero en iniciar una conversación compartiendo tus pensamientos!'}
                 </p>
+                {!search && isAuthed && (
+                  <Button
+                    onClick={() => navigate('/foro/nuevo')}
+                    className="bg-gradient-to-r from-primary to-accent text-white rounded-2xl font-bold flex items-center gap-2 shadow-md shadow-primary/20"
+                  >
+                    <PenSquare className="h-4 w-4" />
+                    Crear el primer tema
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 stagger-animation">
@@ -239,7 +275,7 @@ const ForumPage = () => {
                     key={topic.id}
                     onClick={() => navigate(`/foro/${topic.id}`)}
                     className={cn(
-                      "group cursor-pointer relative overflow-hidden rounded-[2rem] border transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 bg-white",
+                      "group cursor-pointer relative overflow-hidden rounded-[2rem] border transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 bg-white flex flex-col",
                       topic.isPinned ? "border-amber-100 bg-amber-50/20" : "border-gray-100"
                     )}
                     style={{ animationDelay: `${index * 0.05}s` }}
@@ -249,8 +285,18 @@ const ForumPage = () => {
                         <Pin className="h-3 w-3" /> Destacado
                       </div>
                     )}
+
+                    {topic.imageUrl && (
+                      <div className="relative w-full h-48 overflow-hidden rounded-t-[2rem] shrink-0 bg-gray-50">
+                        <img
+                          src={topic.imageUrl}
+                          alt={topic.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                    )}
                     
-                    <div className="p-8 h-full flex flex-col">
+                    <div className="p-5 sm:p-8 h-full flex flex-col flex-1">
                       <div className="flex items-center gap-3 mb-4">
                         {topic.category && (
                           <span className="inline-flex items-center rounded-xl bg-primary/5 px-3 py-1 text-[11px] font-bold text-primary border border-primary/10">
@@ -264,14 +310,18 @@ const ForumPage = () => {
                         {topic.title}
                       </h3>
                       
-                      <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed mb-6 flex-1">
-                        {topic.description || (topic.descriptionHtml ? topic.descriptionHtml.replace(/<[^>]*>/g, '').slice(0, 160) + '...' : 'Sin descripción disponible para este tema.')}
+                      <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed mb-6 flex-1 break-words">
+                        {getTopicDescription(topic)}
                       </p>
 
                       <div className="flex items-center justify-between pt-6 border-t border-gray-50">
-                        <div className="flex items-center gap-4 text-xs font-bold text-gray-400">
-                          <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                            <MessageCircle className="h-3.5 w-3.5" />
+                        <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+                          <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-full group-hover:bg-rose-50 group-hover:text-rose-500 transition-colors">
+                            <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500" />
+                            {topic.likesCount || 0}
+                          </span>
+                          <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-full group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                            <MessageCircle className="h-3.5 w-3.5 text-primary" />
                             {topic.repliesCount}
                           </span>
                           <span className="flex items-center gap-1.5">

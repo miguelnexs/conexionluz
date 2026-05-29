@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import PublicLayout from '../components/PublicLayout';
-import { BookOpen, Calendar, Search, Sparkles } from 'lucide-react';
+import { BookOpen, Calendar, Search, Sparkles, Heart, MessageCircle } from 'lucide-react';
 import { api } from '../api/client';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,8 @@ type Story = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  likesCount?: number;
+  commentsCount?: number;
 };
 
 const StoriesPage = () => {
@@ -246,11 +248,28 @@ const StoriesPage = () => {
                       </div>
                     )}
 
-                    {/* Title */}
-                    <div className="p-5">
-                      <h3 className="text-lg font-bold text-gray-800 group-hover:text-primary transition-colors line-clamp-2">
+                    {/* Title & Stats */}
+                    <div className="p-5 flex flex-col flex-1">
+                      <h3 className="text-lg font-bold text-gray-800 group-hover:text-primary transition-colors line-clamp-2 flex-1 mb-4">
                         {story.title}
                       </h3>
+                      
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-50 text-xs font-bold text-gray-400">
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-full group-hover:bg-rose-50 group-hover:text-rose-500 transition-colors">
+                            <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500" />
+                            {story.likesCount || 0}
+                          </span>
+                          <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-full group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                            <MessageCircle className="h-3.5 w-3.5 text-primary" />
+                            {story.commentsCount || 0}
+                          </span>
+                        </div>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {formatDate(story.createdAt)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}

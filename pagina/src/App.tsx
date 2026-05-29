@@ -14,6 +14,7 @@ import StoriesPage from "./pages/StoriesPage";
 import StoryDetailPage from "./pages/StoryDetailPage";
 import ForumPage from "./pages/ForumPage";
 import ForumDetailPage from "./pages/ForumDetailPage";
+import ForumCreatePage from "./pages/ForumCreateTopic";
 import ContactPage from "./pages/Contact";
 import CoursesPage from "./pages/Courses";
 import CoursePage from "./pages/Course";
@@ -52,9 +53,10 @@ const App = () => (
           <Route path="/historias" element={<StoriesPage />} />
           <Route path="/historias/:id" element={<StoryDetailPage />} />
           <Route path="/foro" element={<ForumPage />} />
+          <Route path="/foro/nuevo" element={<ForumCreatePage />} />
           <Route path="/foro/:id" element={<ForumDetailPage />} />
           <Route path="/contacto" element={<ContactPage />} />
-          <Route path="/membresia" element={<MembresiaPage />} />
+          <Route path="/membresia" element={<Navigate to="/" replace />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

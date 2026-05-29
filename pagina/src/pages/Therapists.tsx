@@ -10,32 +10,7 @@ import type { Therapist } from '@/types/models';
 const TherapistsPage = () => {
   const { data: therapists = [], isLoading, error } = useTherapists();
 
-  const teamStats = [
-    {
-      icon: Users,
-      number: "15+",
-      label: "Terapeutas Certificados",
-      description: "Profesionales con amplia experiencia"
-    },
-    {
-      icon: Award,
-      number: "50+",
-      label: "Certificaciones",
-      description: "En diferentes metodologías terapéuticas"
-    },
-    {
-      icon: Heart,
-      number: "500+",
-      label: "Vidas Transformadas",
-      description: "Pacientes que han encontrado bienestar"
-    },
-    {
-      icon: Star,
-      number: "4.9",
-      label: "Calificación Promedio",
-      description: "Basada en evaluaciones de pacientes"
-    }
-  ];
+
 
   if (isLoading) {
     return (
@@ -85,29 +60,7 @@ const TherapistsPage = () => {
         </div>
       </section>
 
-      {/* Team Stats */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 stagger-animation">
-            {teamStats.map((stat, index) => (
-              <div 
-                key={index}
-                className="text-center group animate-fade-in"
-                style={{ animationDelay: `${index * 0.2}s` }}
-              >
-                <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <stat.icon className="h-8 w-8 text-white" />
-                </div>
-                <div className="text-3xl font-bold text-primary mb-2 group-hover:scale-110 transition-transform duration-300">
-                  {stat.number}
-                </div>
-                <div className="text-lg font-semibold text-gray-800 mb-2">{stat.label}</div>
-                <div className="text-gray-600 text-sm">{stat.description}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* Therapists Grid */}
       <section className="py-20 bg-gray-50">
@@ -143,51 +96,7 @@ const TherapistsPage = () => {
         </div>
       </section>
 
-      {/* Philosophy Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 to-accent/5">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center animate-fade-in">
-            <h2 className="text-4xl font-bold mb-8 text-gray-800">
-              Nuestra Filosofía de Trabajo
-            </h2>
-            <div className="bg-white rounded-2xl p-8 shadow-lg">
-              <Brain className="h-16 w-16 text-primary mx-auto mb-6" />
-              <p className="text-lg text-gray-700 leading-relaxed mb-6">
-                "Creemos en el poder transformador de la terapia psicológica. Cada persona tiene dentro de sí los recursos necesarios para sanar y crecer. Nuestro rol es acompañar, guiar y proporcionar las herramientas adecuadas para que cada individuo pueda descubrir su potencial y vivir una vida plena y auténtica."
-              </p>
-              <div className="text-primary font-semibold">
-                - Equipo ConexiónLuz
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary to-accent">
-        <div className="container mx-auto px-4 text-center animate-fade-in">
-          <h2 className="text-4xl font-bold text-white mb-6">
-            ¿No sabes cuál terapeuta es el indicado para ti?
-          </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Nuestro equipo de coordinación te ayudará a encontrar al profesional ideal según tus necesidades específicas
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              to="/contacto"
-              className="bg-white text-primary px-8 py-4 rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-            >
-              Recibir Orientación Gratuita
-            </Link>
-            <Link 
-              to="/agenda"
-              className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-primary transition-all duration-300"
-            >
-              Agendar Consulta
-            </Link>
-          </div>
-        </div>
-      </section>
 
     </PublicLayout>
   );

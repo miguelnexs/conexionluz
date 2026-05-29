@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from .models import Appointment, Course, CourseMedia, Patient, Service, Talk, TalkRegistration, Testimonial, TestimonialLike, Therapist
+from .models import Appointment, Course, CourseMedia, Patient, Service, Talk, TalkRegistration, Testimonial, TestimonialLike, Therapist, Story, StoryLike, StoryComment, SiteSettings, DailyCheckin
+
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    list_display = ("site_name", "google_enabled", "mercadopago_enabled", "updated_at")
 
 
 @admin.register(Course)
@@ -91,3 +96,30 @@ class TestimonialAdmin(admin.ModelAdmin):
 class TestimonialLikeAdmin(admin.ModelAdmin):
     list_display = ("testimonial", "patient", "client_id", "created_at")
     search_fields = ("testimonial__name", "testimonial__title", "patient__first_name", "patient__last_name", "patient__username", "patient__email", "client_id")
+
+
+@admin.register(Story)
+class StoryAdmin(admin.ModelAdmin):
+    list_display = ("title", "author", "category", "is_active", "updated_at")
+    list_filter = ("is_active", "category")
+    search_fields = ("title", "author", "content")
+
+
+@admin.register(StoryLike)
+class StoryLikeAdmin(admin.ModelAdmin):
+    list_display = ("story", "patient", "client_id", "created_at")
+    search_fields = ("story__title", "patient__first_name", "patient__last_name", "client_id")
+
+
+@admin.register(StoryComment)
+class StoryCommentAdmin(admin.ModelAdmin):
+    list_display = ("story", "author_name", "patient", "is_active", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("story__title", "author_name", "content")
+
+
+@admin.register(DailyCheckin)
+class DailyCheckinAdmin(admin.ModelAdmin):
+    list_display = ("patient", "date", "energy_level", "created_at")
+    list_filter = ("energy_level", "date")
+    search_fields = ("patient__first_name", "patient__last_name", "patient__username")
