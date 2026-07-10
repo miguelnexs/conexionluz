@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("health/", views.health),
     path("auth/admin/login/", views.admin_login),
+    path("auth/admin/google/", views.admin_google_login),
     path("dashboard/", views.dashboard),
     path("analytics/", views.analytics),
     path("courses/", views.courses),
@@ -32,6 +33,11 @@ urlpatterns = [
     path("auth/google/", views.patient_google_login),
     path("portal/me/", views.portal_me),
     path("portal/me/picture/", views.portal_upload_profile_picture),
+    path("portal/follow/patient/toggle/", views.portal_follow_patient_toggle),
+    path("portal/follow/patient/status/", views.portal_follow_patient_status),
+    path("portal/follow/patients/following/", views.portal_follow_patient_list_following),
+    path("portal/follow/therapist/toggle/", views.portal_follow_therapist_toggle),
+    path("portal/follow/therapist/status/", views.portal_follow_therapist_status),
     path("portal/intake/", views.portal_intake),
     path("portal/daily-checkin/", views.portal_daily_checkin),
     path("portal/courses/", views.portal_courses),
@@ -77,4 +83,33 @@ urlpatterns = [
     path("payments/mercadopago/preference/", views.mercadopago_create_preference),
     path("payments/mercadopago/pay/", views.mercadopago_pay),
     path("public/settings/", views.public_site_settings),
+    # Community posts (feed)
+    path("public/community-posts/", views.public_community_posts),
+    path("portal/community-posts/", views.portal_community_posts),
+    path("portal/community-posts/<int:post_id>/", views.portal_community_post_detail),
+    path("portal/community-posts/<int:post_id>/like/", views.portal_community_post_like),
+    path("portal/community-posts/<int:post_id>/comment/", views.portal_community_post_comment),
+    path("portal/community-posts/comments/<int:comment_id>/", views.portal_community_post_comment_detail),
+    # Admin moderation
+    path("admin/community-posts/", views.admin_community_posts),
+    path("admin/community-posts/<int:post_id>/", views.admin_community_post_detail),
+    # Live Chat
+    path("portal/chat/send/", views.portal_chat_send),
+    path("portal/chat/messages/", views.portal_chat_messages),
+    path("admin/chat/sessions/", views.admin_chat_sessions),
+    path("admin/chat/sessions/<str:client_id>/", views.admin_chat_session_detail),
+    path("admin/chat/send/", views.admin_chat_send),
+    path("admin/chat/link/", views.admin_chat_link_patient),
+    # Guided Exercises
+    path("portal/guided-exercises/", views.portal_guided_exercises),
+    path("admin/guided-exercises/", views.admin_guided_exercises),
+    path("admin/guided-exercises/<int:exercise_id>/", views.admin_guided_exercise_detail),
+    # Breathing Techniques
+    path("portal/breathing-techniques/", views.portal_breathing_techniques),
+    path("admin/breathing-techniques/", views.admin_breathing_techniques),
+    path("admin/breathing-techniques/<int:technique_id>/", views.admin_breathing_technique_detail),
+    # Wellbeing Tests
+    path("portal/wellbeing-tests/", views.portal_wellbeing_tests),
+    path("admin/wellbeing-tests/", views.admin_wellbeing_tests),
+    path("admin/wellbeing-tests/<int:test_id>/", views.admin_wellbeing_test_detail),
 ]

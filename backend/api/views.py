@@ -7,14 +7,14 @@ from django.http.multipartparser import MultiPartParser, MultiPartParserError
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import IntegrityError, transaction
-from django.db.models import Avg, Count, ProtectedError, Sum
+from django.db.models import Avg, Count, ProtectedError, Q, Sum
 from django.utils.dateparse import parse_date
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import Appointment, Course, CourseMedia, ForumReply, ForumTopic, ForumTopicLike, MembershipPlan, MembershipSubscription, Patient, PatientCourseProgress, Service, SiteSettings, Story, StoryLike, StoryComment, Talk, TalkRegistration, Testimonial, TestimonialLike, Therapist, UserNotification
+from .models import Appointment, BreathingTechnique, ChatMessage, CommunityPost, CommunityPostComment, Course, CourseMedia, ForumReply, ForumTopic, ForumTopicLike, GuidedExercise, MembershipPlan, MembershipSubscription, Patient, PatientCourseProgress, Service, SiteSettings, Story, StoryLike, StoryComment, Talk, TalkRegistration, Testimonial, TestimonialLike, Therapist, UserNotification, WellbeingTest
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -290,16 +290,22 @@ def _patient_to_dict(patient: Patient) -> dict[str, Any]:
         "intakeSummary": patient.intake_summary,
         "intakeSubmittedAt": _dt_to_iso(patient.intake_submitted_at),
         "isActive": patient.is_active,
+        "userType": patient.user_type,
+        "canPublish": patient.can_publish,
         "createdAt": _dt_to_iso(patient.created_at),
         "updatedAt": _dt_to_iso(patient.updated_at),
     }
 
 
-def _patient_portal_to_dict(patient: Patient) -> dict[str, Any]:
+def _patient_portal_to_dict(patient: Patient, request: Optional[HttpRequest] = None) -> dict[str, Any]:
     has_sub = patient.memberships.filter(status=MembershipSubscription.Status.ACTIVE).exists()
     pic_url = ""
     if patient.profile_picture_file:
-        pic_url = patient.profile_picture_file.url
+        raw_url = patient.profile_picture_file.url
+        if request is not None:
+            pic_url = request.build_absolute_uri(raw_url)
+        else:
+            pic_url = raw_url
     elif patient.profile_picture_url:
         pic_url = patient.profile_picture_url
 
@@ -323,6 +329,8 @@ def _patient_portal_to_dict(patient: Patient) -> dict[str, Any]:
         "intakeCompleted": patient.intake_completed,
         "intakeSummary": patient.intake_summary,
         "hasActiveSubscription": has_sub,
+        "userType": patient.user_type,
+        "canPublish": patient.can_publish,
     }
 
 
@@ -352,6 +360,25 @@ def _get_patient_from_token(request: HttpRequest) -> Optional[Patient]:
         return Patient.objects.get(id=patient_id, is_active=True)
     except Patient.DoesNotExist:
         return None
+
+
+def _can_patient_publish(patient: Patient) -> bool:
+    return True
+
+
+def _require_patient_publisher(request: HttpRequest) -> tuple[Optional[Patient], Optional[JsonResponse]]:
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return None, _json_error("Inicia sesión para continuar.", status=401)
+    if not _can_patient_publish(patient):
+        return None, _json_error("Tu usuario no tiene permisos para publicar.", status=403)
+    return patient, None
+
+
+def _require_admin(request: HttpRequest) -> Optional[JsonResponse]:
+    if not _get_admin_from_token(request):
+        return _json_error("unauthorized", status=401)
+    return None
 
 
 def _clamp_int(value: Any, min_value: int, max_value: int) -> int:
@@ -476,6 +503,49 @@ def admin_login(request: HttpRequest) -> JsonResponse:
         return _json_error("Credenciales incorrectas", status=401)
 
     token = _issue_admin_token()
+    return JsonResponse({"ok": True, "data": {"token": token, "username": valid_username}})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def admin_google_login(request: HttpRequest) -> JsonResponse:
+    import os
+    settings = SiteSettings.get()
+    if not settings.google_enabled or not settings.google_client_id:
+        return _json_error("El inicio de sesión con Google no está activo", status=400)
+
+    body = _parse_json_body(request)
+    credential = body.get("credential")
+    if not credential:
+        return _json_error("credential is required")
+
+    from google.oauth2 import id_token
+    from google.auth.transport import requests as google_requests
+
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            credential, 
+            google_requests.Request(), 
+            settings.google_client_id
+        )
+    except Exception as e:
+        return _json_error(f"Token de Google inválido: {str(e)}", status=401)
+
+    if not idinfo.get("email_verified"):
+        return _json_error("El correo de Google no está verificado", status=401)
+
+    email = idinfo.get("email")
+    if not email:
+        return _json_error("No se pudo obtener el correo de Google", status=400)
+
+    email = email.lower().strip()
+
+    valid_email = os.environ.get("ADMIN_EMAIL", "conexionluz.com@gmail.com").lower().strip()
+    if email != valid_email:
+        return _json_error("No tienes permisos de administrador", status=403)
+
+    token = _issue_admin_token()
+    valid_username = os.environ.get("ADMIN_USERNAME", "conexionluz")
     return JsonResponse({"ok": True, "data": {"token": token, "username": valid_username}})
 
 
@@ -2099,6 +2169,9 @@ def public_testimonial_me(request: HttpRequest) -> JsonResponse:
     if request.method == "GET":
         return JsonResponse({"ok": True, "data": _testimonial_to_dict(existing) if existing else None})
 
+    if not _can_patient_publish(patient):
+        return _json_error("Tu usuario no tiene permisos para publicar.", status=403)
+
     body = _parse_json_body(request)
     quote = str(body.get("quote", "")).strip()
     if not quote:
@@ -2136,11 +2209,9 @@ def public_testimonial_me(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["POST", "DELETE"])
 def public_testimonial_like(request: HttpRequest, testimonial_id: int) -> JsonResponse:
-    client_id = str(request.headers.get("X-Client-Id", "")).strip() or None
     patient = _get_patient_from_token(request)
-
-    if patient is None and not client_id:
-        return _json_error("client id required")
+    if patient is None:
+        return _json_error("Inicia sesión para dar me gusta.", status=401)
 
     try:
         testimonial = Testimonial.objects.get(id=testimonial_id, is_active=True)
@@ -2149,26 +2220,11 @@ def public_testimonial_like(request: HttpRequest, testimonial_id: int) -> JsonRe
 
     liked = False
     if request.method == "POST":
-        if patient is not None:
-            obj, _created = TestimonialLike.objects.get_or_create(
-                testimonial=testimonial,
-                patient=patient,
-                defaults={"client_id": client_id},
-            )
-            if obj.client_id is None and client_id:
-                obj.client_id = client_id
-                obj.save(update_fields=["client_id"])
-            liked = True
-        else:
-            TestimonialLike.objects.get_or_create(testimonial=testimonial, client_id=client_id)
-            liked = True
+        TestimonialLike.objects.get_or_create(testimonial=testimonial, patient=patient)
+        liked = True
     else:
-        if patient is not None:
-            TestimonialLike.objects.filter(testimonial=testimonial, patient=patient).delete()
-            liked = False
-        else:
-            TestimonialLike.objects.filter(testimonial=testimonial, client_id=client_id).delete()
-            liked = False
+        TestimonialLike.objects.filter(testimonial=testimonial, patient=patient).delete()
+        liked = False
 
     likes_count = TestimonialLike.objects.filter(testimonial=testimonial).count()
     return JsonResponse({"ok": True, "data": {"testimonialId": testimonial.id, "likesCount": likes_count, "liked": liked}})
@@ -2177,6 +2233,10 @@ def public_testimonial_like(request: HttpRequest, testimonial_id: int) -> JsonRe
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def testimonials(request: HttpRequest) -> JsonResponse:
+    admin_err = _require_admin(request) if request.method != "GET" else None
+    if admin_err is not None:
+        return admin_err
+
     if request.method == "GET":
         items = Testimonial.objects.all().annotate(likes_count=Count("likes")).order_by("-updated_at")
         return JsonResponse({"ok": True, "data": [_testimonial_to_dict(t) for t in items]})
@@ -2202,6 +2262,10 @@ def testimonials(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["PUT", "PATCH", "DELETE"])
 def testimonial_detail(request: HttpRequest, testimonial_id: int) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
     try:
         testimonial = Testimonial.objects.get(id=testimonial_id)
     except Testimonial.DoesNotExist:
@@ -2235,6 +2299,10 @@ def testimonial_detail(request: HttpRequest, testimonial_id: int) -> JsonRespons
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def patients(request: HttpRequest) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
     if request.method == "GET":
         items = Patient.objects.all().order_by("-updated_at")
         return JsonResponse({"ok": True, "data": [_patient_to_dict(p) for p in items]})
@@ -2274,6 +2342,7 @@ def patients(request: HttpRequest) -> JsonResponse:
             portal_welcome_message=str(body.get("portalWelcomeMessage", "")).strip(),
             portal_accent_color=str(body.get("portalAccentColor", "")).strip(),
             is_active=_parse_bool(body.get("isActive", True), True),
+            user_type=str(body.get("userType", "miembro")).strip()[:50] if str(body.get("userType", "")).strip() else "miembro",
         )
     except IntegrityError:
         return _json_error("username already exists")
@@ -2283,6 +2352,10 @@ def patients(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["GET", "PATCH", "PUT", "DELETE"])
 def patient_detail(request: HttpRequest, patient_id: int) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
     try:
         patient = Patient.objects.get(id=patient_id)
     except Patient.DoesNotExist:
@@ -2349,6 +2422,14 @@ def patient_detail(request: HttpRequest, patient_id: int) -> JsonResponse:
         patient.notes = str(body.get("notes", "")).strip()
     if "isActive" in body:
         patient.is_active = _parse_bool(body.get("isActive"), patient.is_active)
+    if "userType" in body:
+        ut = str(body.get("userType", "")).strip()
+        if ut:
+            patient.user_type = ut[:50]
+    if "canPublish" in body:
+        patient.can_publish = _parse_bool(body.get("canPublish"), patient.can_publish)
+    if "intakeCompleted" in body:
+        patient.intake_completed = _parse_bool(body.get("intakeCompleted"), patient.intake_completed)
 
     if not patient.first_name:
         return _json_error("firstName is required")
@@ -2381,7 +2462,7 @@ def patient_login(request: HttpRequest) -> JsonResponse:
         return _json_error("invalid credentials", status=401)
 
     token = _issue_patient_token(patient.id)
-    return JsonResponse({"ok": True, "data": {"token": token, "patient": _patient_portal_to_dict(patient)}})
+    return JsonResponse({"ok": True, "data": {"token": token, "patient": _patient_portal_to_dict(patient, request)}})
 
 
 @csrf_exempt
@@ -2392,9 +2473,11 @@ def portal_me(request: HttpRequest) -> JsonResponse:
         return _json_error("unauthorized", status=401)
 
     if request.method == "GET":
-        return JsonResponse({"ok": True, "data": _patient_portal_to_dict(patient)})
+        return JsonResponse({"ok": True, "data": _patient_portal_to_dict(patient, request)})
 
     body = _parse_json_body(request)
+    if "userType" in body:
+        return _json_error("No tienes permiso para cambiar tu tipo de usuario.", status=403)
     if "firstName" in body:
         patient.first_name = str(body.get("firstName", "")).strip()
     if "lastName" in body:
@@ -2438,7 +2521,7 @@ def portal_me(request: HttpRequest) -> JsonResponse:
             patient.password_hash = make_password(pwd)
 
     patient.save()
-    return JsonResponse({"ok": True, "data": _patient_portal_to_dict(patient)})
+    return JsonResponse({"ok": True, "data": _patient_portal_to_dict(patient, request)})
 
 
 @csrf_exempt
@@ -2458,7 +2541,198 @@ def portal_upload_profile_picture(request: HttpRequest) -> JsonResponse:
     patient.profile_picture_file = upload
     patient.save(update_fields=["profile_picture_file"])
     
-    return JsonResponse({"ok": True, "data": {"profilePictureUrl": patient.profile_picture_file.url}})
+    pic_url = request.build_absolute_uri(patient.profile_picture_file.url)
+    return JsonResponse({"ok": True, "data": {"profilePictureUrl": pic_url}})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_follow_patient_toggle(request: HttpRequest) -> JsonResponse:
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("unauthorized", status=401)
+
+    body = _parse_json_body(request)
+    target_name = str(body.get("name", "")).strip()
+    if not target_name:
+        return _json_error("Nombre del paciente requerido.", status=400)
+
+    from django.db.models.functions import Concat
+    from django.db.models import Value
+    
+    target_patient = Patient.objects.annotate(
+        full_name=Concat('first_name', Value(' '), 'last_name')
+    ).filter(full_name__iexact=target_name).first()
+
+    if not target_patient:
+        target_patient = Patient.objects.filter(username__iexact=target_name).first()
+        if not target_patient:
+            target_patient = Patient.objects.filter(first_name__iexact=target_name).first()
+
+    if not target_patient:
+        return _json_error("Paciente no encontrado.", status=404)
+
+    if target_patient.id == patient.id:
+        return _json_error("No puedes seguirte a ti mismo.", status=400)
+
+    from .models import FollowPatient
+    follow, created = FollowPatient.objects.get_or_create(
+        follower=patient,
+        followed_patient=target_patient
+    )
+
+    if not created:
+        follow.delete()
+        is_following = False
+    else:
+        is_following = True
+
+    followers_count = FollowPatient.objects.filter(followed_patient=target_patient).count()
+    following_count = FollowPatient.objects.filter(follower=target_patient).count()
+
+    return JsonResponse({
+        "ok": True,
+        "data": {
+            "isFollowing": is_following,
+            "followersCount": followers_count,
+            "followingCount": following_count
+        }
+    })
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def portal_follow_patient_status(request: HttpRequest) -> JsonResponse:
+    patient = _get_patient_from_token(request)
+
+    target_name = request.GET.get("name", "").strip()
+    if not target_name:
+        return _json_error("Nombre del paciente requerido.", status=400)
+
+    from django.db.models.functions import Concat
+    from django.db.models import Value
+    
+    target_patient = Patient.objects.annotate(
+        full_name=Concat('first_name', Value(' '), 'last_name')
+    ).filter(full_name__iexact=target_name).first()
+
+    if not target_patient:
+        target_patient = Patient.objects.filter(username__iexact=target_name).first()
+        if not target_patient:
+            target_patient = Patient.objects.filter(first_name__iexact=target_name).first()
+
+    if not target_patient:
+        return _json_error("Paciente no encontrado.", status=404)
+
+    from .models import FollowPatient
+    is_following = False
+    if patient is not None:
+        is_following = FollowPatient.objects.filter(follower=patient, followed_patient=target_patient).exists()
+    followers_count = FollowPatient.objects.filter(followed_patient=target_patient).count()
+    following_count = FollowPatient.objects.filter(follower=target_patient).count()
+
+    return JsonResponse({
+        "ok": True,
+        "data": {
+            "isFollowing": is_following,
+            "followersCount": followers_count,
+            "followingCount": following_count
+        }
+    })
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def portal_follow_patient_list_following(request: HttpRequest) -> JsonResponse:
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("unauthorized", status=401)
+
+    from .models import FollowPatient
+
+    qs = FollowPatient.objects.filter(follower=patient).select_related("followed_patient")
+    following_names = []
+    for f in qs:
+        full_name = f"{f.followed_patient.first_name} {f.followed_patient.last_name}".strip()
+        following_names.append(full_name)
+
+    return JsonResponse({
+        "ok": True,
+        "data": {
+            "following": following_names
+        }
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_follow_therapist_toggle(request: HttpRequest) -> JsonResponse:
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("unauthorized", status=401)
+
+    body = _parse_json_body(request)
+    try:
+        therapist_id = int(body.get("therapistId", 0))
+    except (ValueError, TypeError):
+        return _json_error("ID de terapeuta inválido.", status=400)
+
+    try:
+        therapist = Therapist.objects.get(id=therapist_id)
+    except Therapist.DoesNotExist:
+        return _json_error("Terapeuta no encontrado.", status=404)
+
+    from .models import FollowTherapist
+    follow, created = FollowTherapist.objects.get_or_create(
+        follower=patient,
+        followed_therapist=therapist
+    )
+
+    if not created:
+        follow.delete()
+        is_following = False
+    else:
+        is_following = True
+
+    followers_count = FollowTherapist.objects.filter(followed_therapist=therapist).count()
+
+    return JsonResponse({
+        "ok": True,
+        "data": {
+            "isFollowing": is_following,
+            "followersCount": followers_count
+        }
+    })
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def portal_follow_therapist_status(request: HttpRequest) -> JsonResponse:
+    patient = _get_patient_from_token(request)
+
+    try:
+        therapist_id = int(request.GET.get("therapistId", 0))
+    except (ValueError, TypeError):
+        return _json_error("ID de terapeuta inválido.", status=400)
+
+    try:
+        therapist = Therapist.objects.get(id=therapist_id)
+    except Therapist.DoesNotExist:
+        return _json_error("Terapeuta no encontrado.", status=404)
+
+    from .models import FollowTherapist
+    is_following = False
+    if patient is not None:
+        is_following = FollowTherapist.objects.filter(follower=patient, followed_therapist=therapist).exists()
+    followers_count = FollowTherapist.objects.filter(followed_therapist=therapist).count()
+
+    return JsonResponse({
+        "ok": True,
+        "data": {
+            "isFollowing": is_following,
+            "followersCount": followers_count
+        }
+    })
 
 
 @csrf_exempt
@@ -2582,7 +2856,7 @@ def patient_register(request: HttpRequest) -> JsonResponse:
         return _json_error("username already exists")
 
     token = _issue_patient_token(patient.id)
-    return JsonResponse({"ok": True, "data": {"token": token, "patient": _patient_portal_to_dict(patient)}}, status=201)
+    return JsonResponse({"ok": True, "data": {"token": token, "patient": _patient_portal_to_dict(patient, request)}}, status=201)
 
 
 @csrf_exempt
@@ -2677,7 +2951,7 @@ def patient_google_login(request: HttpRequest) -> JsonResponse:
             patient.save(update_fields=["profile_picture_url"])
 
     token = _issue_patient_token(patient.id)
-    return JsonResponse({"ok": True, "data": {"token": token, "patient": _patient_portal_to_dict(patient)}})
+    return JsonResponse({"ok": True, "data": {"token": token, "patient": _patient_portal_to_dict(patient, request)}})
 
 
 
@@ -2687,6 +2961,10 @@ def stories(request: HttpRequest) -> JsonResponse:
     if request.method == "GET":
         items = Story.objects.all().order_by("-updated_at")
         return JsonResponse({"ok": True, "data": [_story_to_dict(request, s) for s in items]})
+
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
 
     if not (request.content_type and request.content_type.startswith("multipart/form-data")):
         return _json_error("multipart/form-data required")
@@ -2744,6 +3022,10 @@ def story_detail(request: HttpRequest, story_id: int) -> JsonResponse:
 
     if request.method == "GET":
         return JsonResponse({"ok": True, "data": _story_to_dict(request, story)})
+
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
 
     if request.method == "DELETE":
         story.delete()
@@ -2817,11 +3099,9 @@ def public_story_detail(request: HttpRequest, story_id: int) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["POST", "DELETE"])
 def public_story_like(request: HttpRequest, story_id: int) -> JsonResponse:
-    client_id = str(request.headers.get("X-Client-Id", "")).strip() or None
     patient = _get_patient_from_token(request)
-
-    if patient is None and not client_id:
-        return _json_error("client id required")
+    if patient is None:
+        return _json_error("Inicia sesión para dar me gusta.", status=401)
 
     try:
         story = Story.objects.get(id=story_id, is_active=True)
@@ -2830,45 +3110,21 @@ def public_story_like(request: HttpRequest, story_id: int) -> JsonResponse:
 
     liked = False
     if request.method == "POST":
-        if patient is not None:
-            obj, _created = StoryLike.objects.get_or_create(
-                story=story,
-                patient=patient,
-                defaults={"client_id": client_id},
+        StoryLike.objects.get_or_create(story=story, patient=patient)
+        liked = True
+        if story.patient and story.patient != patient:
+            sender = f"{patient.first_name} {patient.last_name}".strip() or patient.username
+            _create_notification(
+                recipient=story.patient,
+                notification_type="like_story",
+                sender_name=sender,
+                title="Me gusta en tu historia",
+                message=f"{sender} le dio me gusta a tu historia '{story.title}'",
+                target_url=f"/historias/{story.id}"
             )
-            if obj.client_id is None and client_id:
-                obj.client_id = client_id
-                obj.save(update_fields=["client_id"])
-            liked = True
-            if story.patient and story.patient != patient:
-                sender = f"{patient.first_name} {patient.last_name}".strip() or patient.username
-                _create_notification(
-                    recipient=story.patient,
-                    notification_type="like_story",
-                    sender_name=sender,
-                    title="Me gusta en tu historia",
-                    message=f"{sender} le dio me gusta a tu historia '{story.title}'",
-                    target_url=f"/historias/{story.id}"
-                )
-        else:
-            StoryLike.objects.get_or_create(story=story, client_id=client_id)
-            liked = True
-            if story.patient:
-                _create_notification(
-                    recipient=story.patient,
-                    notification_type="like_story",
-                    sender_name="Un usuario",
-                    title="Me gusta en tu historia",
-                    message=f"Un usuario le dio me gusta a tu historia '{story.title}'",
-                    target_url=f"/historias/{story.id}"
-                )
     else:
-        if patient is not None:
-            StoryLike.objects.filter(story=story, patient=patient).delete()
-            liked = False
-        else:
-            StoryLike.objects.filter(story=story, client_id=client_id).delete()
-            liked = False
+        StoryLike.objects.filter(story=story, patient=patient).delete()
+        liked = False
 
     likes_count = StoryLike.objects.filter(story=story).count()
     return JsonResponse({"ok": True, "data": {"storyId": story.id, "likesCount": likes_count, "liked": liked}})
@@ -2882,18 +3138,17 @@ def public_story_comment(request: HttpRequest, story_id: int) -> JsonResponse:
     except Story.DoesNotExist:
         return _json_error("not found", status=404)
 
+    patient, publisher_err = _require_patient_publisher(request)
+    if publisher_err is not None:
+        return publisher_err
+
     body = _parse_json_body(request)
     content = str(body.get("content", "")).strip()
     if not content:
         return _json_error("content is required")
 
-    patient = _get_patient_from_token(request)
     client_id = str(request.headers.get("X-Client-Id", "")).strip() or None
-
-    if patient:
-        author_name = f"{patient.first_name} {patient.last_name}".strip() or patient.username
-    else:
-        author_name = str(body.get("authorName", "")).strip() or "Invitado"
+    author_name = f"{patient.first_name} {patient.last_name}".strip() or patient.username
 
     parent_id = body.get("parentId")
     parent_comment = None
@@ -2944,18 +3199,11 @@ def public_story_comment_detail(request: HttpRequest, comment_id: int) -> JsonRe
         return _json_error("comentario no encontrado", status=404)
 
     patient = _get_patient_from_token(request)
-    client_id = str(request.headers.get("X-Client-Id", "")).strip() or None
+    if patient is None:
+        return _json_error("Inicia sesión para modificar tu comentario", status=401)
 
     # Check ownership
-    is_owner = False
-    if comment.patient_id is not None:
-        if patient is not None and comment.patient_id == patient.id:
-            is_owner = True
-    elif comment.client_id:
-        if client_id and comment.client_id == client_id:
-            is_owner = True
-
-    if not is_owner:
+    if comment.patient_id is None or comment.patient_id != patient.id:
         return _json_error("No tienes permiso para modificar este comentario", status=403)
 
     if request.method == "PATCH":
@@ -3032,11 +3280,9 @@ def _forum_topic_to_dict(request: HttpRequest, topic: ForumTopic) -> dict[str, A
 @csrf_exempt
 @require_http_methods(["POST", "DELETE"])
 def public_forum_topic_like(request: HttpRequest, topic_id: int) -> JsonResponse:
-    client_id = str(request.headers.get("X-Client-Id", "")).strip() or None
     patient = _get_patient_from_token(request)
-
-    if patient is None and not client_id:
-        return _json_error("client id required")
+    if patient is None:
+        return _json_error("Inicia sesión para dar me gusta.", status=401)
 
     try:
         topic = ForumTopic.objects.get(id=topic_id, is_active=True)
@@ -3045,45 +3291,21 @@ def public_forum_topic_like(request: HttpRequest, topic_id: int) -> JsonResponse
 
     liked = False
     if request.method == "POST":
-        if patient is not None:
-            obj, _created = ForumTopicLike.objects.get_or_create(
-                topic=topic,
-                patient=patient,
-                defaults={"client_id": client_id},
+        ForumTopicLike.objects.get_or_create(topic=topic, patient=patient)
+        liked = True
+        if topic.created_by and topic.created_by != patient:
+            sender = f"{patient.first_name} {patient.last_name}".strip() or patient.username
+            _create_notification(
+                recipient=topic.created_by,
+                notification_type="like_topic",
+                sender_name=sender,
+                title="Me gusta en tu tema de foro",
+                message=f"{sender} le dio me gusta a tu tema '{topic.title}'",
+                target_url=f"/foro/{topic.id}"
             )
-            if obj.client_id is None and client_id:
-                obj.client_id = client_id
-                obj.save(update_fields=["client_id"])
-            liked = True
-            if topic.created_by and topic.created_by != patient:
-                sender = f"{patient.first_name} {patient.last_name}".strip() or patient.username
-                _create_notification(
-                    recipient=topic.created_by,
-                    notification_type="like_topic",
-                    sender_name=sender,
-                    title="Me gusta en tu tema de foro",
-                    message=f"{sender} le dio me gusta a tu tema '{topic.title}'",
-                    target_url=f"/foro/{topic.id}"
-                )
-        else:
-            ForumTopicLike.objects.get_or_create(topic=topic, client_id=client_id)
-            liked = True
-            if topic.created_by:
-                _create_notification(
-                    recipient=topic.created_by,
-                    notification_type="like_topic",
-                    sender_name="Un usuario",
-                    title="Me gusta en tu tema de foro",
-                    message=f"Un usuario le dio me gusta a tu tema '{topic.title}'",
-                    target_url=f"/foro/{topic.id}"
-                )
     else:
-        if patient is not None:
-            ForumTopicLike.objects.filter(topic=topic, patient=patient).delete()
-            liked = False
-        else:
-            ForumTopicLike.objects.filter(topic=topic, client_id=client_id).delete()
-            liked = False
+        ForumTopicLike.objects.filter(topic=topic, patient=patient).delete()
+        liked = False
 
     likes_count = ForumTopicLike.objects.filter(topic=topic).count()
     return JsonResponse({"ok": True, "data": {"topicId": topic.id, "likesCount": likes_count, "liked": liked}})
@@ -3110,6 +3332,10 @@ def forum_topics(request: HttpRequest) -> JsonResponse:
     if request.method == "GET":
         items = ForumTopic.objects.all().annotate(replies_count=Count("replies")).order_by("-is_pinned", "-updated_at")
         return JsonResponse({"ok": True, "data": [_forum_topic_to_dict(request, t) for t in items]})
+
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
 
     if request.content_type and request.content_type.startswith("multipart/form-data"):
         body, files = _parse_multipart(request)
@@ -3160,6 +3386,10 @@ def forum_topic_detail(request: HttpRequest, topic_id: int) -> JsonResponse:
             },
         })
 
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
     if request.method == "DELETE":
         topic.delete()
         return JsonResponse({"ok": True})
@@ -3201,6 +3431,10 @@ def forum_topic_detail(request: HttpRequest, topic_id: int) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["POST"])
 def forum_topic_replies(request: HttpRequest, topic_id: int) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
     try:
         topic = ForumTopic.objects.get(id=topic_id)
     except ForumTopic.DoesNotExist:
@@ -3230,6 +3464,10 @@ def forum_topic_replies(request: HttpRequest, topic_id: int) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["DELETE"])
 def forum_reply_detail(request: HttpRequest, reply_id: int) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
     try:
         reply = ForumReply.objects.get(id=reply_id)
     except ForumReply.DoesNotExist:
@@ -3246,9 +3484,11 @@ def public_forum_topics(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"ok": True, "data": [_forum_topic_to_dict(request, t) for t in items]})
 
     elif request.method == "POST":
-        patient = _get_patient_from_token(request)
-        if not patient:
-            return _json_error("Inicia sesión para crear un tema", status=401)
+        patient, publisher_err = _require_patient_publisher(request)
+        if publisher_err is not None:
+            if publisher_err.status_code == 401:
+                return _json_error("Inicia sesión para crear un tema", status=401)
+            return publisher_err
 
         if request.content_type and request.content_type.startswith("multipart/form-data"):
             body, files = _parse_multipart(request)
@@ -3349,9 +3589,9 @@ def public_forum_topic_reply(request: HttpRequest, topic_id: int) -> JsonRespons
     if topic.is_locked:
         return _json_error("this topic is locked")
 
-    patient = _get_patient_from_token(request)
-    if not patient:
-        return _json_error("authentication required", status=401)
+    patient, publisher_err = _require_patient_publisher(request)
+    if publisher_err is not None:
+        return publisher_err
 
     body = _parse_json_body(request)
     content = str(body.get("content", "")).strip()
@@ -4042,6 +4282,7 @@ def portal_notifications(request: HttpRequest) -> JsonResponse:
     })
 
 
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def portal_notifications_read(request: HttpRequest) -> JsonResponse:
@@ -4059,3 +4300,763 @@ def portal_notifications_read(request: HttpRequest) -> JsonResponse:
 
     q.update(is_read=True)
     return JsonResponse({"ok": True})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COMMUNITY POSTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _comment_to_dict(c: CommunityPostComment) -> dict:
+    return {
+        "id": c.id,
+        "postId": c.post_id,
+        "patientId": c.patient_id,
+        "authorName": c.author_name,
+        "authorAvatarUrl": c.author_avatar_url,
+        "authorRole": c.author_role,
+        "content": c.content,
+        "createdAt": _dt_to_iso(c.created_at),
+    }
+
+
+def _post_to_dict(post: CommunityPost, viewer_patient_id: Optional[int] = None) -> dict:
+    comments = list(post.post_comments.filter(is_active=True).order_by("created_at"))
+    likes = post.like_patient_ids if isinstance(post.like_patient_ids, list) else []
+    return {
+        "id": post.id,
+        "patientId": post.patient_id,
+        "authorName": post.author_name,
+        "authorAvatarUrl": post.author_avatar_url,
+        "authorRole": post.author_role,
+        "content": post.content,
+        "imageUrl": post.image_url,
+        "feeling": post.feeling,
+        "likesCount": len(likes),
+        "likedByMe": viewer_patient_id is not None and viewer_patient_id in likes,
+        "commentsCount": len(comments),
+        "comments": [_comment_to_dict(c) for c in comments],
+        "isApproved": post.is_approved,
+        "isActive": post.is_active,
+        "createdAt": _dt_to_iso(post.created_at),
+        "updatedAt": _dt_to_iso(post.updated_at),
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def public_community_posts(request: HttpRequest) -> JsonResponse:
+    """Public read-only feed — no auth required."""
+    posts = CommunityPost.objects.filter(is_active=True, is_approved=True).order_by("-created_at")[:50]
+    return JsonResponse({"ok": True, "data": [_post_to_dict(p) for p in posts]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def portal_community_posts(request: HttpRequest) -> JsonResponse:
+    """Authenticated feed: GET all posts, POST create a new post."""
+    patient = _get_patient_from_token(request)
+
+    if request.method == "GET":
+        if patient is None:
+            posts = CommunityPost.objects.filter(is_active=True, is_approved=True).order_by("-created_at")[:50]
+            return JsonResponse({"ok": True, "data": [_post_to_dict(p) for p in posts]})
+
+        posts = CommunityPost.objects.filter(
+            Q(is_active=True, is_approved=True) | Q(is_active=True, patient_id=patient.id)
+        ).order_by("-created_at")[:50]
+        pid = patient.id if patient else None
+        return JsonResponse({"ok": True, "data": [_post_to_dict(p, pid) for p in posts]})
+
+    # POST: create
+    if patient is None:
+        return _json_error("Inicia sesión para publicar.", status=401)
+    if not patient.can_publish:
+        return _json_error("No tienes permiso para publicar.", status=403)
+
+    body = _parse_json_body(request)
+    content = str(body.get("content", "")).strip()
+    image_url = str(body.get("imageUrl", "")).strip()
+    if not content and not image_url:
+        return _json_error("El contenido o imagen es requerido.")
+
+    author_name = f"{patient.first_name} {patient.last_name}".strip()
+    author_avatar = ""
+    if patient.profile_picture_file:
+        try:
+            author_avatar = request.build_absolute_uri(patient.profile_picture_file.url)
+        except Exception:
+            author_avatar = patient.profile_picture_url or ""
+    elif patient.profile_picture_url:
+        author_avatar = patient.profile_picture_url
+
+    occ = (patient.occupation or "").strip()
+    if occ:
+        author_role = occ[0].upper() + occ[1:]
+    else:
+        ut = (patient.user_type or "miembro").lower()
+        has_sub = patient.memberships.filter(status=MembershipSubscription.Status.ACTIVE).exists()
+        if ut == "paciente":
+            author_role = "Paciente"
+        elif ut == "miembro":
+            author_role = "Miembro Premium" if has_sub else "Miembro"
+        else:
+            author_role = patient.user_type[0].upper() + patient.user_type[1:]
+
+    post = CommunityPost.objects.create(
+        patient=patient,
+        author_name=author_name,
+        author_avatar_url=author_avatar,
+        author_role=author_role,
+        content=content,
+        image_url=image_url,
+        feeling=str(body.get("feeling", "")).strip(),
+    )
+    return JsonResponse({"ok": True, "data": _post_to_dict(post, patient.id)}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PATCH", "DELETE"])
+def portal_community_post_detail(request: HttpRequest, post_id: int) -> JsonResponse:
+    """Edit or delete own post."""
+    try:
+        post = CommunityPost.objects.get(id=post_id, is_active=True)
+    except CommunityPost.DoesNotExist:
+        return _json_error("not found", status=404)
+
+    patient = _get_patient_from_token(request)
+
+    if request.method == "GET":
+        pid = patient.id if patient else None
+        if not post.is_approved and (patient is None or post.patient_id != patient.id):
+            return _json_error("not found", status=404)
+        return JsonResponse({"ok": True, "data": _post_to_dict(post, pid)})
+
+    if patient is None:
+        return _json_error("authentication required", status=401)
+
+    if request.method == "DELETE":
+        if post.patient_id != patient.id:
+            return _json_error("forbidden", status=403)
+        post.is_active = False
+        post.save(update_fields=["is_active"])
+        return JsonResponse({"ok": True})
+
+    # PATCH: edit own post
+    if post.patient_id != patient.id:
+        return _json_error("forbidden", status=403)
+    body = _parse_json_body(request)
+    if "content" in body:
+        post.content = str(body["content"]).strip()
+    if "imageUrl" in body:
+        post.image_url = str(body["imageUrl"]).strip()
+    if "feeling" in body:
+        post.feeling = str(body["feeling"]).strip()
+    post.is_approved = False
+    post.save()
+    return JsonResponse({"ok": True, "data": _post_to_dict(post, patient.id)})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_community_post_like(request: HttpRequest, post_id: int) -> JsonResponse:
+    """Toggle like on a post."""
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("authentication required", status=401)
+    try:
+        post = CommunityPost.objects.get(id=post_id, is_active=True, is_approved=True)
+    except CommunityPost.DoesNotExist:
+        return _json_error("not found", status=404)
+
+    likes = post.like_patient_ids if isinstance(post.like_patient_ids, list) else []
+    if patient.id in likes:
+        likes = [pid for pid in likes if pid != patient.id]
+        liked = False
+    else:
+        likes = likes + [patient.id]
+        liked = True
+    post.like_patient_ids = likes
+    post.save(update_fields=["like_patient_ids"])
+    return JsonResponse({"ok": True, "data": {"liked": liked, "likesCount": len(likes)}})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_community_post_comment(request: HttpRequest, post_id: int) -> JsonResponse:
+    """Add a comment to a post."""
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("authentication required", status=401)
+    try:
+        post = CommunityPost.objects.get(id=post_id, is_active=True, is_approved=True)
+    except CommunityPost.DoesNotExist:
+        return _json_error("not found", status=404)
+
+    body = _parse_json_body(request)
+    content = str(body.get("content", "")).strip()
+    if not content:
+        return _json_error("content is required")
+
+    author_name = f"{patient.first_name} {patient.last_name}".strip()
+    author_avatar = ""
+    if patient.profile_picture_file:
+        try:
+            author_avatar = request.build_absolute_uri(patient.profile_picture_file.url)
+        except Exception:
+            author_avatar = patient.profile_picture_url or ""
+    elif patient.profile_picture_url:
+        author_avatar = patient.profile_picture_url
+
+    occ = (patient.occupation or "").strip()
+    has_sub = patient.memberships.filter(status=MembershipSubscription.Status.ACTIVE).exists()
+    if occ:
+        author_role = occ[0].upper() + occ[1:]
+    else:
+        ut = (patient.user_type or "miembro").lower()
+        if ut == "paciente":
+            author_role = "Paciente"
+        elif ut == "miembro":
+            author_role = "Miembro Premium" if has_sub else "Miembro"
+        else:
+            author_role = patient.user_type[0].upper() + patient.user_type[1:]
+
+    comment = CommunityPostComment.objects.create(
+        post=post,
+        patient=patient,
+        author_name=author_name,
+        author_avatar_url=author_avatar,
+        author_role=author_role,
+        content=content,
+    )
+    return JsonResponse({"ok": True, "data": _comment_to_dict(comment)}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def portal_community_post_comment_detail(request: HttpRequest, comment_id: int) -> JsonResponse:
+    """Delete own comment."""
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("authentication required", status=401)
+    try:
+        comment = CommunityPostComment.objects.get(id=comment_id)
+    except CommunityPostComment.DoesNotExist:
+        return _json_error("not found", status=404)
+    if comment.patient_id != patient.id:
+        return _json_error("forbidden", status=403)
+    comment.is_active = False
+    comment.save(update_fields=["is_active"])
+    return JsonResponse({"ok": True})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def admin_community_posts(request: HttpRequest) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
+    status = str(request.GET.get("status", "") or "").strip().lower()
+    q = CommunityPost.objects.all()
+    if status == "pending":
+        q = q.filter(is_active=True, is_approved=False)
+    elif status == "approved":
+        q = q.filter(is_active=True, is_approved=True)
+    elif status == "inactive":
+        q = q.filter(is_active=False)
+    else:
+        q = q.filter(is_active=True)
+
+    posts = q.order_by("-created_at")[:200]
+    return JsonResponse({"ok": True, "data": [_post_to_dict(p) for p in posts]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PATCH", "DELETE"])
+def admin_community_post_detail(request: HttpRequest, post_id: int) -> JsonResponse:
+    """Admin: retrieve, update (approve), or soft-delete any post."""
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
+    try:
+        post = CommunityPost.objects.get(id=post_id)
+    except CommunityPost.DoesNotExist:
+        return _json_error("not found", status=404)
+
+    if request.method == "GET":
+        return JsonResponse({"ok": True, "data": _post_to_dict(post)})
+
+    if request.method == "DELETE":
+        post.is_active = False
+        post.save(update_fields=["is_active"])
+        return JsonResponse({"ok": True})
+
+    # PATCH request
+    body = _parse_json_body(request)
+    if "isApproved" in body:
+        post.is_approved = _parse_bool(body.get("isApproved"), post.is_approved)
+    if "isActive" in body:
+        post.is_active = _parse_bool(body.get("isActive"), post.is_active)
+    post.save()
+    return JsonResponse({"ok": True, "data": _post_to_dict(post)})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def admin_community_posts(request: HttpRequest) -> JsonResponse:
+    """Admin: list all posts for moderation dashboard."""
+    err = _require_admin(request)
+    if err:
+        return err
+    posts = CommunityPost.objects.filter(is_active=True).order_by("-created_at")
+    return JsonResponse({"ok": True, "data": [_post_to_dict(p) for p in posts]})
+
+
+def _chat_message_to_dict(msg: ChatMessage) -> dict[str, Any]:
+    return {
+        "id": msg.id,
+        "clientId": msg.client_id,
+        "patientId": msg.patient.id if msg.patient else None,
+        "sender": msg.sender,
+        "senderName": msg.sender_name,
+        "message": msg.message,
+        "isRead": msg.is_read,
+        "createdAt": msg.created_at.isoformat() if msg.created_at else None,
+    }
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_chat_send(request: HttpRequest) -> JsonResponse:
+    """Client (guest or patient) sends a message."""
+    client_id = request.headers.get("X-Client-Id", "").strip()
+    body = _parse_json_body(request)
+    message_text = str(body.get("message", "")).strip()
+    
+    if not message_text:
+        return _json_error("El mensaje no puede estar vacío.")
+
+    # Try to resolve client_id from body if header is empty
+    if not client_id:
+        client_id = str(body.get("clientId", "")).strip()
+    
+    if not client_id:
+        return _json_error("client_id is required", status=400)
+
+    # Optional patient from token
+    patient = _get_patient_from_token(request)
+    sender_name = "Visitante"
+    if patient:
+        sender_name = f"{patient.first_name} {patient.last_name}".strip()
+    
+    msg = ChatMessage.objects.create(
+        client_id=client_id,
+        patient=patient,
+        sender="client",
+        sender_name=sender_name,
+        message=message_text
+    )
+    
+    return JsonResponse({"ok": True, "data": _chat_message_to_dict(msg)})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def portal_chat_messages(request: HttpRequest) -> JsonResponse:
+    """Client (guest or patient) retrieves message history."""
+    client_id = request.headers.get("X-Client-Id", "").strip()
+    if not client_id:
+        client_id = str(request.GET.get("clientId", "")).strip()
+    
+    if not client_id:
+        # If logged in as patient, try to find by patient id
+        patient = _get_patient_from_token(request)
+        if patient:
+            messages = ChatMessage.objects.filter(patient=patient).order_by("created_at")
+            return JsonResponse({"ok": True, "data": [_chat_message_to_dict(m) for m in messages]})
+        return _json_error("client_id or authentication required", status=400)
+    
+    # Retrieve messages by client_id (and link patient if token is present but was not linked before)
+    patient = _get_patient_from_token(request)
+    if patient:
+        ChatMessage.objects.filter(client_id=client_id, patient__isnull=True).update(patient=patient)
+        messages = ChatMessage.objects.filter(Q(client_id=client_id) | Q(patient=patient)).order_by("created_at")
+    else:
+        messages = ChatMessage.objects.filter(client_id=client_id).order_by("created_at")
+    return JsonResponse({"ok": True, "data": [_chat_message_to_dict(m) for m in messages]})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def admin_chat_sessions(request: HttpRequest) -> JsonResponse:
+    """Admin: lists all active/unique chat sessions."""
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
+    # Group messages by client_id and get the latest message and unread count
+    sessions = []
+    # Get unique client_ids
+    client_ids = ChatMessage.objects.values_list("client_id", flat=True).distinct()
+    
+    for cid in client_ids:
+        msgs = ChatMessage.objects.filter(client_id=cid).order_by("-created_at")
+        if not msgs.exists():
+            continue
+        last_msg = msgs.first()
+        unread_count = msgs.filter(sender="client", is_read=False).count()
+        
+        # Determine display name
+        display_name = "Visitante"
+        patient_email = ""
+        patient_id = None
+        # Try to find patient from the messages
+        patient_msg = msgs.filter(patient__isnull=False).first()
+        if patient_msg and patient_msg.patient:
+            patient = patient_msg.patient
+            display_name = f"{patient.first_name} {patient.last_name}".strip()
+            patient_email = patient.email
+            patient_id = patient.id
+        elif last_msg.sender_name and last_msg.sender_name != "Visitante":
+            display_name = last_msg.sender_name
+            
+        sessions.append({
+            "clientId": cid,
+            "patientId": patient_id,
+            "displayName": display_name,
+            "email": patient_email,
+            "lastMessage": last_msg.message,
+            "lastMessageAt": last_msg.created_at.isoformat() if last_msg.created_at else None,
+            "unreadCount": unread_count
+        })
+    
+    # Sort sessions by lastMessageAt descending
+    sessions.sort(key=lambda s: s["lastMessageAt"] or "", reverse=True)
+    return JsonResponse({"ok": True, "data": sessions})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def admin_chat_session_detail(request: HttpRequest, client_id: str) -> JsonResponse:
+    """Admin: retrieves complete history for a session and marks as read."""
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
+    # Mark client messages in this session as read
+    ChatMessage.objects.filter(client_id=client_id, sender="client", is_read=False).update(is_read=True)
+
+    messages = ChatMessage.objects.filter(client_id=client_id).order_by("created_at")
+    return JsonResponse({"ok": True, "data": [_chat_message_to_dict(m) for m in messages]})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def admin_chat_send(request: HttpRequest) -> JsonResponse:
+    """Admin: sends a reply to a client_id."""
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+
+    body = _parse_json_body(request)
+    client_id = str(body.get("clientId", "")).strip()
+    message_text = str(body.get("message", "")).strip()
+
+    if not client_id or not message_text:
+        return _json_error("clientId and message are required", status=400)
+
+    # Resolve optional patient if any message in this session has patient
+    patient = None
+    patient_msg = ChatMessage.objects.filter(client_id=client_id, patient__isnull=False).first()
+    if patient_msg:
+        patient = patient_msg.patient
+
+    msg = ChatMessage.objects.create(
+        client_id=client_id,
+        patient=patient,
+        sender="admin",
+        sender_name="Administración",
+        message=message_text,
+        is_read=True  # admin messages are read by default by the sender
+    )
+
+    return JsonResponse({"ok": True, "data": _chat_message_to_dict(msg)})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def admin_chat_link_patient(request: HttpRequest) -> JsonResponse:
+    """Admin: links a guest client_id to a registered patient."""
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+    
+    body = _parse_json_body(request)
+    client_id = str(body.get("clientId", "")).strip()
+    patient_id = body.get("patientId")
+    
+    if not client_id or not patient_id:
+        return _json_error("clientId and patientId are required", status=400)
+        
+    try:
+        patient = Patient.objects.get(id=patient_id)
+    except Patient.DoesNotExist:
+        return _json_error("Patient not found", status=404)
+        
+    # Link all messages with this client_id to this patient
+    ChatMessage.objects.filter(client_id=client_id).update(patient=patient)
+    
+    return JsonResponse({"ok": True, "message": f"Session linked to patient {patient.first_name} {patient.last_name}"})
+
+
+def _guided_exercise_to_dict(ex: GuidedExercise) -> dict[str, Any]:
+    return {
+        "id": ex.id,
+        "title": ex.title,
+        "subtitle": ex.subtitle,
+        "category": ex.category,
+        "color": ex.color,
+        "gradient": ex.gradient,
+        "benefits": ex.benefits,
+        "steps": ex.steps,
+        "isActive": ex.is_active,
+        "createdAt": ex.created_at.isoformat() if ex.created_at else None,
+        "updatedAt": ex.updated_at.isoformat() if ex.updated_at else None,
+    }
+
+
+def _breathing_technique_to_dict(tech: BreathingTechnique) -> dict[str, Any]:
+    return {
+        "id": tech.id,
+        "title": tech.title,
+        "subtitle": tech.subtitle,
+        "description": tech.description,
+        "color": tech.color,
+        "gradient": tech.gradient,
+        "inhale": tech.inhale,
+        "hold1": tech.hold1,
+        "exhale": tech.exhale,
+        "hold2": tech.hold2,
+        "cycles": tech.cycles,
+        "isActive": tech.is_active,
+        "createdAt": tech.created_at.isoformat() if tech.created_at else None,
+        "updatedAt": tech.updated_at.isoformat() if tech.updated_at else None,
+    }
+
+
+def _wellbeing_test_to_dict(tst: WellbeingTest) -> dict[str, Any]:
+    return {
+        "id": tst.id,
+        "title": tst.title,
+        "subtitle": tst.subtitle,
+        "description": tst.description,
+        "durationLabel": tst.duration_label,
+        "color": tst.color,
+        "gradient": tst.gradient,
+        "tag": tst.tag,
+        "questions": tst.questions,
+        "isActive": tst.is_active,
+        "createdAt": tst.created_at.isoformat() if tst.created_at else None,
+        "updatedAt": tst.updated_at.isoformat() if tst.updated_at else None,
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def portal_guided_exercises(request: HttpRequest) -> JsonResponse:
+    qs = GuidedExercise.objects.filter(is_active=True).order_by("-created_at")
+    return JsonResponse({"ok": True, "data": [_guided_exercise_to_dict(e) for e in qs]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def admin_guided_exercises(request: HttpRequest) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+    if request.method == "GET":
+        qs = GuidedExercise.objects.all().order_by("-created_at")
+        return JsonResponse({"ok": True, "data": [_guided_exercise_to_dict(e) for e in qs]})
+    body = _parse_json_body(request)
+    title = str(body.get("title", "")).strip()
+    if not title:
+        return _json_error("title is required")
+    ex = GuidedExercise.objects.create(
+        title=title,
+        subtitle=str(body.get("subtitle", "")).strip(),
+        category=str(body.get("category", "")).strip(),
+        color=str(body.get("color", "#6366f1")).strip(),
+        gradient=str(body.get("gradient", "from-indigo-500 to-blue-600")).strip(),
+        benefits=body.get("benefits") or [],
+        steps=body.get("steps") or [],
+        is_active=bool(body.get("isActive", True))
+    )
+    return JsonResponse({"ok": True, "data": _guided_exercise_to_dict(ex)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "DELETE"])
+def admin_guided_exercise_detail(request: HttpRequest, exercise_id: int) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+    try:
+        ex = GuidedExercise.objects.get(id=exercise_id)
+    except GuidedExercise.DoesNotExist:
+        return _json_error("Exercise not found", status=404)
+    if request.method == "GET":
+        return JsonResponse({"ok": True, "data": _guided_exercise_to_dict(ex)})
+    if request.method == "DELETE":
+        ex.delete()
+        return JsonResponse({"ok": True, "message": "Exercise deleted"})
+    body = _parse_json_body(request)
+    title = str(body.get("title", "")).strip()
+    if not title:
+        return _json_error("title is required")
+    ex.title = title
+    ex.subtitle = str(body.get("subtitle", "")).strip()
+    ex.category = str(body.get("category", "")).strip()
+    ex.color = str(body.get("color", "#6366f1")).strip()
+    ex.gradient = str(body.get("gradient", "from-indigo-500 to-blue-600")).strip()
+    ex.benefits = body.get("benefits") or []
+    ex.steps = body.get("steps") or []
+    ex.is_active = bool(body.get("isActive", True))
+    ex.save()
+    return JsonResponse({"ok": True, "data": _guided_exercise_to_dict(ex)})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def portal_breathing_techniques(request: HttpRequest) -> JsonResponse:
+    qs = BreathingTechnique.objects.filter(is_active=True).order_by("-created_at")
+    return JsonResponse({"ok": True, "data": [_breathing_technique_to_dict(t) for t in qs]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def admin_breathing_techniques(request: HttpRequest) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+    if request.method == "GET":
+        qs = BreathingTechnique.objects.all().order_by("-created_at")
+        return JsonResponse({"ok": True, "data": [_breathing_technique_to_dict(t) for t in qs]})
+    body = _parse_json_body(request)
+    title = str(body.get("title", "")).strip()
+    if not title:
+        return _json_error("title is required")
+    tech = BreathingTechnique.objects.create(
+        title=title,
+        subtitle=str(body.get("subtitle", "")).strip(),
+        description=str(body.get("description", "")).strip(),
+        color=str(body.get("color", "#10b981")).strip(),
+        gradient=str(body.get("gradient", "from-emerald-500 to-teal-600")).strip(),
+        inhale=int(body.get("inhale") or 4),
+        hold1=int(body.get("hold1") or 0),
+        exhale=int(body.get("exhale") or 4),
+        hold2=int(body.get("hold2") or 0),
+        cycles=int(body.get("cycles") or 4),
+        is_active=bool(body.get("isActive", True))
+    )
+    return JsonResponse({"ok": True, "data": _breathing_technique_to_dict(tech)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "DELETE"])
+def admin_breathing_technique_detail(request: HttpRequest, technique_id: int) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+    try:
+        tech = BreathingTechnique.objects.get(id=technique_id)
+    except BreathingTechnique.DoesNotExist:
+        return _json_error("Technique not found", status=404)
+    if request.method == "GET":
+        return JsonResponse({"ok": True, "data": _breathing_technique_to_dict(tech)})
+    if request.method == "DELETE":
+        tech.delete()
+        return JsonResponse({"ok": True, "message": "Technique deleted"})
+    body = _parse_json_body(request)
+    title = str(body.get("title", "")).strip()
+    if not title:
+        return _json_error("title is required")
+    tech.title = title
+    tech.subtitle = str(body.get("subtitle", "")).strip()
+    tech.description = str(body.get("description", "")).strip()
+    tech.color = str(body.get("color", "#10b981")).strip()
+    tech.gradient = str(body.get("gradient", "from-emerald-500 to-teal-600")).strip()
+    tech.inhale = int(body.get("inhale") or 4)
+    tech.hold1 = int(body.get("hold1") or 0)
+    tech.exhale = int(body.get("exhale") or 4)
+    tech.hold2 = int(body.get("hold2") or 0)
+    tech.cycles = int(body.get("cycles") or 4)
+    tech.is_active = bool(body.get("isActive", True))
+    tech.save()
+    return JsonResponse({"ok": True, "data": _breathing_technique_to_dict(tech)})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def portal_wellbeing_tests(request: HttpRequest) -> JsonResponse:
+    qs = WellbeingTest.objects.filter(is_active=True).order_by("-created_at")
+    return JsonResponse({"ok": True, "data": [_wellbeing_test_to_dict(t) for t in qs]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def admin_wellbeing_tests(request: HttpRequest) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+    if request.method == "GET":
+        qs = WellbeingTest.objects.all().order_by("-created_at")
+        return JsonResponse({"ok": True, "data": [_wellbeing_test_to_dict(t) for t in qs]})
+    body = _parse_json_body(request)
+    title = str(body.get("title", "")).strip()
+    if not title:
+        return _json_error("title is required")
+    tst = WellbeingTest.objects.create(
+        title=title,
+        subtitle=str(body.get("subtitle", "")).strip(),
+        description=str(body.get("description", "")).strip(),
+        duration_label=str(body.get("durationLabel", "3 min")).strip(),
+        color=str(body.get("color", "#ec4899")).strip(),
+        gradient=str(body.get("gradient", "from-pink-500 to-rose-600")).strip(),
+        tag=str(body.get("tag", "Clínico")).strip(),
+        questions=body.get("questions") or [],
+        is_active=bool(body.get("isActive", True))
+    )
+    return JsonResponse({"ok": True, "data": _wellbeing_test_to_dict(tst)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "DELETE"])
+def admin_wellbeing_test_detail(request: HttpRequest, test_id: int) -> JsonResponse:
+    admin_err = _require_admin(request)
+    if admin_err is not None:
+        return admin_err
+    try:
+        tst = WellbeingTest.objects.get(id=test_id)
+    except WellbeingTest.DoesNotExist:
+        return _json_error("Test not found", status=404)
+    if request.method == "GET":
+        return JsonResponse({"ok": True, "data": _wellbeing_test_to_dict(tst)})
+    if request.method == "DELETE":
+        tst.delete()
+        return JsonResponse({"ok": True, "message": "Test deleted"})
+    body = _parse_json_body(request)
+    title = str(body.get("title", "")).strip()
+    if not title:
+        return _json_error("title is required")
+    tst.title = title
+    tst.subtitle = str(body.get("subtitle", "")).strip()
+    tst.description = str(body.get("description", "")).strip()
+    tst.duration_label = str(body.get("durationLabel", "3 min")).strip()
+    tst.color = str(body.get("color", "#ec4899")).strip()
+    tst.gradient = str(body.get("gradient", "from-pink-500 to-rose-600")).strip()
+    tst.tag = str(body.get("tag", "Clínico")).strip()
+    tst.questions = body.get("questions") or []
+    tst.is_active = bool(body.get("isActive", True))
+    tst.save()
+    return JsonResponse({"ok": True, "data": _wellbeing_test_to_dict(tst)})

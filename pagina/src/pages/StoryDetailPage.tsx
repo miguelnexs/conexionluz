@@ -60,6 +60,8 @@ const StoryDetailPage = () => {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('conexionluz:token') : null;
   const isAuthed = Boolean(token);
+  const [userType, setUserType] = useState<string | null>(null);
+  const publishBlocked = false;
   
   const [patientName, setPatientName] = useState<string | null>(null);
   const [likedIds, setLikedIdsState] = useState<number[]>(() => {
@@ -73,7 +75,6 @@ const StoryDetailPage = () => {
   });
 
   const [commentText, setCommentText] = useState('');
-  const [guestName, setGuestName] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
 
@@ -87,7 +88,6 @@ const StoryDetailPage = () => {
 
   const [replyingCommentId, setReplyingCommentId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
-  const [replyGuestName, setReplyGuestName] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
   const [collapsedCommentIds, setCollapsedCommentIds] = useState<number[]>([]);
 
@@ -132,8 +132,13 @@ const StoryDetailPage = () => {
         if (res.ok) {
           setPatientName(`${res.data.firstName} ${res.data.lastName}`.trim() || res.data.firstName);
           setPatientId(res.data.id);
+          setUserType((res.data.userType || '').trim() || null);
         }
       });
+    } else {
+      setPatientName(null);
+      setPatientId(null);
+      setUserType(null);
     }
   }, [isAuthed]);
 
@@ -141,6 +146,10 @@ const StoryDetailPage = () => {
 
   const toggleLike = async () => {
     if (!story) return;
+    if (!isAuthed) {
+      navigate('/login', { state: { from: `/historias/${story.id}` } });
+      return;
+    }
     const nextLiked = !isLiked;
 
     setStory(prev => prev ? {
@@ -185,8 +194,12 @@ const StoryDetailPage = () => {
     e.preventDefault();
     if (!story) return;
     if (!commentText.trim()) return;
-    if (!isAuthed && !guestName.trim()) {
-      setCommentError('Por favor ingresa tu nombre para comentar.');
+    if (!isAuthed) {
+      setCommentError('Inicia sesión para comentar.');
+      return;
+    }
+    if (publishBlocked) {
+      setCommentError('Tu cuenta no tiene permisos para publicar.');
       return;
     }
 
@@ -195,7 +208,6 @@ const StoryDetailPage = () => {
 
     const res = await api.post<StoryComment>(`/api/public/stories/${story.id}/comment/`, {
       content: commentText.trim(),
-      authorName: !isAuthed ? guestName.trim() : undefined,
     });
 
     if (res.ok === false) {
@@ -208,9 +220,6 @@ const StoryDetailPage = () => {
         comments: [...(prev.comments || []), newComment]
       } : null);
       setCommentText('');
-      if (!isAuthed) {
-        setGuestName('');
-      }
     }
     setSubmittingComment(false);
   };
@@ -295,8 +304,12 @@ const StoryDetailPage = () => {
     e.preventDefault();
     if (!story) return;
     if (!replyText.trim()) return;
-    if (!isAuthed && !replyGuestName.trim()) {
-      setCommentError('Por favor ingresa tu nombre para responder.');
+    if (!isAuthed) {
+      setCommentError('Inicia sesión para responder.');
+      return;
+    }
+    if (publishBlocked) {
+      setCommentError('Tu cuenta no tiene permisos para publicar.');
       return;
     }
 
@@ -305,7 +318,6 @@ const StoryDetailPage = () => {
 
     const res = await api.post<StoryComment>(`/api/public/stories/${story.id}/comment/`, {
       content: replyText.trim(),
-      authorName: !isAuthed ? replyGuestName.trim() : undefined,
       parentId: parentId
     });
 
@@ -319,9 +331,6 @@ const StoryDetailPage = () => {
         comments: [...(prev.comments || []), newComment]
       } : null);
       setReplyText('');
-      if (!isAuthed) {
-        setReplyGuestName('');
-      }
       setReplyingCommentId(null);
     }
     setSubmittingReply(false);
@@ -388,9 +397,9 @@ const StoryDetailPage = () => {
                     onClick={() => {
                       setReplyingCommentId(comment.id);
                       setReplyText(isReply ? `@${comment.authorName} ` : '');
-                      setReplyGuestName('');
                       setCommentError(null);
                     }}
+                    disabled={!isAuthed || publishBlocked}
                     className="text-primary hover:text-primary/80 transition-colors font-medium"
                   >
                     Responder
@@ -459,22 +468,9 @@ const StoryDetailPage = () => {
                   {commentError}
                 </div>
               )}
-              {!isAuthed ? (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Tu Nombre</label>
-                  <input
-                    type="text"
-                    value={replyGuestName}
-                    onChange={(e) => setReplyGuestName(e.target.value)}
-                    placeholder="Ej. María López"
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-              ) : (
-                <p className="text-[10px] font-bold text-gray-500">
-                  Respondiendo como <span className="text-primary">{patientName || 'Usuario Registrado'}</span>
-                </p>
-              )}
+              <p className="text-[10px] font-bold text-gray-500">
+                Respondiendo como <span className="text-primary">{patientName || 'Usuario Registrado'}</span>
+              </p>
               <div className="space-y-1">
                 <textarea
                   rows={2}
@@ -487,7 +483,7 @@ const StoryDetailPage = () => {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  disabled={submittingReply || !replyText.trim()}
+                  disabled={submittingReply || !replyText.trim() || publishBlocked}
                   className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/95 transition-colors disabled:opacity-50"
                 >
                   {submittingReply ? 'Enviando...' : 'Enviar respuesta'}
@@ -497,7 +493,6 @@ const StoryDetailPage = () => {
                   onClick={() => {
                     setReplyingCommentId(null);
                     setReplyText('');
-                    setReplyGuestName('');
                     setCommentError(null);
                   }}
                   className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors"
@@ -741,50 +736,45 @@ const StoryDetailPage = () => {
                   {commentError}
                 </div>
               )}
-              <form onSubmit={(e) => void submitComment(e)} className="space-y-4">
-                {!isAuthed ? (
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Tu Nombre</label>
-                    <input
-                      type="text"
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="Ej. María López"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                    <p className="text-xs text-gray-500 ml-1">
-                      O{' '}
-                      <Link to="/login" state={{ from: `/historias/${story.id}` }} className="text-primary font-semibold hover:underline">
-                        inicia sesión
-                      </Link>{' '}
-                      para comentar con tu cuenta verificada.
-                    </p>
+              {!isAuthed ? (
+                <div className="rounded-2xl border border-gray-100 bg-white p-5 text-sm text-gray-600">
+                  Inicia sesión para comentar.
+                  <div className="mt-3">
+                    <Link to="/login" state={{ from: `/historias/${story.id}` }} className="text-primary font-bold hover:underline">
+                      Ir a iniciar sesión
+                    </Link>
                   </div>
-                ) : (
+                </div>
+              ) : publishBlocked ? (
+                <div className="rounded-2xl border border-gray-100 bg-white p-5 text-sm text-gray-600">
+                  Tu cuenta no tiene permisos para publicar comentarios.
+                </div>
+              ) : (
+                <form onSubmit={(e) => void submitComment(e)} className="space-y-4">
                   <p className="text-xs font-bold text-gray-500 ml-1">
                     Comentando como <span className="text-primary">{patientName || 'Usuario Registrado'}</span>
                   </p>
-                )}
 
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Mensaje</label>
-                  <textarea
-                    rows={4}
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Escribe tu comentario aquí..."
-                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 leading-relaxed"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Mensaje</label>
+                    <textarea
+                      rows={4}
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Escribe tu comentario aquí..."
+                      className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 leading-relaxed"
+                    />
+                  </div>
 
-                <Button
-                  type="submit"
-                  disabled={submittingComment || !commentText.trim()}
-                  className="bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-xl font-bold transition-all animate-scale-in"
-                >
-                  {submittingComment ? 'Enviando...' : 'Publicar Comentario'}
-                </Button>
-              </form>
+                  <Button
+                    type="submit"
+                    disabled={submittingComment || !commentText.trim() || publishBlocked}
+                    className="bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-xl font-bold transition-all animate-scale-in"
+                  >
+                    {submittingComment ? 'Enviando...' : 'Publicar Comentario'}
+                  </Button>
+                </form>
+              )}
             </div>
           </div>
 

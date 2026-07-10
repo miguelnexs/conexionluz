@@ -104,6 +104,8 @@ class Patient(TimestampedModel):
     intake_summary = models.TextField(blank=True)
     intake_submitted_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    user_type = models.CharField(max_length=50, default="miembro")
+    can_publish = models.BooleanField(default=False)
     
     profile_picture_file = models.ImageField(upload_to="patients/profile/", null=True, blank=True)
     profile_picture_url = models.CharField(max_length=500, blank=True)
@@ -131,6 +133,90 @@ class DailyCheckin(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.patient} - {self.date} ({self.energy_level})"
+
+
+class CommunityPost(TimestampedModel):
+    """Feed posts created by users with publish permission."""
+    patient = models.ForeignKey(
+        Patient, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='community_posts'
+    )
+    author_name = models.CharField(max_length=200, blank=True)
+    author_avatar_url = models.CharField(max_length=500, blank=True)
+    author_role = models.CharField(max_length=100, blank=True)
+    content = models.TextField(blank=True)
+    image_url = models.TextField(blank=True)
+    feeling = models.CharField(max_length=100, blank=True)
+    like_patient_ids = models.JSONField(default=list, blank=True)
+    is_approved = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        return f"{self.author_name}: {self.content[:60]}"
+
+
+class CommunityPostComment(TimestampedModel):
+    """Comments on community feed posts."""
+    post = models.ForeignKey(
+        CommunityPost, on_delete=models.CASCADE, related_name='post_comments'
+    )
+    patient = models.ForeignKey(
+        Patient, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='community_post_comments'
+    )
+    author_name = models.CharField(max_length=200, blank=True)
+    author_avatar_url = models.CharField(max_length=500, blank=True)
+    author_role = models.CharField(max_length=100, blank=True)
+    content = models.TextField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self) -> str:
+        return f"Comment by {self.author_name} on {self.post_id}"
+
+
+class ChatMessage(TimestampedModel):
+    """Real-time chat messages between visitors/patients and admins."""
+    client_id = models.CharField(max_length=150, db_index=True)
+    patient = models.ForeignKey(
+        Patient, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='chat_messages'
+    )
+    sender = models.CharField(max_length=50, default="client")  # "client" or "admin"
+    sender_name = models.CharField(max_length=200, blank=True)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self) -> str:
+        return f"{self.sender_name or self.client_id} ({self.sender}): {self.message[:40]}"
+
+
+class FollowPatient(TimestampedModel):
+    follower = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="following_patients")
+    followed_patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="patient_followers")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["follower", "followed_patient"], name="uniq_follow_patient")
+        ]
+
+
+class FollowTherapist(TimestampedModel):
+    follower = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="following_therapists")
+    followed_therapist = models.ForeignKey(Therapist, on_delete=models.CASCADE, related_name="therapist_followers")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["follower", "followed_therapist"], name="uniq_follow_therapist")
+        ]
 
 
 class Service(TimestampedModel):
@@ -420,3 +506,49 @@ class UserNotification(TimestampedModel):
 
     def __str__(self) -> str:
         return f"Notification for {self.recipient_id} - {self.notification_type}"
+
+
+class GuidedExercise(TimestampedModel):
+    title = models.CharField(max_length=200)
+    subtitle = models.CharField(max_length=200, blank=True)
+    category = models.CharField(max_length=100, blank=True)
+    color = models.CharField(max_length=20, default="#6366f1")
+    gradient = models.CharField(max_length=100, default="from-indigo-500 to-blue-600")
+    benefits = models.JSONField(default=list, blank=True)  # list of strings
+    steps = models.JSONField(default=list, blank=True)  # list of dicts: {title, body, duration}
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class BreathingTechnique(TimestampedModel):
+    title = models.CharField(max_length=200)
+    subtitle = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    color = models.CharField(max_length=20, default="#10b981")
+    gradient = models.CharField(max_length=100, default="from-emerald-500 to-teal-600")
+    inhale = models.PositiveIntegerField(default=4)
+    hold1 = models.PositiveIntegerField(default=0)
+    exhale = models.PositiveIntegerField(default=4)
+    hold2 = models.PositiveIntegerField(default=0)
+    cycles = models.PositiveIntegerField(default=4)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class WellbeingTest(TimestampedModel):
+    title = models.CharField(max_length=200)
+    subtitle = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    duration_label = models.CharField(max_length=50, default="3 min")
+    color = models.CharField(max_length=20, default="#ec4899")
+    gradient = models.CharField(max_length=100, default="from-pink-500 to-rose-600")
+    tag = models.CharField(max_length=100, default="Clínico")
+    questions = models.JSONField(default=list, blank=True)  # list of dicts: {id, text}
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self) -> str:
+        return self.title

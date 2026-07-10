@@ -52,6 +52,8 @@ const ForumDetailPage = () => {
   const [replyError, setReplyError] = useState<string | null>(null);
 
   const [patientId, setPatientId] = useState<number | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
+  const publishBlocked = false;
   const [editingReplyId, setEditingReplyId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
   const [savingReply, setSavingReply] = useState(false);
@@ -72,6 +74,10 @@ const ForumDetailPage = () => {
 
   const toggleLike = async () => {
     if (!topic) return;
+    if (!isAuthed) {
+      navigate('/login', { state: { from: `/foro/${topic.id}` } });
+      return;
+    }
     const nextLiked = !isLiked;
 
     setTopic(prev => prev ? {
@@ -203,8 +209,12 @@ const ForumDetailPage = () => {
       api.get<any>('/api/portal/me/').then((res) => {
         if (res.ok) {
           setPatientId(res.data.id);
+          setUserType((res.data.userType || '').trim() || null);
         }
       });
+    } else {
+      setPatientId(null);
+      setUserType(null);
     }
   }, [isAuthed]);
 
@@ -263,6 +273,10 @@ const ForumDetailPage = () => {
 
   const submitNestedReply = async (e: React.FormEvent, parentId: number) => {
     e.preventDefault();
+    if (publishBlocked) {
+      setReplyFormError('Tu cuenta no tiene permisos para publicar.');
+      return;
+    }
     if (!topic || !replyText.trim()) return;
     setSubmittingReply(true);
     setReplyFormError(null);
@@ -370,6 +384,7 @@ const ForumDetailPage = () => {
                       setReplyText(isReply ? `@${reply.authorName} ` : '');
                       setReplyFormError(null);
                     }}
+                    disabled={publishBlocked}
                     className="text-primary hover:text-primary/80 transition-colors font-medium"
                   >
                     Responder
@@ -443,7 +458,7 @@ const ForumDetailPage = () => {
             <div className="flex gap-2">
               <button
                 type="submit"
-                disabled={submittingReply || !replyText.trim()}
+                disabled={submittingReply || !replyText.trim() || publishBlocked}
                 className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/95 transition-colors disabled:opacity-50"
               >
                 {submittingReply ? 'Enviando...' : 'Enviar respuesta'}
@@ -483,6 +498,10 @@ const ForumDetailPage = () => {
 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (publishBlocked) {
+      setReplyError('Tu cuenta no tiene permisos para publicar.');
+      return;
+    }
     if (!topic || !replyContent.trim()) return;
     setSendingReply(true);
     setReplyError(null);
@@ -873,6 +892,16 @@ const ForumDetailPage = () => {
                     Iniciar sesión ahora
                   </Link>
                 </div>
+              ) : publishBlocked ? (
+                <div className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-10 text-center shadow-xl shadow-primary/5">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-primary/5 flex items-center justify-center mx-auto mb-6">
+                    <User className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-2">Publicación restringida</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+                    Tu cuenta no tiene permisos para publicar en el foro.
+                  </p>
+                </div>
               ) : (
                 <form onSubmit={handleSendReply} className="rounded-3xl border border-gray-100 bg-white p-5 sm:p-8 md:p-10 shadow-xl shadow-primary/5 space-y-6">
                   <div className="flex items-center gap-3">
@@ -898,7 +927,7 @@ const ForumDetailPage = () => {
                   <div className="flex justify-end">
                     <Button
                       type="submit"
-                      disabled={sendingReply || !replyContent.trim()}
+                      disabled={sendingReply || !replyContent.trim() || publishBlocked}
                       className="h-12 sm:h-14 px-6 sm:px-10 bg-primary text-white rounded-xl sm:rounded-2xl font-black shadow-xl shadow-primary/20 hover:shadow-2xl hover:-translate-y-0.5 transition-all text-xs sm:text-sm"
                     >
                       {sendingReply ? (

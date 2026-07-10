@@ -10,6 +10,7 @@ const ForumCreateTopic = () => {
   const navigate = useNavigate();
   const token = typeof window !== 'undefined' ? localStorage.getItem('conexionluz:token') : null;
   const isAuthed = Boolean(token);
+  const [publishBlocked, setPublishBlocked] = useState(false);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -33,6 +34,8 @@ const ForumCreateTopic = () => {
     }
   }, [isAuthed, navigate]);
 
+
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -52,6 +55,10 @@ const ForumCreateTopic = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (publishBlocked) {
+      toast.error('Tu cuenta no tiene permisos para publicar en el foro.');
+      return;
+    }
     if (!title.trim()) {
       toast.error('El título es obligatorio.');
       return;
@@ -108,7 +115,7 @@ const ForumCreateTopic = () => {
     }
   };
 
-  if (!isAuthed) return null;
+  if (!isAuthed || publishBlocked) return null;
 
   return (
     <PublicLayout contentClassName="p-0">

@@ -44,6 +44,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T
     const json: unknown = text ? JSON.parse(text) : null
 
     if (!res.ok) {
+      if (res.status === 401) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('conexionluz:token')
+          window.location.href = '/login'
+        }
+      }
       const error =
         isRecord(json) && typeof json.error === 'string' ? json.error : `HTTP ${res.status}`
       return { ok: false, error }

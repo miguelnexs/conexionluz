@@ -1,7 +1,9 @@
 
-import React from 'react';
-import { Star, Award, Calendar, FileDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Star, Award, Calendar, FileDown, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../api/client';
+import { cn } from '@/lib/utils';
 
 interface TherapistCardProps {
   id: string;
@@ -31,6 +33,41 @@ const TherapistCard: React.FC<TherapistCardProps> = ({
   cvUrl
 }) => {
   const navigate = useNavigate();
+
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [loadingFollow, setLoadingFollow] = useState(false);
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('conexionluz:token') : null;
+  const isAuthed = Boolean(token);
+
+  useEffect(() => {
+    if (id) {
+      api.get<any>(`/api/portal/follow/therapist/status/?therapistId=${id}`).then(res => {
+        if (res.ok) {
+          setIsFollowing(res.data.isFollowing);
+          setFollowersCount(res.data.followersCount);
+        }
+      });
+    }
+  }, [id, isAuthed]);
+
+  const handleFollowToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthed) {
+      navigate('/login');
+      return;
+    }
+    setLoadingFollow(true);
+    const res = await api.post<any>('/api/portal/follow/therapist/toggle/', { therapistId: Number(id) });
+    if (res.ok) {
+      setIsFollowing(res.data.isFollowing);
+      setFollowersCount(res.data.followersCount);
+    } else {
+      alert(res.error || 'Error al procesar la solicitud.');
+    }
+    setLoadingFollow(false);
+  };
 
   const initials = (name || '')
     .split(' ')
@@ -80,6 +117,18 @@ const TherapistCard: React.FC<TherapistCardProps> = ({
           <Star className="h-4 w-4 text-amber-400 fill-current" />
           <span className="text-sm font-semibold">{rating}</span>
         </div>
+
+        {/* Follow/Unfollow Button */}
+        <button
+          type="button"
+          onClick={handleFollowToggle}
+          disabled={loadingFollow}
+          className="absolute top-4 left-4 h-8 px-3 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full text-xs font-bold shadow-md flex items-center gap-1.5 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 z-10"
+          title={isFollowing ? "Dejar de seguir" : "Seguir"}
+        >
+          <Heart className={cn("h-4 w-4 transition-colors", isFollowing ? "text-rose-500 fill-current animate-pulse" : "text-slate-400")} />
+          <span className="text-slate-700">{followersCount}</span>
+        </button>
       </div>
 
       {/* Content Section */}

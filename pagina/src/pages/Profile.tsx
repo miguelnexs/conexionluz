@@ -42,6 +42,7 @@ type PortalMe = {
   address?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
+  userType?: string;
 };
 
 type IntakeAnswers = {
@@ -1173,7 +1174,7 @@ const ProfilePage = () => {
   const [prefs, setPrefs] = useState({ title: '', message: '', color: '' });
   const [profileForm, setProfileForm] = useState({
     firstName: '', lastName: '', email: '', phone: '', birthDate: '', gender: '',
-    occupation: '', city: '', address: '', emergencyContactName: '', emergencyContactPhone: ''
+    occupation: '', city: '', address: '', emergencyContactName: '', emergencyContactPhone: '',
   });
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
@@ -1189,7 +1190,7 @@ const ProfilePage = () => {
     formData.append('file', file);
     
     try {
-      const res = await fetch('/api/portal/me/picture/', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/portal/me/picture/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -1235,7 +1236,7 @@ const ProfilePage = () => {
       city: res.data.city || '',
       address: res.data.address || '',
       emergencyContactName: res.data.emergencyContactName || '',
-      emergencyContactPhone: res.data.emergencyContactPhone || ''
+      emergencyContactPhone: res.data.emergencyContactPhone || '',
     });
     setLoadingMe(false);
   };
@@ -1283,7 +1284,34 @@ const ProfilePage = () => {
   const saveProfile = async () => {
     setSavingProfile(true);
     const res = await api.patch<PortalMe>('/api/portal/me/', profileForm);
-    if (res.ok) { setMe(res.data); }
+    if (res.ok) { 
+      setMe(res.data); 
+      // Update local storage posts written by this user
+      const saved = localStorage.getItem('conexionluz:feed_posts');
+      if (saved) {
+        try {
+          const posts = JSON.parse(saved);
+          const userName = `${res.data.firstName} ${res.data.lastName}`;
+          const newRole = res.data.occupation?.trim()
+            ? (res.data.occupation.trim().charAt(0).toUpperCase() + res.data.occupation.trim().slice(1))
+            : (res.data.userType
+              ? (['miembro', 'paciente'].includes(res.data.userType.toLowerCase())
+                ? (res.data.userType.toLowerCase() === 'paciente' ? 'Paciente' : (res.data.hasActiveSubscription ? 'Miembro Premium' : 'Miembro'))
+                : (res.data.userType.charAt(0).toUpperCase() + res.data.userType.slice(1)))
+              : 'Miembro');
+          const newAvatar = res.data.profilePictureUrl || '';
+          const updated = posts.map((post: any) => {
+            if (post.authorName === userName) {
+              return { ...post, authorRole: newRole, authorAvatar: newAvatar };
+            }
+            return post;
+          });
+          localStorage.setItem('conexionluz:feed_posts', JSON.stringify(updated));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
     setSavingProfile(false);
   };
 
@@ -1508,6 +1536,12 @@ const ProfilePage = () => {
                             <option value="Otro">Otro</option>
                             <option value="Prefiero no decirlo">Prefiero no decirlo</option>
                           </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Tipo de Usuario</label>
+                          <div className="w-full rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3 text-gray-800 text-sm">
+                            {me?.userType ? (me.userType.charAt(0).toUpperCase() + me.userType.slice(1)) : 'Miembro'}
+                          </div>
                         </div>
                       </div>
                       

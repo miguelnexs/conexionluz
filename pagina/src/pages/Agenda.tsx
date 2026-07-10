@@ -35,7 +35,10 @@ const Agenda = () => {
     typeof serviceIdFromUrl === 'number' && Number.isFinite(serviceIdFromUrl) ? serviceIdFromUrl : null
   );
   const { data: therapists = [], isLoading: loadingTherapists } = useTherapists();
-  const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(null);
+  const therapistIdFromUrl = searchParams.get('therapist') ? Number(searchParams.get('therapist')) : null;
+  const [selectedTherapistId, setSelectedTherapistId] = useState<number | null>(
+    typeof therapistIdFromUrl === 'number' && Number.isFinite(therapistIdFromUrl) ? therapistIdFromUrl : null
+  );
   const [me, setMe] = useState<{ firstName: string; lastName: string; email: string; phone: string } | null>(null);
   const [patientData, setPatientData] = useState({
     name: '',
@@ -67,6 +70,15 @@ const Agenda = () => {
       if (exists) setSelectedServiceId(serviceIdFromUrl);
     }
   }, [services, selectedServiceId, serviceIdFromUrl]);
+
+  useEffect(() => {
+    if (!therapists.length) return;
+    if (selectedTherapistId) return;
+    if (typeof therapistIdFromUrl === 'number' && Number.isFinite(therapistIdFromUrl)) {
+      const exists = therapists.some((t) => Number(t.id) === therapistIdFromUrl);
+      if (exists) setSelectedTherapistId(therapistIdFromUrl);
+    }
+  }, [therapists, selectedTherapistId, therapistIdFromUrl]);
 
   const steps: AgendaStep[] = useMemo(() => {
     if (isAuthed) {

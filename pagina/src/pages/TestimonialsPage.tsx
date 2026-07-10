@@ -19,6 +19,10 @@ type Testimonial = {
   updatedAt?: string;
 };
 
+type PortalMe = {
+  userType?: string;
+};
+
 function hasToken(): boolean {
   if (typeof window === 'undefined') return false;
   return Boolean(localStorage.getItem('conexionluz:token'));
@@ -53,6 +57,7 @@ const TestimonialsPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const authed = hasToken();
+  const [publishBlocked, setPublishBlocked] = useState(false);
 
   const [items, setItems] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,6 +109,8 @@ const TestimonialsPage = () => {
     void load();
   }, []);
 
+
+
   useEffect(() => {
     if (!authed) return;
     void (async () => {
@@ -125,6 +132,10 @@ const TestimonialsPage = () => {
 
   const saveMy = async () => {
     if (!canSave) return;
+    if (publishBlocked) {
+      setMyError('Tu cuenta no tiene permisos para publicar testimonios.');
+      return;
+    }
     setSaving(true);
     setMyError(null);
     const res = await api.post<Testimonial>('/api/public/testimonials/me/', {
@@ -144,6 +155,10 @@ const TestimonialsPage = () => {
   };
 
   const toggleLike = async (id: number) => {
+    if (!authed) {
+      navigate('/login', { state: { from: '/testimonios' } });
+      return;
+    }
     const liked = likedSet.has(id);
     const res = liked
       ? await api.del<{ testimonialId: number; likesCount: number; liked: boolean }>(`/api/public/testimonials/${id}/like/`)
@@ -196,6 +211,10 @@ const TestimonialsPage = () => {
                     onClick={() => {
                       if (!authed) {
                         navigate('/login');
+                        return;
+                      }
+                      if (publishBlocked) {
+                        toast({ title: 'Acceso restringido', description: 'Tu cuenta no tiene permisos para publicar testimonios.', variant: 'destructive' });
                         return;
                       }
                       setFormOpen(true);
