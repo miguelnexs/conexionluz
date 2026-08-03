@@ -57,6 +57,18 @@ class PatientCourseProgress(TimestampedModel):
         unique_together = ("patient", "course")
 
 
+class CourseEnrollment(TimestampedModel):
+    patient = models.ForeignKey("Patient", on_delete=models.CASCADE, related_name="course_enrollments")
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="enrollments")
+    is_paid = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("patient", "course")
+
+    def __str__(self) -> str:
+        return f"{self.patient} - {self.course} (Paid: {self.is_paid})"
+
+
 class Therapist(TimestampedModel):
     name = models.CharField(max_length=200)
     title = models.CharField(max_length=200, blank=True)

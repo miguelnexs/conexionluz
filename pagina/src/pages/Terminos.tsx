@@ -7,200 +7,238 @@ const SECTIONS = [
   {
     icon: CheckCircle2,
     color: '#10b981',
-    title: '1. Aceptación de los términos',
-    content: `Al acceder y utilizar la plataforma ConexiónLuz (en adelante, "la Plataforma"), aceptas quedar vinculado por estos Términos y Condiciones de uso. Si no estás de acuerdo con alguno de estos términos, te pedimos que no utilices la Plataforma.
+    title: '1. Aceptación de los Términos y Condiciones',
+    content: `Al acceder, registrarse o utilizar la plataforma ConexiónLuz (en adelante, "la Plataforma"), usted (en adelante, "el Usuario") acepta expresamente quedar sujeto a los presentes Términos y Condiciones, así como a nuestra Política de Privacidad. Si no está de acuerdo con la totalidad de estos términos, debe abstenerse de utilizar la Plataforma y sus servicios.
 
-Estos términos aplican a todos los visitantes, usuarios registrados y personas que accedan a los servicios de ConexiónLuz, ya sea a través del sitio web, aplicaciones móviles o cualquier otro canal digital de nuestra plataforma.`,
+Estos Términos constituyen un contrato legalmente vinculante entre el Usuario y ConexiónLuz. Nos reservamos el derecho de modificar o actualizar estos términos en cualquier momento. Las modificaciones entrarán en vigencia de manera inmediata tras su publicación en la Plataforma. Es responsabilidad del Usuario revisar periódicamente estos términos para estar al tanto de cualquier cambio.`,
+  },
+  {
+    icon: AlertTriangle,
+    color: '#ef4444',
+    title: '2. Naturaleza del Servicio y Exención de Responsabilidad Médica',
+    content: `**Aviso Importante:** ConexiónLuz NO es un proveedor de servicios médicos de emergencia ni sustituye la atención médica psiquiátrica de urgencia.
+
+La Plataforma facilita el contacto entre usuarios y profesionales independientes del bienestar emocional, psicológico y terapéutico. Las herramientas de autogestión (diario emocional, tests, meditaciones) son de carácter estrictamente educativo y de apoyo personal, y **en ningún caso constituyen un diagnóstico clínico, tratamiento médico o psicológico profesional**.
+
+**Exención de Responsabilidad:** ConexiónLuz no asume responsabilidad alguna por las decisiones tomadas por el Usuario basadas en la información, servicios o herramientas proporcionadas en la Plataforma. Si usted está experimentando una crisis, tiene pensamientos suicidas o se encuentra en una situación de riesgo inminente, debe comunicarse inmediatamente con los servicios de emergencia de su localidad (ej. 123 en Colombia) o acudir al centro médico más cercano.`,
   },
   {
     icon: FileText,
     color: '#6366f1',
-    title: '2. Descripción de los servicios',
-    content: `ConexiónLuz ofrece los siguientes servicios:
+    title: '3. Registro, Cuentas de Usuario y Privacidad',
+    content: `Para acceder a determinados servicios, el Usuario deberá registrarse creando una cuenta. Al hacerlo, se compromete a:
 
-**Servicios gratuitos:**
-- Acceso al blog y artículos de bienestar
-- Herramientas de autoconocimiento (tests orientativos, ejercicios, diario emocional)
-- Participación en el foro comunitario
-- Lectura de historias y testimonios
+- **Veracidad:** Proporcionar información precisa, actual y completa, incluyendo nombre legal e historial médico básico si es requerido para las consultas.
+- **Confidencialidad:** Mantener la total seguridad y confidencialidad de sus contraseñas. El Usuario es el único responsable de todas las actividades que ocurran bajo su cuenta.
+- **Uso Personal:** La cuenta es personal e intransferible. Queda estrictamente prohibido compartir el acceso con terceros.
 
-**Servicios de pago:**
-- Sesiones de psicoterapia individual (presencial o virtual)
-- Sesiones de terapia de pareja o familiar
-- Cursos y talleres especializados
-- Membresías con beneficios adicionales
-
-**Importante:** Las herramientas de Actividades (tests, ejercicios, diario) son recursos de apoyo y NO constituyen terapia psicológica ni diagnóstico clínico.`,
+**Protección de Datos:** El manejo de sus datos personales y sensibles (incluyendo notas de sesiones y registros emocionales) está regido por nuestra Política de Privacidad, cumpliendo con la normatividad de protección de datos (Ley 1581 de 2012 en Colombia). Los terapeutas están sujetos al secreto profesional y acuerdos de confidencialidad estrictos.`,
   },
   {
-    icon: AlertTriangle,
+    icon: XCircle,
     color: '#f59e0b',
-    title: '3. Obligaciones del usuario',
-    content: `Al usar la Plataforma, el usuario se compromete a:
+    title: '4. Normas de Conducta y Usos Prohibidos',
+    content: `El Usuario acepta utilizar la Plataforma de buena fe y de manera lícita. Queda terminantemente prohibido:
 
-- Proporcionar información veraz y actualizada en su registro
-- Mantener la confidencialidad de sus credenciales de acceso
-- No compartir su cuenta con terceros
-- Respetar a otros miembros de la comunidad en el foro y espacios participativos
-- No publicar contenido ofensivo, difamatorio o que viole derechos de terceros
-- No intentar acceder de forma no autorizada a secciones restringidas
-- Notificar inmediatamente cualquier uso no autorizado de su cuenta
+1. Utilizar la Plataforma para cualquier fin ilegal, fraudulento o no autorizado.
+2. Acosar, intimidar, amenazar o discriminar a terapeutas, personal de soporte u otros usuarios (especialmente en foros comunitarios).
+3. Publicar o transmitir contenido difamatorio, obsceno, ofensivo, que incite al odio o viole los derechos de terceros.
+4. Intentar vulnerar la seguridad del sistema, introducir virus, malware o utilizar técnicas de scraping para extraer información de la base de datos.
+5. Grabar o reproducir las sesiones de terapia o conversatorios sin el consentimiento expreso y por escrito del terapeuta y los demás participantes.
 
-**Uso prohibido:** Está terminantemente prohibido usar la Plataforma para actividades ilegales, spam, acoso, suplantación de identidad o cualquier actividad que perjudique a otros usuarios.`,
+ConexiónLuz se reserva el derecho de suspender o cancelar de forma permanente, sin previo aviso ni derecho a reembolso, la cuenta de cualquier Usuario que viole estas normas.`,
   },
   {
     icon: Scale,
     color: '#ec4899',
-    title: '4. Alcance y limitaciones del servicio',
-    content: `**ConexiónLuz NO es un servicio de emergencias.** En caso de crisis o emergencia de salud mental, contacta los servicios de emergencia locales (123 en Colombia) o líneas de crisis disponibles 24/7.
+    title: '5. Pagos, Suscripciones, Cancelaciones y Reembolsos',
+    content: `**Procesamiento de Pagos:** Todos los pagos se realizan a través de pasarelas de pago seguras de terceros (ej. MercadoPago). ConexiónLuz no almacena datos de tarjetas de crédito.
 
-**Limitaciones del servicio:**
-- Los terapeutas ofrecen psicoterapia, no diagnóstico médico
-- No prescribimos medicamentos (servicio exclusivo de psiquiatría)
-- Las herramientas de autogestión son complementos, no reemplazos terapéuticos
-- La disponibilidad de terapeutas está sujeta a su agenda
+**Política de Cancelación de Citas:**
+- **Cancelaciones tempranas:** Si cancela o reprograma con al menos 24 horas de antelación a la sesión programada, no habrá penalidad y podrá agendar una nueva fecha.
+- **Cancelaciones tardías:** Las cancelaciones con menos de 24 horas de anticipación generarán un cargo del 50% del valor de la sesión.
+- **Inasistencia (No-show):** La inasistencia a la sesión sin previo aviso resultará en la pérdida total (100%) del valor abonado. Se considera inasistencia si el Usuario no se presenta tras 15 minutos de iniciada la sesión.
 
-**Garantías:** Nos comprometemos a la calidad de nuestros servicios, pero no podemos garantizar resultados específicos en el proceso terapéutico, ya que estos dependen de múltiples factores individuales.`,
-  },
-  {
-    icon: XCircle,
-    color: '#ef4444',
-    title: '5. Cancelaciones y reembolsos',
-    content: `**Política de cancelación de citas:**
-- Cancelación con más de 24 horas de anticipación: sin cargo
-- Cancelación con 12-24 horas de anticipación: cargo del 50%
-- Cancelación con menos de 12 horas o inasistencia: cargo del 100%
-
-**Reembolsos:**
-- Las sesiones no realizadas por falla del terapeuta o plataforma se reembolsan al 100%
-- Los cursos adquiridos pueden reembolsarse dentro de los 7 días posteriores a la compra si no se ha accedido a más del 20% del contenido
-- Las membresías pueden cancelarse en cualquier momento; no se reembolsa el período ya transcurrido
-
-Para solicitar un reembolso, contáctanos dentro de los 30 días siguientes a la transacción.`,
+**Reembolsos y Garantías:**
+- En caso de que el terapeuta no se presente a la sesión por problemas técnicos de la plataforma o fuerza mayor, se ofrecerá la reprogramación sin costo o el reembolso íntegro (100%) a petición del Usuario.
+- Los cursos digitales, herramientas descargables y membresías activas no son reembolsables una vez consumido o descargado el contenido, salvo que exista una falla demostrable en la plataforma que impida el acceso.`,
   },
   {
     icon: FileText,
     color: '#0ea5e9',
-    title: '6. Propiedad intelectual',
-    content: `Todo el contenido de ConexiónLuz (textos, imágenes, logotipos, videos, diseños, código) es propiedad de ConexiónLuz o tiene licencia de uso. Queda prohibido:
+    title: '6. Propiedad Intelectual',
+    content: `Todos los contenidos, diseños, textos, gráficos, logotipos, íconos, código fuente, algoritmos, cursos, audios y videos presentes en ConexiónLuz son propiedad exclusiva de la Plataforma o de sus licenciantes, y están protegidos por las leyes internacionales y locales de propiedad intelectual y derechos de autor.
 
-- Reproducir o distribuir contenido sin autorización escrita
-- Modificar o crear obras derivadas del contenido de la Plataforma
-- Usar la marca ConexiónLuz o nuestros logotipos sin permiso
-- Hacer scraping o extracción masiva de datos
+**Restricciones:** 
+Queda expresamente prohibida la reproducción, copia, distribución, comercialización, transformación o ingeniería inversa de cualquier elemento de la Plataforma sin la autorización explícita y por escrito de ConexiónLuz. 
 
-**Contenido del usuario:** Al publicar en el foro o comunidad, otorgas a ConexiónLuz una licencia no exclusiva para mostrar dicho contenido en la Plataforma. Mantienes todos los derechos sobre tu contenido.`,
+**Contenido Generado por el Usuario:** Al publicar en foros o testimonios, el Usuario otorga a ConexiónLuz una licencia mundial, perpetua, irrevocable y libre de regalías para utilizar, reproducir y adaptar dicho contenido estrictamente dentro de la Plataforma.`,
   },
   {
     icon: Scale,
     color: '#8b5cf6',
-    title: '7. Ley aplicable y jurisdicción',
-    content: `Estos términos se rigen por las leyes de la República de Colombia. Cualquier controversia se resolverá preferiblemente mediante diálogo directo con nuestro equipo de atención al usuario.
+    title: '7. Limitación de Responsabilidad y Relación con los Terapeutas',
+    content: `**Profesionales Independientes:** Los terapeutas y facilitadores que prestan servicios a través de la Plataforma son profesionales independientes y no son empleados directos de ConexiónLuz. La Plataforma actúa únicamente como intermediario tecnológico.
 
-En caso de que no sea posible llegar a un acuerdo, las partes se someten a la jurisdicción de los tribunales competentes de la ciudad de Bogotá, Colombia.
+**Alcance de Responsabilidad:** En la máxima medida permitida por la ley aplicable, ConexiónLuz, sus directores, empleados o afiliados no serán responsables de ningún daño directo, indirecto, incidental, consecuente, especial o punitivo (incluyendo lucro cesante, pérdida de datos o agravamiento de condiciones médicas) que resulte de:
+- El uso o la imposibilidad de usar la Plataforma.
+- El consejo, asesoramiento, mala praxis o acciones de los terapeutas.
+- Acceso no autorizado o alteración de las transmisiones de datos por terceros ajenos a la Plataforma.
 
-**Contacto legal:** Para consultas sobre estos términos, escríbenos a legal@conexionluz.com o desde nuestra página de contacto.
+El Usuario comprende y acepta que la responsabilidad máxima total de ConexiónLuz derivada de cualquier reclamación relacionada con los servicios no excederá la cantidad total pagada por el Usuario a la Plataforma en los tres (3) meses anteriores al evento.`,
+  },
+  {
+    icon: CheckCircle2,
+    color: '#10b981',
+    title: '8. Ley Aplicable y Resolución de Controversias',
+    content: `La validez, interpretación y ejecución de los presentes Términos y Condiciones se regirán por las leyes vigentes de la República de Colombia.
 
-Última modificación de estos términos: Mayo de 2025. ConexiónLuz se reserva el derecho de actualizar estos términos con previo aviso a los usuarios.`,
+Cualquier disputa, controversia o reclamo que surja de, o esté relacionado con el uso de la Plataforma, se resolverá en primera instancia de manera directa y amigable entre las partes mediante nuestro canal oficial: **legal@conexionluz.com**.
+
+Si transcurridos treinta (30) días calendario no se ha logrado un acuerdo, las partes acuerdan someter la controversia a los jueces y tribunales competentes de la ciudad de Bogotá, D.C., Colombia, renunciando expresamente a cualquier otro fuero que pudiera corresponderles en razón de sus domicilios presentes o futuros.`,
   },
 ];
 
 export default function TerminosPage() {
+  const [activeSection, setActiveSection] = React.useState(0);
+
   return (
     <PublicLayout>
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-5xl mx-auto px-4">
 
         {/* Hero */}
-        <div className="relative overflow-hidden rounded-3xl mb-10 bg-gradient-to-br from-slate-600 via-slate-700 to-slate-900 p-8 md:p-12 text-white shadow-2xl">
+        <div className="relative overflow-hidden rounded-3xl mb-8 bg-gradient-to-br from-slate-600 via-slate-700 to-slate-900 p-8 md:p-12 text-white shadow-2xl">
           <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'linear-gradient(45deg, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-4">
-              <FileText className="h-4 w-4 text-sky-400" />
-              <span className="text-sm font-bold">Marco legal</span>
+          <div className="relative z-10 flex flex-col md:flex-row gap-6 justify-between items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-4">
+                <FileText className="h-4 w-4 text-sky-400" />
+                <span className="text-sm font-bold">Marco legal</span>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-black leading-tight mb-3">Términos y Condiciones</h1>
+              <p className="text-white/70 text-base max-w-md leading-relaxed">
+                Las condiciones que rigen el uso de nuestra plataforma. Escritas con claridad para proteger a ambas partes.
+              </p>
             </div>
-            <h1 className="text-3xl md:text-4xl font-black leading-tight mb-3">Términos y Condiciones</h1>
-            <p className="text-white/70 text-base max-w-md leading-relaxed">
-              Las condiciones que rigen el uso de nuestra plataforma. Escritas con claridad, sin jerga legal innecesaria.
-            </p>
-            <div className="mt-5 flex items-center gap-2 text-xs text-white/50">
-              <RefreshCw className="h-3.5 w-3.5" />
-              <span>Versión vigente: Mayo 2025</span>
+            <div className="flex flex-col items-end gap-2 text-xs text-white/50 bg-black/20 p-4 rounded-xl border border-white/10">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span className="font-bold">Última actualización:</span>
+              </div>
+              <span className="text-white/80">Agosto 2026</span>
             </div>
           </div>
         </div>
 
         {/* Emergency alert */}
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-8 flex items-start gap-3">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-8 flex items-start gap-3 shadow-sm">
           <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-red-700">
-            <strong>⚠️ En caso de emergencia:</strong> ConexiónLuz NO es un servicio de crisis. Si estás en peligro o tienes pensamientos de hacerte daño, llama al <strong>123</strong> (Colombia) o acude al servicio de urgencias más cercano.
+          <p className="text-sm text-red-700 leading-relaxed">
+            <strong>⚠️ En caso de emergencia:</strong> ConexiónLuz NO es un servicio de crisis. Si estás en peligro o tienes pensamientos de hacerte daño, llama al <strong>123</strong> (Colombia) o acude al servicio de urgencias más cercano inmediatamente.
           </p>
         </div>
 
-        {/* Table of contents */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-8">
-          <h2 className="font-black text-slate-700 text-sm mb-3 uppercase tracking-widest">Índice</h2>
-          <div className="space-y-1">
-            {SECTIONS.map((s, i) => {
-              const Icon = s.icon;
-              return (
-                <a key={i} href={`#term-${i}`} className="flex items-center gap-2.5 py-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors group">
-                  <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: s.color }} />
-                  <span className="group-hover:underline">{s.title}</span>
-                </a>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Sections */}
-        <div className="space-y-5 mb-10">
-          {SECTIONS.map((section, i) => {
-            const Icon = section.icon;
-            return (
-              <div key={i} id={`term-${i}`} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-50">
-                  <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${section.color}15` }}>
-                    <Icon className="h-4 w-4" style={{ color: section.color }} />
-                  </div>
-                  <h3 className="font-black text-slate-800">{section.title}</h3>
-                </div>
-                <div className="px-6 py-5">
-                  {section.content.split('\n').map((line, j) => {
-                    if (line.startsWith('**') && line.endsWith('**')) {
-                      return <p key={j} className="font-black text-slate-700 mt-3 mb-1 text-sm">{line.slice(2, -2)}</p>;
-                    }
-                    if (line.startsWith('- ')) {
-                      const content = line.slice(2);
-                      const parts = content.split(/\*\*(.*?)\*\*/g);
-                      return (
-                        <li key={j} className="text-sm text-slate-600 leading-relaxed ml-4 list-disc">
-                          {parts.map((p, k) => k % 2 === 1 ? <strong key={k} className="text-slate-700">{p}</strong> : p)}
-                        </li>
-                      );
-                    }
-                    if (line.trim() === '') return <div key={j} className="h-2" />;
-                    const parts = line.split(/\*\*(.*?)\*\*/g);
-                    return (
-                      <p key={j} className="text-sm text-slate-600 leading-relaxed">
-                        {parts.map((p, k) => k % 2 === 1 ? <strong key={k} className="text-slate-700">{p}</strong> : p)}
-                      </p>
-                    );
-                  })}
-                </div>
+        <div className="flex flex-col md:flex-row gap-8 mb-12">
+          {/* Sidebar / Index */}
+          <div className="w-full md:w-1/3 shrink-0">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sticky top-24">
+              <h2 className="font-black text-slate-700 text-sm mb-4 uppercase tracking-widest border-b border-slate-100 pb-3">Índice Legal</h2>
+              <div className="space-y-1.5">
+                {SECTIONS.map((s, i) => {
+                  const Icon = s.icon;
+                  const isActive = activeSection === i;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setActiveSection(i);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className={`w-full flex items-start gap-3 p-3 rounded-xl transition-all text-left group ${
+                        isActive ? 'bg-slate-50 border border-slate-200 shadow-sm' : 'hover:bg-slate-50 border border-transparent'
+                      }`}
+                    >
+                      <Icon className={`h-4 w-4 shrink-0 mt-0.5 ${isActive ? '' : 'opacity-60 group-hover:opacity-100'}`} style={{ color: s.color }} />
+                      <span className={`text-sm ${isActive ? 'font-bold text-slate-800' : 'font-medium text-slate-500 group-hover:text-slate-700'}`}>
+                        {s.title}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+              
+              {/* CTA */}
+              <div className="mt-6 pt-5 border-t border-slate-100 text-center">
+                <p className="text-slate-500 text-xs mb-3 font-medium">¿Tienes dudas legales?</p>
+                <Link to="/contacto" className="inline-flex items-center justify-center gap-2 w-full bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl hover:bg-slate-700 transition-colors shadow-md text-sm">
+                  Contactar Soporte <ChevronRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
 
-        {/* CTA */}
-        <div className="bg-slate-800 rounded-2xl p-6 text-white text-center">
-          <Scale className="h-8 w-8 text-sky-400 mx-auto mb-3" />
-          <h3 className="font-black text-xl mb-2">¿Tienes dudas legales?</h3>
-          <p className="text-white/70 text-sm mb-5">Nuestro equipo te aclara cualquier punto de estos términos.</p>
-          <Link to="/contacto" className="inline-flex items-center gap-2 bg-sky-500 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-sky-400 transition-colors shadow-md">
-            Contactar <ChevronRight className="h-4 w-4" />
-          </Link>
+          {/* Main Content Area */}
+          <div className="w-full md:w-2/3">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-h-[500px]">
+              <div className="flex items-center gap-3 px-6 md:px-8 py-5 border-b border-slate-50 bg-slate-50/50">
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner bg-white border border-slate-100">
+                  {React.createElement(SECTIONS[activeSection].icon, { className: "h-5 w-5", style: { color: SECTIONS[activeSection].color } })}
+                </div>
+                <h3 className="font-black text-xl text-slate-800">{SECTIONS[activeSection].title}</h3>
+              </div>
+              
+              <div className="px-6 md:px-8 py-6 md:py-8 space-y-4">
+                {SECTIONS[activeSection].content.split('\n').map((line, j) => {
+                  const trimmed = line.trim();
+                  
+                  if (trimmed === '') return <div key={j} className="h-2" />;
+                  
+                  if (trimmed.startsWith('**') && trimmed.endsWith('**') && !trimmed.slice(2, -2).includes('**')) {
+                    return <h4 key={j} className="font-black text-slate-800 mt-6 mb-2 text-base">{trimmed.slice(2, -2)}</h4>;
+                  }
+                  
+                  if (trimmed.startsWith('- ') || /^\d+\.\s/.test(trimmed)) {
+                    const isNumbered = /^\d+\.\s/.test(trimmed);
+                    const content = isNumbered ? trimmed.replace(/^\d+\.\s/, '') : trimmed.slice(2);
+                    const parts = content.split(/\*\*(.*?)\*\*/g);
+                    return (
+                      <div key={j} className="flex gap-3 text-sm text-slate-600 leading-relaxed ml-2 mb-2">
+                        <span className="text-slate-400 shrink-0 select-none">{isNumbered ? trimmed.match(/^\d+\./)?.[0] : '•'}</span>
+                        <span>
+                          {parts.map((p, k) => k % 2 === 1 ? <strong key={k} className="text-slate-800 font-bold">{p}</strong> : p)}
+                        </span>
+                      </div>
+                    );
+                  }
+                  
+                  const parts = trimmed.split(/\*\*(.*?)\*\*/g);
+                  return (
+                    <p key={j} className="text-sm md:text-base text-slate-600 leading-relaxed">
+                      {parts.map((p, k) => k % 2 === 1 ? <strong key={k} className="text-slate-800 font-bold">{p}</strong> : p)}
+                    </p>
+                  );
+                })}
+              </div>
+
+              {/* Navigation Footer */}
+              <div className="px-6 md:px-8 py-4 border-t border-slate-50 bg-slate-50/50 flex items-center justify-between">
+                <button 
+                  onClick={() => setActiveSection(Math.max(0, activeSection - 1))}
+                  disabled={activeSection === 0}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-800 disabled:opacity-30 disabled:hover:text-slate-500 flex items-center gap-1 transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4 rotate-180" /> Anterior
+                </button>
+                <button 
+                  onClick={() => setActiveSection(Math.min(SECTIONS.length - 1, activeSection + 1))}
+                  disabled={activeSection === SECTIONS.length - 1}
+                  className="text-xs font-bold text-sky-600 hover:text-sky-700 disabled:opacity-30 disabled:hover:text-sky-600 flex items-center gap-1 transition-colors"
+                >
+                  Siguiente <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>

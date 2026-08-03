@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Sun, Home, Users, Sparkles, Video, Star, Phone, Calendar,
   UserRound, MessageCircle, LogIn, LogOut, Menu, BookOpen, MessageSquareText,
   Bell, Heart, CalendarPlus, ChevronRight, ChevronLeft, X, Info,
   ClipboardList, Dumbbell, NotebookPen, Wind, BarChart2, Activity,
-  HelpCircle, FileText, Shield, Newspaper, Building2, Send
+  HelpCircle, FileText, Shield, Newspaper, Building2, Send, UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '../api/client';
@@ -102,6 +102,7 @@ const navSections = [
 
 const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const token = typeof window !== 'undefined' ? localStorage.getItem('conexionluz:token') : null;
   const isAuthed = Boolean(token);
 
@@ -298,6 +299,12 @@ const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
 
   // ── Section click handler ─────────────────────────────────────
   const handleSectionClick = (sectionId: string, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (sectionId === 'explorar') {
+      navigate('/');
+      setActiveSection(null);
+      setMobileOpen(false);
+      return;
+    }
     if (activeSection === sectionId) {
       setActiveSection(null);
       return;
@@ -620,7 +627,10 @@ const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
                             </div>
                           ) : (
                             notifications.map(notif => {
-                              const Icon = notif.notificationType.includes('like') ? Heart : MessageCircle;
+                              let Icon = MessageCircle;
+                              if (notif.notificationType.includes('like')) Icon = Heart;
+                              if (notif.notificationType === 'new_follower') Icon = UserPlus;
+                              if (notif.notificationType === 'new_talk') Icon = Calendar;
                               return (
                                 <Link
                                   key={notif.id}

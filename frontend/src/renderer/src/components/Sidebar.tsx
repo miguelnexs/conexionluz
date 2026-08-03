@@ -203,6 +203,9 @@ export function Sidebar({ className }: SidebarProps): JSX.Element {
                 onMouseEnter={e => openFlyout(section.id, e.currentTarget)}
                 onMouseLeave={scheduleClose}
                 onClick={e => {
+                  if (section.links.length > 0) {
+                    navigate(section.links[0].href)
+                  }
                   if (activeSection === section.id) {
                     setActiveSection(null)
                     activeSectionRef.current = null

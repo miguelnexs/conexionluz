@@ -28,8 +28,13 @@ import {
   Clock,
   ArrowRight,
   Sliders,
-  Move
+  Move,
+  GitBranch,
+  RotateCcw,
+  Check
 } from 'lucide-react';
+
+import { calcularDiagnosticoArbol, DiagnosticResultEngine } from '../utils/arbolDiagnosticoMotor';
 
 interface Comment {
   id: string;
@@ -182,6 +187,1750 @@ const DailyCheckinCard = ({ onComplete }: { onComplete: (level: string) => void 
   );
 };
 
+// ─── Question Tree Data Definition ─────────────────────────────────────────────
+
+type TreeNodeOption = {
+  id: string;
+  label: string;
+  emoji: string;
+  description: string;
+  nextNodeId: string;
+  scores: { stress: number; mood: number; sleep: number; energy: number; focus: number };
+};
+
+type TreeNode = {
+  id: string;
+  stepNumber: number;
+  stageName: string;
+  icon: string;
+  title: string;
+  subtitle: string;
+  compassionNote: string;
+  options: TreeNodeOption[];
+};
+
+type TreePathHistoryItem = {
+  nodeId: string;
+  nodeTitle: string;
+  optionId: string;
+  optionLabel: string;
+  emoji: string;
+};
+
+const QUESTION_TREE: Record<string, TreeNode> = {
+  root: {
+    id: 'root',
+    stepNumber: 1,
+    stageName: 'Tierra & Raíces',
+    icon: '🌱',
+    title: '¿Cuál es tu Necesidad Dominante o búsqueda prioritaria hoy?',
+    subtitle: 'El Árbol Interior explora la necesidad legítima que intenta ser satisfecha en tu momento presente.',
+    compassionNote: 'Respira con calma. Toda necesidad humana es legítima y merece ser escuchada sin juicio.',
+    options: [
+      {
+        id: 'opt_stress',
+        label: 'Seguridad y Protección',
+        emoji: '🛡️',
+        description: 'Tranquilidad, resguardo ante la incertidumbre o reducción de la tensión y la alerta.',
+        nextNodeId: 'node_heridas_vigilante',
+        scores: { stress: 45, mood: 20, sleep: 25, energy: 20, focus: 25 },
+      },
+      {
+        id: 'opt_mood',
+        label: 'Pertenencia y Vínculo Afectivo',
+        emoji: '🤝',
+        description: 'Sentirme acompañado/a, superando la soledad interna o la sensación de falta de apoyo.',
+        nextNodeId: 'node_heridas_caminante',
+        scores: { stress: 20, mood: 50, sleep: 20, energy: 25, focus: 20 },
+      },
+      {
+        id: 'opt_sleep',
+        label: 'Reconocimiento y Valía Personal',
+        emoji: '🌟',
+        description: 'Autovaloración, soltar la autoexigencia extrema y descansar sin culpabilidad.',
+        nextNodeId: 'node_heridas_guerrero',
+        scores: { stress: 35, mood: 20, sleep: 45, energy: 35, focus: 20 },
+      },
+      {
+        id: 'opt_coherencia',
+        label: 'Coherencia y Autenticidad',
+        emoji: '⚖️',
+        description: 'Soltar la rigidez y el temor al error para expresarme con total libertad.',
+        nextNodeId: 'node_heridas_prisionero',
+        scores: { stress: 25, mood: 25, sleep: 20, energy: 30, focus: 40 },
+      },
+      {
+        id: 'opt_growth',
+        label: 'Sentido y Propósito Existencial',
+        emoji: '🔮',
+        description: 'Comprender el significado profundo de mis vivencias y trascender el vacío.',
+        nextNodeId: 'node_heridas_explorador',
+        scores: { stress: 15, mood: 20, sleep: 15, energy: 30, focus: 50 },
+      },
+      {
+        id: 'opt_direccion',
+        label: 'Dirección y Claridad de Rumbo',
+        emoji: '🧭',
+        description: 'Claridad en mis próximos pasos, superando la dispersión o la postergación.',
+        nextNodeId: 'node_heridas_navegante',
+        scores: { stress: 20, mood: 25, sleep: 20, energy: 40, focus: 45 },
+      },
+    ],
+  },
+
+  // ── STEP 2: HERIDAS ORGANIZADORAS ──
+  node_heridas_vigilante: {
+    id: 'node_heridas_vigilante',
+    stepNumber: 2,
+    stageName: 'Grietas de las Raíces',
+    icon: '🪵',
+    title: '¿Qué experiencia o vivencia del pasado activó tu necesidad de protección?',
+    subtitle: 'Comprender la herida primaria origen ayuda a desarmar el control automático.',
+    compassionNote: 'Toda estrategia de protección fue una respuesta inteligente para sobrevivir en su momento.',
+    options: [
+      {
+        id: 'opt_s_mental',
+        label: 'Experiencias de Impredecibilidad o Traición',
+        emoji: '👁️',
+        description: 'Aprendí que confiar plenamente era peligroso y que debía vigilarlo todo.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 35, mood: 15, sleep: 25, energy: 15, focus: 35 },
+      },
+      {
+        id: 'opt_s_somatic',
+        label: 'Sobrecarga de Responsabilidad Temprana',
+        emoji: '🏋️',
+        description: 'Tuve que asumir el control y cuidar de otros antes de tiempo.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 40, mood: 10, sleep: 30, energy: 25, focus: 15 },
+      },
+    ],
+  },
+
+  node_heridas_caminante: {
+    id: 'node_heridas_caminante',
+    stepNumber: 2,
+    stageName: 'Grietas de las Raíces',
+    icon: '🪵',
+    title: '¿De dónde proviene la sensación de soledad o distancia afectiva?',
+    subtitle: 'Identificar la marca del Abandono permite reconstruir el verdadero autoacompañamiento.',
+    compassionNote: 'No estás solo/a en este momento; tu historia merece ser abrazada.',
+    options: [
+      {
+        id: 'opt_m_apathy',
+        label: 'Distancia o Separación Afectiva Temprana',
+        emoji: '🍂',
+        description: 'Sentí que debía buscar fuera el calor y la presencia que me faltaban dentro.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 15, mood: 45, sleep: 15, energy: 30, focus: 25 },
+      },
+      {
+        id: 'opt_m_grief',
+        label: 'Transiciones de Vida o Duelos no Procesados',
+        emoji: '🌧️',
+        description: 'Conservo una nostalgia profunda de un momento donde me sentía en plenitud.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 25, mood: 50, sleep: 20, energy: 20, focus: 15 },
+      },
+    ],
+  },
+
+  node_heridas_guerrero: {
+    id: 'node_heridas_guerrero',
+    stepNumber: 2,
+    stageName: 'Grietas de las Raíces',
+    icon: '🪵',
+    title: '¿Qué alimentó la necesidad de demostrar constantemente tu valor?',
+    subtitle: 'La Herida de Humillación o Desvalorización enseña que valemos solo por lo que rendimos.',
+    compassionNote: 'Tu valor es intrínseco. No necesitas ganar tu derecho a existir.',
+    options: [
+      {
+        id: 'opt_m_burnout',
+        label: 'Entorno de Exigencia Condicionada',
+        emoji: '🪫',
+        description: 'Aprendí que el afecto o la aprobación dependían exclusivamente de mis logros.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 40, mood: 25, sleep: 30, energy: 40, focus: 20 },
+      },
+      {
+        id: 'opt_sl_fatigue',
+        label: 'Experiencias de Crítica o Humillación',
+        emoji: '🥱',
+        description: 'Construí una armadura de hiperactividad para no sentirme vulnerable o inferior.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 30, mood: 20, sleep: 35, energy: 45, focus: 20 },
+      },
+    ],
+  },
+
+  node_heridas_prisionero: {
+    id: 'node_heridas_prisionero',
+    stepNumber: 2,
+    stageName: 'Grietas de las Raíces',
+    icon: '🪵',
+    title: '¿Por qué aprendiste a ocultar o filtrar tu espontaneidad auténtica?',
+    subtitle: 'La Herida de Rechazo e Injusticia crea prisiones mentales defensivas.',
+    compassionNote: 'Es seguro mostrarte. Tu verdad es valiosa tal como es.',
+    options: [
+      {
+        id: 'opt_s_emotional',
+        label: 'Temor al Rechazo o Exclusión Social',
+        emoji: '🔥',
+        description: 'Aprendí a adaptarme o volverme invisible para evitar ser criticado o juzgado.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 30, mood: 35, sleep: 15, energy: 20, focus: 20 },
+      },
+      {
+        id: 'opt_sl_init',
+        label: 'Normas Rígidas e Injustas de Perfección',
+        emoji: '🕰️',
+        description: 'Sentí que cualquier error me expondría al rechazo, por lo que busqué la perfección.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 35, mood: 15, sleep: 40, energy: 25, focus: 30 },
+      },
+    ],
+  },
+
+  node_heridas_explorador: {
+    id: 'node_heridas_explorador',
+    stepNumber: 2,
+    stageName: 'Grietas de las Raíces',
+    icon: '🪵',
+    title: '¿Por qué la mente se convirtió en tu principal refugio?',
+    subtitle: 'Racionalizar suele ser una forma de proteger el corazón de sentir demasiado.',
+    compassionNote: 'Saber no sustituye a sentir. El cuerpo también es una fuente de sabiduría.',
+    options: [
+      {
+        id: 'opt_g_calm',
+        label: 'Emociones Abrumadoras no Procesadas',
+        emoji: '🧘',
+        description: 'Descubrí que analizando el porqué de las cosas lograba distanciarme del dolor.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 15, mood: 15, sleep: 15, energy: 25, focus: 50 },
+      },
+      {
+        id: 'opt_g_journal',
+        label: 'Búsqueda de Coherencia e Injusticia Existencial',
+        emoji: '📓',
+        description: 'Necesitaba entender las razones detrás de situaciones que no tenían sentido.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 20, mood: 25, sleep: 10, energy: 20, focus: 45 },
+      },
+    ],
+  },
+
+  node_heridas_navegante: {
+    id: 'node_heridas_navegante',
+    stepNumber: 2,
+    stageName: 'Grietas de las Raíces',
+    icon: '🪵',
+    title: '¿En qué momento sentiste que perdiste la brújula o dirección personal?',
+    subtitle: 'La Desorientación aparece cuando probamos rumbos sin anclaje en el centro.',
+    compassionNote: 'No saber el destino final no te impide dar el siguiente paso con valor.',
+    options: [
+      {
+        id: 'opt_sl_interr',
+        label: 'Giros Inesperados o Ruptura de Planes',
+        emoji: '🦉',
+        description: 'Mi rumbo cambió drásticamente y desde entonces me cuesta mantener una dirección fija.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 25, mood: 20, sleep: 40, energy: 30, focus: 20 },
+      },
+      {
+        id: 'opt_g_guidance',
+        label: 'Múltiples Opciones sin Enfoque Unificado',
+        emoji: '💬',
+        description: 'Exploro muchos caminos pero me cuesta comprometerme a largo plazo con uno.',
+        nextNodeId: 'node_savia_verguenza',
+        scores: { stress: 20, mood: 30, sleep: 15, energy: 35, focus: 35 },
+      },
+    ],
+  },
+
+  // ── STEP 3: EL MANTO DE VERGÜENZA® & SAVIA INTERNA ──
+  node_savia_verguenza: {
+    id: 'node_savia_verguenza',
+    stepNumber: 3,
+    stageName: 'La Savia Interna (El Manto de Vergüenza®)',
+    icon: '💧',
+    title: '¿Qué aspecto de tu vulnerabilidad sueles ocultar para protegerte?',
+    subtitle: 'El Manto de Vergüenza® es el filtro protector que oculta lo que tememos expuesto.',
+    compassionNote: 'Detrás de todo ocultamiento hay un deseo profundo de ser aceptado y protegido.',
+    options: [
+      {
+        id: 'opt_f_mild',
+        label: 'Mis Temores o Sensación de Inseguridad',
+        emoji: '🌱',
+        description: 'Oculto mi miedo para mostrarme fuerte, autosuficiente y en control.',
+        nextNodeId: 'node_tronco_creencia',
+        scores: { stress: 15, mood: 15, sleep: 15, energy: 20, focus: 20 },
+      },
+      {
+        id: 'opt_f_mod',
+        label: 'Mi Necesidad de Afecto o Tristeza',
+        emoji: '🌊',
+        description: 'Oculto mi sensibilidad para no parecer dependiente o abrumar a otros.',
+        nextNodeId: 'node_tronco_creencia',
+        scores: { stress: 25, mood: 30, sleep: 20, energy: 25, focus: 25 },
+      },
+      {
+        id: 'opt_f_high',
+        label: 'Mis Errores e Imperfecciones',
+        emoji: '⚡',
+        description: 'Oculto la duda o la falla rindiendo al máximo para no ser juzgado.',
+        nextNodeId: 'node_tronco_creencia',
+        scores: { stress: 45, mood: 35, sleep: 35, energy: 40, focus: 30 },
+      },
+    ],
+  },
+
+  // ── STEP 4: TRONCO & CORTEZA (CREENCIAS NÚCLEO) ──
+  node_tronco_creencia: {
+    id: 'node_tronco_creencia',
+    stepNumber: 4,
+    stageName: 'El Tronco y la Corteza',
+    icon: '🌳',
+    title: '¿Cuál de estas frases resuena más con tu diálogo interno automático?',
+    subtitle: 'El tronco sostiene la estructura de la identidad que construiste para responder al entorno.',
+    compassionNote: 'Una creencia que te protegió ayer puede cuestionarse compasivamente hoy.',
+    options: [
+      {
+        id: 'opt_c_step1',
+        label: '“Debo vigilar y estar en alerta para estar a salvo”',
+        emoji: '🛡️',
+        description: 'La creencia organizadora del perfil Vigilante centrada en la protección.',
+        nextNodeId: 'node_ramas_conductas',
+        scores: { stress: 30, mood: 15, sleep: 20, energy: 20, focus: 30 },
+      },
+      {
+        id: 'opt_c_guided',
+        label: '“Debo demostrar mi valor a través de mi esfuerzo”',
+        emoji: '🏆',
+        description: 'La creencia del Guerrero Agotado basada en la valía ligada al rendimiento.',
+        nextNodeId: 'node_ramas_conductas',
+        scores: { stress: 35, mood: 20, sleep: 30, energy: 35, focus: 25 },
+      },
+      {
+        id: 'opt_c_full',
+        label: '“Si me expongo auténticamente sin filtro, seré juzgado”',
+        emoji: '🌫️',
+        description: 'La creencia del Prisionero Invisible que promueve el ocultamiento.',
+        nextNodeId: 'node_ramas_conductas',
+        scores: { stress: 25, mood: 35, sleep: 20, energy: 25, focus: 35 },
+      },
+    ],
+  },
+
+  // ── STEP 5: LAS RAMAS EXTERIORES (CONDUCTAS ADAPTATIVAS) ──
+  node_ramas_conductas: {
+    id: 'node_ramas_conductas',
+    stepNumber: 5,
+    stageName: 'Las Ramas Exteriores',
+    icon: '🌿',
+    title: '¿Qué conducta defensiva notas que se activa automáticamente?',
+    subtitle: 'Las ramas del árbol representan las acciones repetitivas de protección.',
+    compassionNote: 'Al observar tus patrones sin culpa, abres la puerta al cambio consciente.',
+    options: [
+      {
+        id: 'opt_ca_control',
+        label: 'Exceso de Control, Hipervigilancia o Rigidez',
+        emoji: '🎛️',
+        description: 'Intento anticipar cualquier cambio para evitar sorpresas o dolor.',
+        nextNodeId: 'node_frutos_luz',
+        scores: { stress: 40, mood: 20, sleep: 30, energy: 20, focus: 25 },
+      },
+      {
+        id: 'opt_ca_complacencia',
+        label: 'Complacencia, Autosacrificio o Invisibilidad',
+        emoji: '🤝',
+        description: 'Renuncio a mis necesidades prioritarias para mantener la paz y la aceptación.',
+        nextNodeId: 'node_frutos_luz',
+        scores: { stress: 25, mood: 40, sleep: 20, energy: 25, focus: 25 },
+      },
+      {
+        id: 'opt_ca_autoexigencia',
+        label: 'Autoexigencia Extrema, Sobreesfuerzo o Intelectualización',
+        emoji: '🏋️',
+        description: 'Lucho incesantemente por rendir o analizar todo sin permitirme parar.',
+        nextNodeId: 'node_frutos_luz',
+        scores: { stress: 35, mood: 25, sleep: 35, energy: 40, focus: 30 },
+      },
+    ],
+  },
+
+  // ── STEP 6: FRUTOS Y LUZ (SERVICIOS Y RECURSOS) ──
+  node_frutos_luz: {
+    id: 'node_frutos_luz',
+    stepNumber: 6,
+    stageName: 'Frutos y Luz Evolutiva',
+    icon: '✨',
+    title: '¿Qué servicio o práctica te inspiraría integrar desde hoy para tu evolución?',
+    subtitle: 'La luz en la copa del árbol representa tu potencial transformador e integración consciente.',
+    compassionNote: 'Estás listo/a para dar el paso hacia tu estado evolutivo integrado.',
+    options: [
+      {
+        id: 'opt_serv_relajacion',
+        label: 'Relajación & Meditación Guiada',
+        emoji: '🧘',
+        description: 'Audios clínicos de calma para desarticular la tensión y regular el sistema nervioso.',
+        nextNodeId: 'results',
+        scores: { stress: 10, mood: 25, sleep: 45, energy: 30, focus: 40 },
+      },
+      {
+        id: 'opt_serv_diario',
+        label: 'Diario Emocional Introspectivo',
+        emoji: '📓',
+        description: 'Procesar El Manto de Vergüenza® en un espacio seguro de desahogo y verdad.',
+        nextNodeId: 'results',
+        scores: { stress: 15, mood: 45, sleep: 20, energy: 25, focus: 45 },
+      },
+      {
+        id: 'opt_serv_ejercicios',
+        label: 'Ejercicios Guiados de Transformación',
+        emoji: '🏋️',
+        description: 'Paso a paso para cultivar tu Virtud Evolutiva y soltar los obstáculos.',
+        nextNodeId: 'results',
+        scores: { stress: 20, mood: 30, sleep: 20, energy: 45, focus: 40 },
+      },
+      {
+        id: 'opt_serv_consulta',
+        label: 'Acompañamiento Terapéutico Profesional',
+        emoji: '💬',
+        description: 'Profundizar en tu informe con orientación humana personalizada.',
+        nextNodeId: 'results',
+        scores: { stress: 25, mood: 35, sleep: 25, energy: 35, focus: 35 },
+      },
+    ],
+  },
+};
+
+const TreeDiagnosticTest = ({
+  firstName,
+  userKey,
+  onCompleted,
+  onClose,
+}: {
+  firstName: string;
+  userKey: string;
+  onCompleted: () => void;
+  onClose?: () => void;
+}) => {
+  const storageKey = `conexionluz:user_diagnostic:${userKey.toLowerCase().replace(/\s+/g, '_')}`;
+
+  const [savedUserRecord, setSavedUserRecord] = useState<any | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
+
+  const [mode, setMode] = useState<'view' | 'test'>(savedUserRecord ? 'view' : 'test');
+  const [currentNodeId, setCurrentNodeId] = useState<string>('root');
+  const [historyPath, setHistoryPath] = useState<TreePathHistoryItem[]>([]);
+  const [scores, setScores] = useState({ stress: 20, mood: 20, sleep: 20, energy: 20, focus: 20 });
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [animatingBranch, setAnimatingBranch] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [leavesVisible, setLeavesVisible] = useState(false);
+  const [panelVisible, setPanelVisible] = useState(true);
+  const [panelKey, setPanelKey] = useState(0);
+  const [rippleId, setRippleId] = useState<string | null>(null);
+
+  const currentNode = QUESTION_TREE[currentNodeId];
+  const isResults = currentNodeId === 'results';
+  const treeStep = historyPath.length; // 0-4 steps visible on tree
+
+  React.useEffect(() => {
+    setLeavesVisible(true);
+  }, []);
+
+  const handleSelectOption = (option: TreeNodeOption) => {
+    if (animatingBranch) return;
+    setSelectedOption(option.id);
+    setRippleId(option.id);
+    setAnimatingBranch(true);
+    // Slide panel out
+    setPanelVisible(false);
+
+    setTimeout(() => {
+      setScores(prev => ({
+        stress: Math.min(100, prev.stress + option.scores.stress),
+        mood: Math.min(100, prev.mood + option.scores.mood),
+        sleep: Math.min(100, prev.sleep + option.scores.sleep),
+        energy: Math.min(100, prev.energy + option.scores.energy),
+        focus: Math.min(100, prev.focus + option.scores.focus),
+      }));
+
+      const newHistoryItem: TreePathHistoryItem = {
+        nodeId: currentNode.id,
+        nodeTitle: currentNode.stageName,
+        optionId: option.id,
+        optionLabel: option.label,
+        emoji: option.emoji,
+      };
+      setHistoryPath(prev => [...prev, newHistoryItem]);
+      setCurrentNodeId(option.nextNodeId);
+      setAnimatingBranch(false);
+      setSelectedOption(null);
+      setRippleId(null);
+      // Slide next panel in
+      setPanelKey(k => k + 1);
+      setPanelVisible(true);
+    }, 620);
+  };
+
+  const handleBackToNode = (targetIndex: number) => {
+    if (targetIndex < 0 || targetIndex >= historyPath.length) return;
+    const targetNodeId = historyPath[targetIndex].nodeId;
+    setHistoryPath(prev => prev.slice(0, targetIndex));
+    setCurrentNodeId(targetNodeId);
+  };
+
+  const handleResetTree = () => {
+    setPanelVisible(false);
+    setTimeout(() => {
+      setCurrentNodeId('root');
+      setHistoryPath([]);
+      setScores({ stress: 20, mood: 20, sleep: 20, energy: 20, focus: 20 });
+      setSelectedOption(null);
+      setAnimatingBranch(false);
+      setPanelKey(k => k + 1);
+      setPanelVisible(true);
+    }, 300);
+  };
+
+  const generateDiagnosticSummary = () => {
+    if (historyPath.length === 0) return 'Evaluación general realizada.';
+    const focusArea = historyPath[0]?.optionLabel || 'Bienestar integral';
+    const detail = historyPath[1]?.optionLabel || 'Atención personal';
+    const freq = historyPath[2]?.optionLabel || 'Frecuencia moderada';
+    const coping = historyPath[3]?.optionLabel || 'Autogestión';
+
+    return `Diagnóstico Integral de Bienestar (Test en Árbol):
+• Área de Enfoque Principal: ${focusArea}
+• Manifestación: ${detail}
+• Frecuencia / Intensidad: ${freq}
+• Disposición: ${coping}
+
+Resumen:
+Hola ${firstName}, tu evaluación indica un enfoque prioritario en ${focusArea.toLowerCase()}, expresado principalmente a través de ${detail.toLowerCase()} con una intensidad ${freq.toLowerCase()}.
+Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de relajación guiada y considerar agendar una sesión de apoyo para profundizar en tu proceso.`;
+  };
+
+  const handleSaveDiagnostic = async () => {
+    setIsSaving(true);
+    const summaryText = generateDiagnosticSummary();
+    const formattedDate = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const userRecord = {
+      id: `diag_${Date.now()}`,
+      userName: firstName,
+      date: formattedDate,
+      timestamp: Date.now(),
+      historyPath,
+      scores,
+      summary: summaryText,
+    };
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(userRecord));
+      setSavedUserRecord(userRecord);
+    } catch (e) {
+      console.error('Error saving user diagnostic record locally:', e);
+    }
+
+    const res = await api.post<{ completed: boolean; summary: string }>('/api/portal/intake/', {
+      answers: scores,
+      summary: summaryText,
+    });
+
+    setIsSaving(false);
+    if (res.ok) {
+      setSavedSuccess(true);
+      setTimeout(() => {
+        onCompleted();
+        setMode('view');
+      }, 1200);
+    }
+  };
+
+  // Tree branch path points — trunk + 4 branching levels
+  // Each level has left and right branch targets
+  const TRUNK_X = 240;
+  const TRUNK_Y_START = 440;
+  const TRUNK_Y_END = 320;
+
+  // Branch endpoints per step (growing upward)
+  const branchLevels = [
+    { y: 300, leftX: 140, rightX: 340 },
+    { y: 230, leftX: 100, rightX: 380 },
+    { y: 170, leftX: 80,  rightX: 400 },
+    { y: 120, leftX: 60,  rightX: 420 },
+  ];
+
+  const getTreePath = (step: number) => {
+    // Returns how far up the trunk + branches grow based on progress
+    return step;
+  };
+
+  const activeBranches = getTreePath(treeStep);
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#f8faf8] text-slate-800 font-sans flex flex-col">
+      {/* Animated CSS Keyframes */}
+      <style>{`
+        @keyframes sway { 0%,100%{transform:rotate(-0.8deg) translateX(0)} 33%{transform:rotate(0.8deg) translateX(1px)} 66%{transform:rotate(-0.5deg) translateX(-1px)} }
+        @keyframes leaf-float { 0%,100%{transform:translateY(0) rotate(-4deg) scale(1)} 50%{transform:translateY(-8px) rotate(4deg) scale(1.06)} }
+        @keyframes branch-grow { 0%{stroke-dashoffset:200;opacity:0.3} 40%{opacity:1} 100%{stroke-dashoffset:0;opacity:1} }
+        @keyframes pulse-glow { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)} 50%{box-shadow:0 0 0 10px rgba(16,185,129,0)} }
+        @keyframes climb-up { 0%{transform:translateY(28px) scale(0.75);opacity:0} 55%{transform:translateY(-4px) scale(1.06);opacity:1} 100%{transform:translateY(0) scale(1);opacity:1} }
+        @keyframes answer-bubble { 0%{transform:translateY(0) scale(1);opacity:1} 30%{transform:translateY(-16px) scale(1.1);opacity:1} 70%{transform:translateY(-32px) scale(1.05);opacity:0.7} 100%{transform:translateY(-55px) scale(0.8);opacity:0} }
+        @keyframes trunk-grow { from{stroke-dashoffset:300;opacity:0} 30%{opacity:0.7} to{stroke-dashoffset:0;opacity:1} }
+        @keyframes sparkle-pop { 0%{transform:scale(0);opacity:0} 50%{transform:scale(1.15);opacity:1} 100%{transform:scale(1);opacity:0.9} }
+        @keyframes root-pulse { 0%,100%{opacity:0.25;transform:scaleX(1)} 50%{opacity:0.55;transform:scaleX(1.04)} }
+        @keyframes fade-up { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slide-out-left { 0%{opacity:1;transform:translateX(0) scale(1)} 100%{opacity:0;transform:translateX(-28px) scale(0.97)} }
+        @keyframes slide-in-right { 0%{opacity:0;transform:translateX(28px) scale(0.97)} 100%{opacity:1;transform:translateX(0) scale(1)} }
+        @keyframes step-reveal { from{opacity:0;transform:translateX(-14px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes ripple-ring { 0%{transform:scale(0.8);opacity:0.7;border-width:3px} 100%{transform:scale(2.2);opacity:0;border-width:1px} }
+        @keyframes dot-move { 0%{opacity:0;transform:scale(0.5)} 60%{opacity:1;transform:scale(1.2)} 100%{opacity:1;transform:scale(1)} }
+        @keyframes card-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.0)} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0.15)} }
+        @keyframes cloud-drift { 0%{transform:translateX(0)} 50%{transform:translateX(12px)} 100%{transform:translateX(0)} }
+        @keyframes cloud-drift-slow { 0%{transform:translateX(0)} 50%{transform:translateX(-8px)} 100%{transform:translateX(0)} }
+        @keyframes bird-fly { 0%{transform:translateX(0) translateY(0)} 25%{transform:translateX(8px) translateY(-4px)} 50%{transform:translateX(18px) translateY(0)} 75%{transform:translateX(26px) translateY(-3px)} 100%{transform:translateX(36px) translateY(0);opacity:0} }
+        @keyframes grass-sway { 0%,100%{transform:rotate(-3deg) scaleY(1)} 50%{transform:rotate(3deg) scaleY(1.04)} }
+        .sway { animation: sway 5s ease-in-out infinite; transform-origin: bottom center; }
+        .leaf-float { animation: leaf-float 3.5s ease-in-out infinite; }
+        .branch-grow { stroke-dasharray:200; animation: branch-grow 0.85s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .pulse-glow { animation: pulse-glow 1.8s ease-in-out infinite; }
+        .climb-up { animation: climb-up 0.65s cubic-bezier(0.34,1.45,0.64,1) forwards; }
+        .answer-bubble { animation: answer-bubble 0.65s cubic-bezier(0.4,0,0.2,1) forwards; }
+        .trunk-grow { stroke-dasharray:300; animation: trunk-grow 1.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .sparkle-pop { animation: sparkle-pop 0.65s cubic-bezier(0.34,1.4,0.64,1) forwards; }
+        .root-pulse { animation: root-pulse 3.5s ease-in-out infinite; }
+        .fade-up { animation: fade-up 0.5s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .panel-out { animation: slide-out-left 0.3s cubic-bezier(0.4,0,1,1) forwards; }
+        .panel-in { animation: slide-in-right 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .step-reveal { animation: step-reveal 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .ripple-ring { animation: ripple-ring 0.7s cubic-bezier(0.4,0,0.2,1) forwards; border-radius:1rem; border:3px solid #10b981; position:absolute; inset:0; pointer-events:none; }
+        .dot-move { animation: dot-move 0.5s cubic-bezier(0.34,1.45,0.64,1) forwards; }
+        .card-pulse { animation: card-pulse 1.2s ease-in-out 1; }
+        .cloud-drift { animation: cloud-drift 7s ease-in-out infinite; }
+        .cloud-drift-slow { animation: cloud-drift-slow 11s ease-in-out infinite; }
+        .bird-fly { animation: bird-fly 6s linear infinite; }
+        .grass-sway { animation: grass-sway 2.5s ease-in-out infinite; transform-origin: bottom center; }
+      `}</style>
+
+      {/* Soft background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/40 via-transparent to-teal-50/30 pointer-events-none" />
+      <div className="absolute top-0 left-0 w-[400px] h-[400px] rounded-full bg-emerald-300/8 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-teal-300/8 blur-3xl pointer-events-none" />
+
+      {/* ── Header ── */}
+      <div className="relative z-10 flex items-center justify-between gap-4 px-4 sm:px-8 py-4 border-b border-slate-200/70 bg-white/80 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 text-xs font-bold"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Mi Perfil</span>
+            </button>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🌳</span>
+            <div>
+              <div className="text-sm font-black text-slate-900">Test del Árbol</div>
+              <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Diagnóstico de Bienestar</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Progress pips */}
+          {mode === 'test' && !isResults && (
+            <div className="hidden sm:flex items-center gap-1.5">
+              {[0,1,2,3,4,5].map(i => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-2 h-2 rounded-full transition-all duration-500",
+                    i < treeStep ? "bg-emerald-500 scale-110" : i === treeStep ? "bg-emerald-300 animate-pulse" : "bg-slate-200"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+          {historyPath.length > 0 && mode === 'test' && (
+            <button
+              onClick={handleResetTree}
+              className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 transition-all text-xs font-bold flex items-center gap-1.5"
+              title="Reiniciar árbol"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Reiniciar</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Body ── */}
+      <div className="relative z-10 flex-1 overflow-hidden flex flex-col">
+        {/* ===== VIEW MODE: Saved Record ===== */}
+        {mode === 'view' && savedUserRecord ? (
+          <div className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 fade-up">
+            <div className="text-center space-y-2">
+              <div className="text-5xl mb-3">🌳</div>
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-black uppercase tracking-wider">
+                🌱 Tu Diagnóstico Personal Registrado
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                Árbol de {savedUserRecord.userName}
+              </h2>
+              <p className="text-slate-500 text-sm font-medium">Evaluado el {savedUserRecord.date}</p>
+            </div>
+
+            {savedUserRecord.historyPath?.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+                  <GitBranch className="h-4 w-4 text-emerald-600" /> Tu Camino en el Árbol
+                </div>
+                <div className="flex flex-col gap-2">
+                  {savedUserRecord.historyPath.map((item: any, i: number) => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                      <div className="w-6 h-6 rounded-full bg-emerald-600 text-white text-[10px] font-black flex items-center justify-center shrink-0">{i+1}</div>
+                      <span className="text-base">{item.emoji}</span>
+                      <div>
+                        <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">{item.nodeTitle}</div>
+                        <div className="text-sm font-bold text-slate-800">{item.optionLabel}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {savedUserRecord.scores && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-700">
+                  <Activity className="h-4 w-4" /> Balanza de Estado Personal
+                </div>
+                <div className="space-y-2.5">
+                  {[
+                    { label: 'Estrés / Tensión', value: savedUserRecord.scores.stress, color: 'bg-rose-500' },
+                    { label: 'Equilibrio Emocional', value: savedUserRecord.scores.mood, color: 'bg-indigo-500' },
+                    { label: 'Calidad de Descanso', value: savedUserRecord.scores.sleep, color: 'bg-blue-500' },
+                    { label: 'Energía', value: savedUserRecord.scores.energy, color: 'bg-teal-500' },
+                    { label: 'Claridad Mental', value: savedUserRecord.scores.focus, color: 'bg-emerald-500' },
+                  ].map(item => (
+                    <div key={item.label} className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold text-slate-600">
+                        <span>{item.label}</span><span>{item.value}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div className={cn("h-full rounded-full", item.color)} style={{ width: `${Math.max(10, item.value)}%`, transition: 'width 1s ease' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-5 space-y-2 shadow-sm">
+              <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
+                <Sparkles className="h-4 w-4 text-emerald-600" /> Tu Informe Personalizado
+              </div>
+              <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line font-medium">{savedUserRecord.summary}</p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pb-6">
+              <button
+                onClick={() => { handleResetTree(); setMode('test'); }}
+                className="flex-1 py-4 px-6 rounded-xl font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                🌳 Nuevo Diagnóstico
+              </button>
+              <Link to="/actividades/diario" className="py-4 px-6 rounded-xl font-bold text-sm bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all text-center flex items-center justify-center">
+                Ir al Diario Emocional
+              </Link>
+            </div>
+          </div>
+          </div>
+        ) : (
+          /* ===== TEST MODE ===== */
+          <div className="flex-1 flex flex-col lg:flex-row h-full min-h-0">
+
+            {/* ── Left Panel: Animated Tree ── LARGER & DOMINANT */}
+            <div
+              className="lg:w-[480px] xl:w-[540px] shrink-0 flex flex-col items-center justify-between bg-gradient-to-b from-sky-100/70 via-emerald-50/50 to-emerald-100/80 border-r border-slate-200/60 relative overflow-y-auto min-h-0"
+            >
+              {/* Sky clouds */}
+              <div className="absolute top-5 left-10 w-28 h-8 bg-white/60 rounded-full blur-md opacity-80" />
+              <div className="absolute top-12 right-16 w-20 h-5 bg-white/50 rounded-full blur-sm opacity-60" />
+              <div className="absolute top-3 left-1/2 w-16 h-6 bg-white/40 rounded-full blur-sm opacity-50" />
+
+              {/* Ambient light glow */}
+              <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-sky-200/30 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-emerald-200/30 to-transparent pointer-events-none" />
+
+              {/* Floating leaves */}
+              {leavesVisible && [0,1,2,3,4,5,6,7].map(i => (
+                <div
+                  key={i}
+                  className="absolute select-none pointer-events-none leaf-float"
+                  style={{
+                    left: `${8 + (i * 12) % 82}%`,
+                    top: `${4 + (i * 13) % 55}%`,
+                    fontSize: `${14 + (i*4)%12}px`,
+                    opacity: 0.18 + (i%3)*0.06,
+                    animationDelay: `${i * 0.5}s`,
+                    animationDuration: `${3.5 + i * 0.4}s`,
+                  }}
+                >
+                  {['🍃','🍀','🌿','🍃','🌱'][i%5]}
+                </div>
+              ))}
+
+              {/* Animated Answer bubble floating up */}
+              {animatingBranch && (
+                <div
+                  className="absolute bottom-48 left-1/2 -translate-x-1/2 z-20 text-3xl answer-bubble pointer-events-none"
+                  style={{ animationDuration: '0.65s' }}
+                >
+                  {historyPath[historyPath.length - 1]?.emoji || '🌿'}
+                </div>
+              )}
+
+              {/* ── DOMINANT SVG TREE ── */}
+              <div className="flex-1 flex flex-col items-center justify-end w-full px-4 pt-4 min-h-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+                <svg
+                  viewBox="0 0 520 560"
+                  className="w-full max-w-[420px] xl:max-w-[480px] sway"
+                  style={{
+                    filter: 'drop-shadow(0 12px 32px rgba(16,185,129,0.18)) drop-shadow(0 4px 12px rgba(120,85,15,0.12))',
+                  }}
+                >
+                  {/* ── Sky gradient background ── */}
+                  <defs>
+                    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#bfdbfe" stopOpacity="0.5" />
+                      <stop offset="60%" stopColor="#d1fae5" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="#a7f3d0" stopOpacity="0.15" />
+                    </linearGradient>
+                  </defs>
+                  <rect x="0" y="0" width="520" height="560" fill="url(#skyGrad)" />
+
+                  {/* ── Clouds ── */}
+                  {/* Cloud 1 — large, left */}
+                  <g className="cloud-drift" style={{ animationDuration: '8s' }}>
+                    <ellipse cx="80" cy="55" rx="38" ry="18" fill="white" opacity="0.88" />
+                    <ellipse cx="108" cy="48" rx="28" ry="20" fill="white" opacity="0.92" />
+                    <ellipse cx="52" cy="58" rx="22" ry="14" fill="white" opacity="0.80" />
+                    <ellipse cx="130" cy="56" rx="18" ry="13" fill="white" opacity="0.78" />
+                    <ellipse cx="90" cy="65" rx="45" ry="12" fill="white" opacity="0.60" />
+                  </g>
+                  {/* Cloud 2 — medium, right */}
+                  <g className="cloud-drift-slow" style={{ animationDuration: '11s', animationDelay: '2s' }}>
+                    <ellipse cx="400" cy="42" rx="30" ry="15" fill="white" opacity="0.80" />
+                    <ellipse cx="424" cy="36" rx="22" ry="16" fill="white" opacity="0.85" />
+                    <ellipse cx="378" cy="46" rx="18" ry="11" fill="white" opacity="0.72" />
+                    <ellipse cx="442" cy="44" rx="14" ry="10" fill="white" opacity="0.65" />
+                    <ellipse cx="408" cy="52" rx="36" ry="10" fill="white" opacity="0.50" />
+                  </g>
+                  {/* Cloud 3 — small, center-right */}
+                  <g className="cloud-drift" style={{ animationDuration: '13s', animationDelay: '4s' }}>
+                    <ellipse cx="310" cy="28" rx="20" ry="10" fill="white" opacity="0.70" />
+                    <ellipse cx="328" cy="23" rx="15" ry="11" fill="white" opacity="0.75" />
+                    <ellipse cx="294" cy="30" rx="13" ry="8" fill="white" opacity="0.60" />
+                    <ellipse cx="318" cy="35" rx="24" ry="7" fill="white" opacity="0.45" />
+                  </g>
+
+                  {/* ── Birds (tiny V shapes flying across) ── */}
+                  <g className="bird-fly" style={{ animationDuration: '9s', animationDelay: '1s' }}>
+                    <path d="M160 80 Q163 76 166 80" stroke="#475569" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.5" />
+                    <path d="M170 74 Q173 70 176 74" stroke="#475569" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.4" />
+                  </g>
+                  <g className="bird-fly" style={{ animationDuration: '12s', animationDelay: '5s' }}>
+                    <path d="M60 100 Q63 96 66 100" stroke="#64748b" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.4" />
+                  </g>
+
+                  {/* ── Ground / Soil ── */}
+                  <ellipse cx="260" cy="550" rx="180" ry="16" fill="#d1fae5" opacity="0.5" className="root-pulse" />
+                  <ellipse cx="260" cy="550" rx="130" ry="11" fill="#6ee7b7" opacity="0.3" className="root-pulse" style={{ animationDelay: '0.4s' }} />
+                  <ellipse cx="260" cy="553" rx="90" ry="7" fill="#34d399" opacity="0.4" />
+
+                  {/* ── GROUND GRASS STRIPS ── */}
+                  {/* Left side grass */}
+                  {[65,80,95,110,125,140,155].map((x, i) => (
+                    <path key={i}
+                      d={`M${x} 553 Q${x-4} ${538 - (i%3)*4} ${x} ${524 - (i%2)*3}`}
+                      stroke="#22c55e" strokeWidth={2 + (i%2)} fill="none" strokeLinecap="round"
+                      opacity={0.55 + (i%3)*0.1}
+                      className="grass-sway"
+                      style={{ animationDelay: `${i * 0.18}s`, animationDuration: `${2.2 + i*0.15}s` }}
+                    />
+                  ))}
+                  {/* Right side grass */}
+                  {[365,380,395,410,425,440,455].map((x, i) => (
+                    <path key={i}
+                      d={`M${x} 553 Q${x+4} ${538 - (i%3)*4} ${x} ${524 - (i%2)*3}`}
+                      stroke="#16a34a" strokeWidth={2 + (i%2)} fill="none" strokeLinecap="round"
+                      opacity={0.5 + (i%3)*0.1}
+                      className="grass-sway"
+                      style={{ animationDelay: `${i * 0.2}s`, animationDuration: `${2.4 + i*0.12}s` }}
+                    />
+                  ))}
+
+                  {/* ── LEFT BUSH ── */}
+                  {/* Bush base/shadow */}
+                  <ellipse cx="110" cy="544" rx="55" ry="12" fill="#15803d" opacity="0.2" />
+                  {/* Bush body — layered circles */}
+                  <circle cx="85"  cy="530" r="22" fill="#16a34a" opacity="0.90" />
+                  <circle cx="108" cy="524" r="26" fill="#22c55e" opacity="0.88" />
+                  <circle cx="130" cy="529" r="20" fill="#16a34a" opacity="0.85" />
+                  <circle cx="72"  cy="535" r="16" fill="#15803d" opacity="0.80" />
+                  <circle cx="145" cy="534" r="15" fill="#15803d" opacity="0.78" />
+                  <circle cx="95"  cy="516" r="16" fill="#4ade80" opacity="0.70" />
+                  <circle cx="118" cy="512" r="18" fill="#34d399" opacity="0.65" />
+                  <circle cx="108" cy="508" r="10" fill="#86efac" opacity="0.55" />
+                  {/* Bush highlight dots */}
+                  <circle cx="100" cy="518" r="5" fill="#bbf7d0" opacity="0.50" />
+                  <circle cx="120" cy="514" r="4" fill="#bbf7d0" opacity="0.45" />
+                  {/* Small flower on bush */}
+                  <circle cx="134" cy="520" r="4" fill="#fde68a" opacity="0.90" />
+                  <circle cx="134" cy="516" r="3" fill="#fbbf24" opacity="0.80" />
+
+                  {/* ── RIGHT BUSH ── */}
+                  <ellipse cx="400" cy="544" rx="55" ry="12" fill="#15803d" opacity="0.2" />
+                  <circle cx="375" cy="530" r="20" fill="#15803d" opacity="0.85" />
+                  <circle cx="396" cy="524" r="26" fill="#22c55e" opacity="0.88" />
+                  <circle cx="418" cy="529" r="22" fill="#16a34a" opacity="0.90" />
+                  <circle cx="362" cy="534" r="15" fill="#15803d" opacity="0.78" />
+                  <circle cx="432" cy="534" r="16" fill="#15803d" opacity="0.80" />
+                  <circle cx="386" cy="516" r="18" fill="#34d399" opacity="0.65" />
+                  <circle cx="408" cy="512" r="16" fill="#4ade80" opacity="0.70" />
+                  <circle cx="397" cy="507" r="10" fill="#86efac" opacity="0.55" />
+                  <circle cx="382" cy="518" r="5" fill="#bbf7d0" opacity="0.50" />
+                  <circle cx="408" cy="514" r="4" fill="#bbf7d0" opacity="0.45" />
+                  {/* Small flower on right bush */}
+                  <circle cx="376" cy="521" r="4" fill="#fda4af" opacity="0.90" />
+                  <circle cx="376" cy="517" r="3" fill="#fb7185" opacity="0.80" />
+
+                  {/* ── Small wildflowers on ground ── */}
+                  {[[175,548,"#fde68a"],[195,546,"#fda4af"],[320,547,"#fde68a"],[340,549,"#c4b5fd"],[358,546,"#fda4af"]].map(([x,y,fill],i)=>(
+                    <g key={i}>
+                      <circle cx={x} cy={y} r={4} fill={fill as string} opacity={0.85} />
+                      <circle cx={x} cy={y} r={2} fill="#fbbf24" opacity={0.9} />
+                      <path d={`M${x} ${y+4} L${x} ${(y as number)+10}`} stroke="#22c55e" strokeWidth="1.5" opacity="0.7" />
+                    </g>
+                  ))}
+
+                  {/* ── Root System ── */}
+                  <path d="M245 540 Q210 548 175 545 Q155 545 140 552" stroke="#92400e" strokeWidth="5" fill="none" strokeLinecap="round" opacity="0.5" />
+                  <path d="M255 542 Q230 555 205 555" stroke="#a16207" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.35" />
+                  <path d="M275 540 Q310 548 345 545 Q365 545 380 552" stroke="#92400e" strokeWidth="5" fill="none" strokeLinecap="round" opacity="0.5" />
+                  <path d="M265 542 Q290 555 315 555" stroke="#a16207" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.35" />
+                  <path d="M250 544 Q240 560 225 562" stroke="#a16207" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.25" />
+                  <path d="M270 544 Q280 560 295 562" stroke="#a16207" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.25" />
+
+                  {/* ── MAIN TRUNK — THICK & DOMINANT ── */}
+                  {/* Shadow/depth layer */}
+                  <path
+                    d="M268 542 C266 500 264 465 262 430 C260 400 257 370 255 340 C253 315 252 295 254 272 C256 252 258 238 260 222"
+                    stroke="#78350f"
+                    strokeWidth="34"
+                    fill="none"
+                    strokeLinecap="round"
+                    opacity="0.25"
+                  />
+                  {/* Main trunk */}
+                  <path
+                    d="M260 542 C258 500 256 465 254 430 C252 400 249 370 247 340 C245 315 244 295 246 272 C248 252 252 238 254 222"
+                    stroke="#92400e"
+                    strokeWidth="28"
+                    fill="none"
+                    strokeLinecap="round"
+                    className="trunk-grow"
+                  />
+                  {/* Highlight stripe */}
+                  <path
+                    d="M255 530 C254 495 253 460 252 430 C251 400 250 375 250 350 C250 325 251 305 252 285"
+                    stroke="#b45309"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeLinecap="round"
+                    opacity="0.4"
+                    className="trunk-grow"
+                  />
+                  {/* Bark texture lines */}
+                  <path d="M257 510 C256 490 255 470 254 450" stroke="#78350f" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.35" />
+                  <path d="M263 500 C262 480 261 460 260 440" stroke="#78350f" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.25" />
+                  <path d="M258 480 Q270 475 268 468" stroke="#78350f" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.3" />
+                  <path d="M256 430 Q244 425 246 418" stroke="#78350f" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.3" />
+                  {/* Knot */}
+                  <ellipse cx="252" cy="390" rx="6" ry="4" fill="#78350f" opacity="0.35" />
+
+                  {/* ── LEVEL 1 BRANCHES (step 1) — Fat & Wide ── */}
+                  {activeBranches >= 1 && (
+                    <>
+                      {/* Left branch — thick, sweeping */}
+                      <path
+                        d="M249 345 C228 328 200 318 168 310 C148 305 128 305 108 308"
+                        stroke="#92400e" strokeWidth="16" fill="none" strokeLinecap="round"
+                        className="branch-grow" style={{ animationDuration: '0.9s' }}
+                      />
+                      <path
+                        d="M249 345 C228 328 200 318 168 310 C148 305 128 305 108 308"
+                        stroke="#b45309" strokeWidth="5" fill="none" strokeLinecap="round"
+                        opacity="0.3" className="branch-grow" style={{ animationDuration: '0.9s' }}
+                      />
+                      {/* Right branch */}
+                      <path
+                        d="M249 345 C270 328 300 318 332 312 C352 307 374 306 396 308"
+                        stroke="#92400e" strokeWidth="16" fill="none" strokeLinecap="round"
+                        className="branch-grow" style={{ animationDuration: '0.9s', animationDelay: '0.12s' }}
+                      />
+                      <path
+                        d="M249 345 C270 328 300 318 332 312 C352 307 374 306 396 308"
+                        stroke="#b45309" strokeWidth="5" fill="none" strokeLinecap="round"
+                        opacity="0.3" className="branch-grow" style={{ animationDuration: '0.9s', animationDelay: '0.12s' }}
+                      />
+                      {/* LEFT foliage cluster — lush */}
+                      {[
+                        [108,295,28],[90,308,20],[96,322,16],[78,316,13],
+                        [118,282,16],[70,302,12],[106,332,11]
+                      ].map(([cx,cy,r],i) => (
+                        <circle key={i} cx={cx} cy={cy} r={r}
+                          fill={['#4ade80','#22c55e','#16a34a','#86efac','#34d399','#4ade80','#22c55e'][i]}
+                          opacity={0.9 - i*0.07} className="sparkle-pop"
+                          style={{ animationDelay: `${0.65+i*0.08}s` }} />
+                      ))}
+                      {/* RIGHT foliage cluster */}
+                      {[
+                        [396,295,28],[414,308,20],[408,322,16],[426,316,13],
+                        [386,282,16],[434,302,12],[398,332,11]
+                      ].map(([cx,cy,r],i) => (
+                        <circle key={i} cx={cx} cy={cy} r={r}
+                          fill={['#34d399','#4ade80','#22c55e','#86efac','#16a34a','#34d399','#4ade80'][i]}
+                          opacity={0.9 - i*0.07} className="sparkle-pop"
+                          style={{ animationDelay: `${0.75+i*0.08}s` }} />
+                      ))}
+                      <text x="85" y="275" fontSize="18" textAnchor="middle" className="sparkle-pop" style={{ animationDelay: '1s' }}>
+                        {historyPath[0]?.emoji || ''}
+                      </text>
+                    </>
+                  )}
+
+                  {/* ── LEVEL 2 BRANCHES (step 2) ── */}
+                  {activeBranches >= 2 && (
+                    <>
+                      <path
+                        d="M247 295 C224 278 196 268 162 262 C142 258 120 258 98 260"
+                        stroke="#a16207" strokeWidth="12" fill="none" strokeLinecap="round"
+                        className="branch-grow" style={{ animationDuration: '0.85s' }}
+                      />
+                      <path
+                        d="M247 295 C224 278 196 268 162 262 C142 258 120 258 98 260"
+                        stroke="#ca8a04" strokeWidth="4" fill="none" strokeLinecap="round"
+                        opacity="0.3" className="branch-grow" style={{ animationDuration: '0.85s' }}
+                      />
+                      <path
+                        d="M247 295 C270 278 298 268 332 262 C352 258 374 258 398 260"
+                        stroke="#a16207" strokeWidth="12" fill="none" strokeLinecap="round"
+                        className="branch-grow" style={{ animationDuration: '0.85s', animationDelay: '0.12s' }}
+                      />
+                      <path
+                        d="M247 295 C270 278 298 268 332 262 C352 258 374 258 398 260"
+                        stroke="#ca8a04" strokeWidth="4" fill="none" strokeLinecap="round"
+                        opacity="0.3" className="branch-grow" style={{ animationDuration: '0.85s', animationDelay: '0.12s' }}
+                      />
+                      {[
+                        [98,248,24],[80,260,18],[86,274,14],[68,268,12],
+                        [108,238,14],[62,255,11],[95,282,10]
+                      ].map(([cx,cy,r],i) => (
+                        <circle key={i} cx={cx} cy={cy} r={r}
+                          fill={['#22c55e','#16a34a','#4ade80','#86efac','#22c55e','#15803d','#4ade80'][i]}
+                          opacity={0.92 - i*0.06} className="sparkle-pop"
+                          style={{ animationDelay: `${0.6+i*0.07}s` }} />
+                      ))}
+                      {[
+                        [398,248,24],[416,260,18],[410,274,14],[428,268,12],
+                        [388,238,14],[434,255,11],[401,282,10]
+                      ].map(([cx,cy,r],i) => (
+                        <circle key={i} cx={cx} cy={cy} r={r}
+                          fill={['#10b981','#22c55e','#16a34a','#34d399','#4ade80','#059669','#22c55e'][i]}
+                          opacity={0.92 - i*0.06} className="sparkle-pop"
+                          style={{ animationDelay: `${0.7+i*0.07}s` }} />
+                      ))}
+                      <text x="76" y="230" fontSize="18" textAnchor="middle" className="sparkle-pop" style={{ animationDelay: '0.95s' }}>
+                        {historyPath[1]?.emoji || ''}
+                      </text>
+                    </>
+                  )}
+
+                  {/* ── LEVEL 3 BRANCHES (step 3) ── */}
+                  {activeBranches >= 3 && (
+                    <>
+                      <path
+                        d="M248 258 C228 242 202 234 172 228 C152 224 130 223 108 225"
+                        stroke="#a16207" strokeWidth="10" fill="none" strokeLinecap="round"
+                        className="branch-grow" style={{ animationDuration: '0.8s' }}
+                      />
+                      <path
+                        d="M248 258 C268 242 294 234 324 228 C344 224 368 223 392 225"
+                        stroke="#a16207" strokeWidth="10" fill="none" strokeLinecap="round"
+                        className="branch-grow" style={{ animationDuration: '0.8s', animationDelay: '0.12s' }}
+                      />
+                      {[
+                        [108,212,22],[90,223,16],[96,236,13],[74,228,11],
+                        [118,202,13],[68,218,10],[103,244,9]
+                      ].map(([cx,cy,r],i) => (
+                        <circle key={i} cx={cx} cy={cy} r={r}
+                          fill={['#16a34a','#22c55e','#4ade80','#15803d','#22c55e','#16a34a','#4ade80'][i]}
+                          opacity={0.93 - i*0.06} className="sparkle-pop"
+                          style={{ animationDelay: `${0.55+i*0.07}s` }} />
+                      ))}
+                      {[
+                        [392,212,22],[410,223,16],[404,236,13],[426,228,11],
+                        [382,202,13],[432,218,10],[397,244,9]
+                      ].map(([cx,cy,r],i) => (
+                        <circle key={i} cx={cx} cy={cy} r={r}
+                          fill={['#059669','#10b981','#22c55e','#065f46','#16a34a','#059669','#22c55e'][i]}
+                          opacity={0.93 - i*0.06} className="sparkle-pop"
+                          style={{ animationDelay: `${0.65+i*0.07}s` }} />
+                      ))}
+                      <text x="86" y="196" fontSize="18" textAnchor="middle" className="sparkle-pop" style={{ animationDelay: '0.9s' }}>
+                        {historyPath[2]?.emoji || ''}
+                      </text>
+                    </>
+                  )}
+
+                  {/* ── LEVEL 4 BRANCHES + MASSIVE CROWN (step 4) ── */}
+                  {activeBranches >= 4 && (
+                    <>
+                      <path
+                        d="M250 228 C232 212 210 204 184 198 C164 194 144 194 124 196"
+                        stroke="#a16207" strokeWidth="8" fill="none" strokeLinecap="round"
+                        className="branch-grow" style={{ animationDuration: '0.75s' }}
+                      />
+                      <path
+                        d="M250 228 C268 212 290 204 316 198 C336 194 358 194 380 196"
+                        stroke="#a16207" strokeWidth="8" fill="none" strokeLinecap="round"
+                        className="branch-grow" style={{ animationDuration: '0.75s', animationDelay: '0.12s' }}
+                      />
+                      {/* Massive multi-layer canopy */}
+                      <ellipse cx="254" cy="185" rx="140" ry="100" fill="#14532d" opacity="0.08" className="sparkle-pop" style={{ animationDelay: '0.4s' }} />
+                      <ellipse cx="254" cy="178" rx="118" ry="84" fill="#15803d" opacity="0.14" className="sparkle-pop" style={{ animationDelay: '0.5s' }} />
+                      <ellipse cx="254" cy="170" rx="96" ry="70" fill="#16a34a" opacity="0.22" className="sparkle-pop" style={{ animationDelay: '0.6s' }} />
+                      <ellipse cx="254" cy="162" rx="76" ry="56" fill="#22c55e" opacity="0.35" className="sparkle-pop" style={{ animationDelay: '0.7s' }} />
+                      <ellipse cx="254" cy="152" rx="56" ry="42" fill="#4ade80" opacity="0.5" className="sparkle-pop" style={{ animationDelay: '0.8s' }} />
+                      <ellipse cx="254" cy="140" rx="38" ry="30" fill="#86efac" opacity="0.65" className="sparkle-pop" style={{ animationDelay: '0.9s' }} />
+                      {/* Individual crown leaf clusters */}
+                      {[
+                        [204,148,20],[170,162,16],[186,130,14],
+                        [304,148,20],[338,162,16],[318,130,14],
+                        [254,110,22],[226,120,15],[282,120,15],
+                      ].map(([cx,cy,r],i) => (
+                        <circle key={i} cx={cx} cy={cy} r={r}
+                          fill={['#22c55e','#16a34a','#4ade80','#10b981','#059669','#22c55e','#4ade80','#34d399','#22c55e'][i]}
+                          opacity={0.7 - i*0.02} className="sparkle-pop"
+                          style={{ animationDelay: `${0.75+i*0.07}s` }} />
+                      ))}
+                      {/* Top glow star */}
+                      <circle cx="254" cy="90" r="18" fill="#fde047" opacity="0.85" className="sparkle-pop" style={{ animationDelay: '1.1s' }} />
+                      <circle cx="254" cy="90" r="12" fill="#fbbf24" opacity="0.9" className="sparkle-pop" style={{ animationDelay: '1.2s' }} />
+                      <text x="254" y="97" fontSize="18" textAnchor="middle" className="sparkle-pop" style={{ animationDelay: '1.3s' }}>⭐</text>
+                      <text x="120" y="188" fontSize="18" textAnchor="middle" className="sparkle-pop" style={{ animationDelay: '0.95s' }}>
+                        {historyPath[3]?.emoji || ''}
+                      </text>
+                    </>
+                  )}
+
+                  {/* ── Smooth gliding dot on trunk ── */}
+                  {!isResults && (
+                    <>
+                      <circle
+                        cx="254" cy={542 - treeStep * 68}
+                        r="18" fill="none" stroke="#059669" strokeWidth="2"
+                        opacity="0.2"
+                        style={{ transition: 'cy 0.9s cubic-bezier(0.34,1.3,0.64,1)' }}
+                      />
+                      <circle
+                        cx="254" cy={542 - treeStep * 68}
+                        r="14" fill="#10b981" opacity="0.3"
+                        className="pulse-glow"
+                        style={{ transition: 'cy 0.9s cubic-bezier(0.34,1.3,0.64,1)' }}
+                      />
+                      <circle
+                        cx="254" cy={542 - treeStep * 68}
+                        r="8" fill="#ecfdf5" stroke="#059669" strokeWidth="2.5"
+                        className="dot-move"
+                        style={{ transition: 'cy 0.9s cubic-bezier(0.34,1.3,0.64,1)' }}
+                      />
+                    </>
+                  )}
+
+                  {/* Completion glow */}
+                  {isResults && (
+                    <>
+                      <circle cx="254" cy="140" r="70" fill="#fef9c3" opacity="0.25" className="sparkle-pop" style={{ animationDelay: '0.2s' }} />
+                      <text x="254" y="60" fontSize="30" textAnchor="middle" className="sparkle-pop" style={{ animationDelay: '0.5s' }}>🎉</text>
+                    </>
+                  )}
+                </svg>
+              </div>
+
+              {/* Step history chips below tree */}
+              <div className="w-full px-4 pb-5 pt-3 space-y-1.5">
+                {historyPath.map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleBackToNode(i)}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/90 border border-emerald-100 hover:border-emerald-300 hover:bg-emerald-50 transition-all text-left step-reveal shadow-sm"
+                    style={{ animationDelay: `${i * 0.07}s` }}
+                  >
+                    <span className="text-lg shrink-0">{item.emoji}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider truncate">{item.nodeTitle}</div>
+                      <div className="text-xs font-bold text-slate-700 truncate">{item.optionLabel}</div>
+                    </div>
+                    <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
+                  </button>
+                ))}
+                {historyPath.length === 0 && (
+                  <div className="text-center text-xs text-slate-400/80 font-medium py-1.5">
+                    🌿 Tus respuestas subirán por el árbol
+                  </div>
+                )}
+              </div>
+            </div>
+
+
+            {/* ── Right Panel: Questions / Results ── */}
+            <div className="flex-1 flex flex-col overflow-y-auto min-h-0">
+              {!isResults && currentNode && (
+                <div
+                  key={panelKey}
+                  className={cn(
+                    "max-w-2xl mx-auto w-full px-4 sm:px-8 py-8 flex flex-col gap-5",
+                    panelVisible ? "panel-in" : "panel-out"
+                  )}
+                >
+                  {/* Stage pill + step counter */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-black uppercase tracking-wider">
+                      <span>{currentNode.icon}</span>
+                      <span>Paso {currentNode.stepNumber} de 6 · {currentNode.stageName}</span>
+                    </div>
+                    {/* Mini step dots */}
+                    <div className="flex items-center gap-1.5 sm:hidden">
+                      {[0,1,2,3,4,5].map(i => (
+                        <div key={i} className={cn(
+                          "rounded-full transition-all duration-500",
+                          i < treeStep ? "w-4 h-2 bg-emerald-500" : i === treeStep ? "w-4 h-2 bg-emerald-300" : "w-2 h-2 bg-slate-200"
+                        )} />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Question */}
+                  <div className="space-y-1.5">
+                    <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+                      {currentNode.title}
+                    </h2>
+                    <p className="text-slate-400 text-sm leading-relaxed font-medium">{currentNode.subtitle}</p>
+                  </div>
+
+                  {/* Compassion note */}
+                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/60 text-emerald-800 text-xs font-semibold">
+                    <Sparkles className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span>{currentNode.compassionNote}</span>
+                  </div>
+
+                  {/* Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {currentNode.options.map((opt, idx) => {
+                      const isSelected = selectedOption === opt.id;
+                      const isOther = animatingBranch && !isSelected;
+                      return (
+                        <button
+                          key={opt.id}
+                          onClick={() => handleSelectOption(opt)}
+                          disabled={animatingBranch}
+                          className={cn(
+                            "group relative rounded-2xl border p-5 text-left flex flex-col gap-3 cursor-pointer overflow-hidden",
+                            "transition-all duration-300 ease-out",
+                            isSelected
+                              ? "border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-lg shadow-emerald-200/60 scale-[0.98] card-pulse"
+                              : isOther
+                              ? "border-slate-100 bg-white/60 opacity-40 scale-[0.97] shadow-none"
+                              : "border-slate-200/80 bg-white shadow-sm hover:border-emerald-400 hover:bg-emerald-50/30 hover:-translate-y-1 hover:shadow-lg hover:shadow-emerald-100/60"
+                          )}
+                          style={{ animationDelay: `${idx * 0.06}s` }}
+                        >
+                          {/* Ripple ring on selected */}
+                          {isSelected && <div className="ripple-ring" />}
+
+                          {/* Climbing emoji particle */}
+                          {isSelected && (
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+                              <div
+                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-2xl answer-bubble"
+                                style={{ animationDuration: '0.65s' }}
+                              >{opt.emoji}</div>
+                            </div>
+                          )}
+
+                          <div className="flex items-start justify-between gap-2">
+                            <span className={cn(
+                              "transition-all duration-300",
+                              isSelected ? "text-4xl scale-125" : "text-3xl group-hover:scale-110"
+                            )}>{opt.emoji}</span>
+                            <div className={cn(
+                              "w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 shrink-0",
+                              isSelected ? "bg-emerald-600 text-white rotate-90" : "bg-slate-100 text-slate-400 group-hover:bg-emerald-600 group-hover:text-white"
+                            )}>
+                              <ChevronRight className="h-4 w-4" />
+                            </div>
+                          </div>
+
+                          <div>
+                            <h3 className={cn(
+                              "text-base font-black leading-snug transition-colors duration-200",
+                              isSelected ? "text-emerald-800" : "text-slate-900 group-hover:text-emerald-800"
+                            )}>{opt.label}</h3>
+                            <p className="text-xs text-slate-400 leading-relaxed mt-1 font-medium">{opt.description}</p>
+                          </div>
+
+                          {/* Progress bar indicator */}
+                          {isSelected && (
+                            <div className="w-full h-1 bg-emerald-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-emerald-500 rounded-full"
+                                style={{ width:'100%', animation:'branch-grow 0.6s cubic-bezier(0.22,1,0.36,1) forwards', strokeDasharray:'unset' }}
+                              />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Results Screen ── */}
+              {isResults && (() => {
+                const diagEngine = calcularDiagnosticoArbol(historyPath, scores);
+                const perfil = diagEngine.perfilPrincipal;
+                const ruta = diagEngine.rutaTransformacion;
+                const informe = diagEngine.informeOficialACM10;
+
+                return (
+                  <div className="max-w-2xl mx-auto w-full px-4 sm:px-8 py-8 space-y-6 fade-up">
+                    <div className="text-center space-y-2">
+                      <div className="text-5xl mb-2">🌳</div>
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-black uppercase tracking-wider">
+                        Sistema Oficial del Árbol Interior® (Motor ACM-1.0)
+                      </div>
+                      <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                        Informe Diagnóstico Oficial
+                      </h2>
+                      <p className="text-slate-500 text-sm font-medium max-w-md mx-auto">
+                        Evaluación Integral de Adaptación, Recursos y Potencial Evolutivo
+                      </p>
+                    </div>
+
+                    {/* ÍNDICE GENERAL DEL ÁRBOL (IGA) & MÉTRICAS AIC-60® */}
+                    <div className="bg-white border-2 border-emerald-200 rounded-3xl p-6 shadow-lg space-y-4">
+                      <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-3">
+                        <div>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Índice General del Árbol (IGA)</span>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-4xl font-black text-slate-900">{informe.igaMetrics.igaScore}</span>
+                            <span className="text-sm text-slate-400 font-bold">/ 5.0</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={cn("px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider inline-block mb-1 shadow-xs", informe.igaMetrics.igaColor)}>
+                            {informe.igaMetrics.igaLabel}
+                          </span>
+                          <span className="text-xs font-bold text-slate-500 block">Perfil Global: {informe.igaMetrics.perfilGlobal}</span>
+                        </div>
+                      </div>
+
+                      {/* INDICES IAD & IPE */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Índice de Adaptación Defensiva (IAD)</span>
+                            <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-black text-[10px]">{informe.seccion9_iad.nivel}</span>
+                          </div>
+                          <p className="text-slate-600 text-[11px] font-medium leading-relaxed">{informe.seccion9_iad.interpretacion}</p>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Índice Potencial Evolutivo (IPE)</span>
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-black text-[10px]">{informe.seccion11_ipe.nivel}</span>
+                          </div>
+                          <p className="text-emerald-900 text-[11px] font-medium leading-relaxed">{informe.seccion11_ipe.interpretacion}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* TARJETA MAESTRA DEL PERFIL ADAPTATIVO */}
+                    <div className={cn(
+                      "relative rounded-3xl p-6 sm:p-8 border-2 shadow-xl overflow-hidden bg-gradient-to-br",
+                      perfil.colorTheme.border,
+                      perfil.colorTheme.bgGradient
+                    )}>
+                      <div className="flex items-center justify-between gap-4 mb-4">
+                        <div className={cn("px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-widest border", perfil.colorTheme.badge)}>
+                          Perfil Dominante
+                        </div>
+                        <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                          <span>Estado Evolutivo:</span>
+                          <span className="font-black text-slate-800 underline">{perfil.estadoEvolutivo}</span>
+                        </div>
+                      </div>
+
+                      <h3 className="text-3xl font-black text-slate-900 mb-2">{perfil.nombre}</h3>
+                      <p className="text-slate-700 text-sm font-medium leading-relaxed mb-4">
+                        {perfil.descripcionDetallada}
+                      </p>
+
+                      {/* PREGUNTA CENTRAL DE REFLEXIÓN (DOC 2) */}
+                      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 mb-6 flex items-start gap-3">
+                        <span className="text-2xl shrink-0">💡</span>
+                        <div>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 block">Pregunta Central de Reflexión</span>
+                          <p className="text-base font-black text-amber-950 italic">"{perfil.preguntaCentral}"</p>
+                        </div>
+                      </div>
+
+                      {/* MATRIZ DE TRANSFORMACIÓN MAESTRA (DOC 1 & 2) */}
+                      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-5 border border-slate-200/80 space-y-4 shadow-sm">
+                        <div className="text-xs font-black uppercase tracking-wider text-emerald-800 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-emerald-600" /> Matriz de Transformación Evolutiva
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-normal">Edición 1.0</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Necesidad Dominante</span>
+                            <span className="font-black text-slate-800 text-sm">{ruta.necesidad}</span>
+                          </div>
+                          <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-100">
+                            <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">Herida Principal</span>
+                            <span className="font-black text-rose-900 text-sm">{ruta.herida}</span>
+                          </div>
+                          <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-100 sm:col-span-2">
+                            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">Creencia Núcleo</span>
+                            <span className="font-bold text-amber-950 italic">{ruta.creencia}</span>
+                          </div>
+                          <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-100">
+                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider block">Emoción Principal</span>
+                            <span className="font-black text-indigo-900 text-sm">{ruta.emocion}</span>
+                          </div>
+                          <div className="p-3 rounded-xl bg-orange-50/70 border border-orange-100">
+                            <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wider block">Obstáculo Principal</span>
+                            <span className="font-black text-orange-950 text-sm">{ruta.obstaculo}</span>
+                          </div>
+                          <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-100 sm:col-span-2">
+                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Virtud Evolutiva a Desarrollar</span>
+                            <span className="font-black text-emerald-900 text-sm">{ruta.virtud}</span>
+                          </div>
+                        </div>
+
+                        {/* OBJETIVO TERAPÉUTICO */}
+                        <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm space-y-1">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-200 block">Objetivo Terapéutico</span>
+                          <span className="font-black text-sm block">{ruta.objetivo}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* EL MANTO DE VERGÜENZA® (DOC 3) */}
+                    <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl space-y-4 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+                        <Lock className="w-28 h-28 text-purple-300" />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                        <div className="flex items-center gap-2">
+                          <Lock className="h-4 w-4 text-purple-400" />
+                          <span className="text-xs font-black uppercase tracking-widest text-purple-300">El Manto de Vergüenza®</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400">Modelo Conexión Luz®</span>
+                      </div>
+
+                      <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                        Mecanismo de regulación protectora que busca ocultar aspectos vulnerables para evitar rechazo o pérdida de valor.
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
+                        <div className="p-3 rounded-2xl bg-slate-800/90 border border-slate-700/80 space-y-1">
+                          <span className="text-[9px] font-bold text-rose-400 uppercase tracking-wider block">Emoción Oculta</span>
+                          <span className="font-bold text-slate-200 text-xs block">{ruta.mantoVerguenza.emocionOculta}</span>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-slate-800/90 border border-slate-700/80 space-y-1">
+                          <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider block">Necesidad Velada</span>
+                          <span className="font-bold text-slate-200 text-xs block">{ruta.mantoVerguenza.necesidadVelada}</span>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-slate-800/90 border border-slate-700/80 space-y-1">
+                          <span className="text-[9px] font-bold text-purple-400 uppercase tracking-wider block">Identidad Protegida</span>
+                          <span className="font-bold text-slate-200 text-xs block">{ruta.mantoVerguenza.identidadProtegida}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Conductas Adaptativas:</span>
+                        {ruta.conductasAdaptativas.map((cond, i) => (
+                          <span key={i} className="px-2.5 py-0.5 rounded-full bg-purple-950/80 border border-purple-800/60 text-purple-200 text-[11px] font-bold">
+                            🛡️ {cond}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* ANATOMÍA DEL ÁRBOL INTERIOR® (DOC 3) */}
+                    <div className="bg-gradient-to-b from-emerald-900 to-teal-950 text-white rounded-3xl p-6 sm:p-7 shadow-xl space-y-4">
+                      <div className="flex items-center justify-between gap-3 border-b border-emerald-800/80 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">🌳</span>
+                          <span className="text-xs font-black uppercase tracking-widest text-emerald-300">Anatomía del Árbol Interior®</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Simbolismo Clínico</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div className="p-3 rounded-2xl bg-emerald-900/60 border border-emerald-800/60 space-y-1">
+                          <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block">🌱 Tierra (Contexto)</span>
+                          <span className="text-emerald-100 font-medium leading-snug block">{ruta.anatomiaArbol.tierra}</span>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-emerald-900/60 border border-emerald-800/60 space-y-1">
+                          <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block">🪵 Raíces (Necesidades & Herida)</span>
+                          <span className="text-emerald-100 font-medium leading-snug block">{ruta.anatomiaArbol.raices}</span>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-emerald-900/60 border border-emerald-800/60 space-y-1">
+                          <span className="text-[10px] font-bold text-teal-300 uppercase tracking-wider block">💧 Savia (Manto de Vergüenza®)</span>
+                          <span className="text-emerald-100 font-medium leading-snug block">{ruta.anatomiaArbol.savia}</span>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-emerald-900/60 border border-emerald-800/60 space-y-1">
+                          <span className="text-[10px] font-bold text-teal-300 uppercase tracking-wider block">🌳 Tronco (Creencias e Identidad)</span>
+                          <span className="text-emerald-100 font-medium leading-snug block">{ruta.anatomiaArbol.tronco}</span>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-emerald-900/60 border border-emerald-800/60 space-y-1">
+                          <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider block">🌿 Ramas (Conductas Adaptativas)</span>
+                          <span className="text-emerald-100 font-medium leading-snug block">{ruta.anatomiaArbol.ramas}</span>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-emerald-900/60 border border-emerald-800/60 space-y-1">
+                          <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider block">🍎 Frutos (Resultados)</span>
+                          <span className="text-emerald-100 font-medium leading-snug block">{ruta.anatomiaArbol.frutos}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 font-black text-xs flex items-center gap-3 shadow-md">
+                        <span className="text-xl">✨</span>
+                        <div>
+                          <span className="text-[9px] uppercase tracking-widest text-amber-900 block font-black">Luz Evolutiva</span>
+                          <span className="text-sm block">{ruta.anatomiaArbol.luz}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SÍNTOMAS Y RECURSOS NATURALES */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-2">
+                        <div className="text-xs font-black uppercase tracking-wider text-slate-500">Recursos Naturales</div>
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {perfil.recursosNaturales.map((rec, i) => (
+                            <span key={i} className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                              ✨ {rec}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-2">
+                        <div className="text-xs font-black uppercase tracking-wider text-slate-500">Indicadores de Integración</div>
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {perfil.indicadoresIntegracion.map((ind, i) => (
+                            <span key={i} className="px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">
+                              🌱 {ind}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Path chips */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+                        <GitBranch className="h-4 w-4 text-emerald-600" /> Ramas Recorridas
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {historyPath.map((item, i) => (
+                          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-100 climb-up" style={{ animationDelay: `${i*0.12}s` }}>
+                            <div className="w-6 h-6 rounded-full bg-emerald-600 text-white text-[10px] font-black flex items-center justify-center shrink-0">{i+1}</div>
+                            <span className="text-base">{item.emoji}</span>
+                            <div>
+                              <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">{item.nodeTitle}</div>
+                              <div className="text-sm font-bold text-slate-800">{item.optionLabel}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Score bars */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-700">
+                        <Activity className="h-4 w-4" /> Tu Balance Personal
+                      </div>
+                      <div className="space-y-2.5">
+                        {[
+                          { label: 'Estrés / Tensión', value: scores.stress, color: 'bg-rose-500' },
+                          { label: 'Equilibrio Emocional', value: scores.mood, color: 'bg-indigo-500' },
+                          { label: 'Calidad de Descanso', value: scores.sleep, color: 'bg-blue-500' },
+                          { label: 'Energía', value: scores.energy, color: 'bg-teal-500' },
+                          { label: 'Claridad Mental', value: scores.focus, color: 'bg-emerald-500' },
+                        ].map(item => (
+                          <div key={item.label} className="space-y-1">
+                            <div className="flex justify-between text-xs font-bold text-slate-600">
+                              <span>{item.label}</span><span>{item.value}%</span>
+                            </div>
+                            <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={cn("h-full rounded-full transition-all duration-1000", item.color)}
+                                style={{ width: `${Math.max(10, item.value)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* RECOMENDACIONES PERSONALIZADAS (SECCIÓN 14 - ACM-1.0) */}
+                    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-800">
+                        <Sparkles className="h-4 w-4 text-emerald-600" /> Recomendaciones Personalizadas de Evolución (ACM-1.0)
+                      </div>
+                      <div className="space-y-2 pt-1">
+                        {informe.seccion14_recomendaciones.map((rec, i) => (
+                          <div key={i} className="flex items-start gap-3 p-3 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                            <span className="text-sm shrink-0">🎯</span>
+                            <span className="text-xs font-bold text-slate-700 leading-relaxed">{rec}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* SERVICIOS RECOMENDADOS DE LA PLATAFORMA CONEXIÓN LUZ® */}
+                    {perfil.serviciosRecomendados && perfil.serviciosRecomendados.length > 0 && (
+                      <div className="bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-emerald-800/80 pb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">🌟</span>
+                            <h4 className="text-sm font-black uppercase tracking-wider text-emerald-300">Ruta de Servicios Recomendados</h4>
+                          </div>
+                          <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Conexión Luz®</span>
+                        </div>
+
+                        <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                          Con base en tu Perfil <span className="font-bold text-emerald-300">{perfil.nombre}</span>, estas son las herramientas y servicios interactivos diseñados para facilitar tu transformación hacia <span className="font-bold text-amber-300">{perfil.estadoEvolutivo}</span>:
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                          {perfil.serviciosRecomendados.map((serv, i) => (
+                            <div key={i} className="flex flex-col justify-between p-4 rounded-2xl bg-slate-800/90 border border-slate-700/80 space-y-3 hover:border-emerald-500/50 transition-all">
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-2xl">{serv.icono}</span>
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-300 text-[9px] font-black uppercase tracking-wider">
+                                    {serv.badge}
+                                  </span>
+                                </div>
+                                <h5 className="font-bold text-slate-100 text-sm">{serv.titulo}</h5>
+                                <p className="text-[11px] text-slate-300 leading-relaxed font-medium">{serv.descripcion}</p>
+                              </div>
+
+                              <Link
+                                to={serv.ruta}
+                                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs text-center transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                              >
+                                <span>Explorar Servicio</span>
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </Link>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CONCLUSIÓN OFICIAL (SECCIÓN 15 - ACM-1.0) */}
+                    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-3xl p-6 shadow-md space-y-2">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Conclusión del Sistema Conexión Luz®</div>
+                      <p className="text-xs text-slate-200 leading-relaxed font-medium italic">
+                        "{informe.seccion15_conclusion}"
+                      </p>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-5 space-y-2 shadow-sm">
+                      <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
+                        <Sparkles className="h-4 w-4 text-emerald-600" /> Síntesis Clínica Diagnóstica
+                      </div>
+                      <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line font-medium">{diagEngine.resumenClinico}</p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col sm:flex-row gap-3 pb-8">
+                      <button
+                        onClick={handleSaveDiagnostic}
+                        disabled={isSaving || savedSuccess}
+                        className="flex-1 py-4 px-6 rounded-xl font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {savedSuccess ? (
+                          <><Check className="h-5 w-5" /> ¡Guardado en tu Perfil!</>
+                        ) : isSaving ? 'Guardando...' : (
+                          <><GitBranch className="h-5 w-5" /> Guardar Mi Árbol de Bienestar</>
+                        )}
+                      </button>
+                      {onClose && (
+                        <button
+                          onClick={onClose}
+                          className="py-4 px-6 rounded-xl font-bold text-sm bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-xs"
+                        >
+                          Volver a Mi Perfil
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="relative z-10 px-6 py-3 border-t border-slate-200/70 bg-white/60 backdrop-blur-sm text-center text-[11px] text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-1">
+        <span>🔒 Tus respuestas son privadas y se almacenan con seguridad.</span>
+        <span>ConexiónLuz · Plataforma de Bienestar</span>
+      </div>
+    </div>
+  );
+};
+
+
+
 const PublicProfile = () => {
   const { name: rawName } = useParams<{ name: string }>();
   const name = decodeURIComponent(rawName || '');
@@ -224,7 +1973,7 @@ const PublicProfile = () => {
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'posts' | 'wellbeing' | 'courses' | 'settings'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'wellbeing' | 'courses' | 'test' | 'settings'>('posts');
 
   // Personal Wellbeing / Settings Tab States
   const [dailyCheckin, setDailyCheckin] = useState<{hasCheckedIn: boolean, energyLevel: string|null}>({hasCheckedIn: true, energyLevel: null});
@@ -574,7 +2323,7 @@ const PublicProfile = () => {
 
   return (
     <PublicLayout contentClassName="p-0">
-      <div className="max-w-6xl mx-auto px-4 py-8 md:py-12">
+      <div className="w-full px-4 md:px-6 py-6 md:py-8">
         
         {/* Back navigation button */}
         <button
@@ -848,6 +2597,7 @@ const PublicProfile = () => {
               { id: 'posts', label: 'Mis Destellos', icon: Sparkles },
               { id: 'wellbeing', label: 'Mi Bienestar', icon: Activity },
               { id: 'courses', label: 'Mis Cursos', icon: BookOpen },
+              { id: 'test', label: 'Test en Árbol', icon: GitBranch },
               { id: 'settings', label: 'Ajustes', icon: Settings },
             ].map(t => (
               <button
@@ -1374,149 +3124,136 @@ const PublicProfile = () => {
 
           {/* TAB 4: Settings (Ajustes) */}
           {isMe && activeTab === 'settings' && (
-            <div className="max-w-3xl mx-auto space-y-8">
+            <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Personal Information Form */}
-              <div className="rounded-[2.5rem] bg-white border border-slate-200/60 p-8 sm:p-12 shadow-sm">
-                <h3 className="text-2xl font-black text-slate-800 mb-6 flex items-center gap-3">
-                  <User className="h-6 w-6 text-primary" />
-                  Información Personal
-                </h3>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nombre</label>
-                      <input
-                        value={profileForm.firstName}
-                        onChange={e => setProfileForm(p => ({ ...p, firstName: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Apellidos</label>
-                      <input
-                        value={profileForm.lastName}
-                        onChange={e => setProfileForm(p => ({ ...p, lastName: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Correo Electrónico</label>
-                      <input
-                        value={profileForm.email}
-                        onChange={e => setProfileForm(p => ({ ...p, email: e.target.value }))}
-                        type="email"
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Teléfono</label>
-                      <input
-                        value={profileForm.phone}
-                        onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Fecha de Nacimiento</label>
-                      <input
-                        type="date"
-                        value={profileForm.birthDate}
-                        onChange={e => setProfileForm(p => ({ ...p, birthDate: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Género</label>
-                      <select
-                        value={profileForm.gender}
-                        onChange={e => setProfileForm(p => ({ ...p, gender: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      >
-                        <option value="">Seleccionar...</option>
-                        <option value="Femenino">Femenino</option>
-                        <option value="Masculino">Masculino</option>
-                        <option value="Otro">Otro</option>
-                        <option value="Prefiero no decirlo">Prefiero no decirlo</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Tipo de Usuario</label>
-                      <select
-                        value={profileForm.userType}
-                        onChange={e => setProfileForm(p => ({ ...p, userType: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      >
-                        <option value="miembro">Miembro</option>
-                        <option value="paciente">Paciente</option>
-                        <option value="terapeuta">Terapeuta</option>
-                        {profileForm.userType && !['miembro', 'paciente', 'terapeuta'].includes(profileForm.userType) && (
-                          <option value={profileForm.userType}>
-                            {profileForm.userType.charAt(0).toUpperCase() + profileForm.userType.slice(1)}
-                          </option>
-                        )}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Ciudad</label>
-                      <input
-                        value={profileForm.city}
-                        onChange={e => setProfileForm(p => ({ ...p, city: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Ocupación</label>
-                      <input
-                        value={profileForm.occupation}
-                        onChange={e => setProfileForm(p => ({ ...p, occupation: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Dirección Completa</label>
-                      <input
-                        value={profileForm.address}
-                        onChange={e => setProfileForm(p => ({ ...p, address: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Contacto de Emergencia</label>
-                      <input
-                        value={profileForm.emergencyContactName}
-                        onChange={e => setProfileForm(p => ({ ...p, emergencyContactName: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Teléfono de Emergencia</label>
-                      <input
-                        value={profileForm.emergencyContactPhone}
-                        onChange={e => setProfileForm(p => ({ ...p, emergencyContactPhone: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
-                      />
-                    </div>
-                  </div>
-
+              <div className="bg-white border border-slate-200/60 rounded-2xl sm:rounded-3xl p-6 sm:p-10 md:p-12 shadow-sm w-full">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-3">
+                    <User className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                    Información Personal
+                  </h3>
                   <button
                     type="button"
                     onClick={() => void saveProfile()}
                     disabled={savingProfile}
-                    className="w-full bg-slate-900 hover:bg-slate-850 text-white py-4 rounded-2xl font-black shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 mt-4 text-sm"
+                    className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold shadow-md transition-all disabled:opacity-50 text-sm self-start sm:self-auto"
                   >
-                    {savingProfile ? 'Guardando...' : 'Guardar Información Personal'}
+                    {savingProfile ? 'Guardando...' : 'Guardar Cambios'}
                   </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre</label>
+                    <input
+                      value={profileForm.firstName}
+                      onChange={e => setProfileForm(p => ({ ...p, firstName: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Apellidos</label>
+                    <input
+                      value={profileForm.lastName}
+                      onChange={e => setProfileForm(p => ({ ...p, lastName: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Correo Electrónico</label>
+                    <input
+                      value={profileForm.email}
+                      onChange={e => setProfileForm(p => ({ ...p, email: e.target.value }))}
+                      type="email"
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Teléfono</label>
+                    <input
+                      value={profileForm.phone}
+                      onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Fecha de Nacimiento</label>
+                    <input
+                      type="date"
+                      value={profileForm.birthDate}
+                      onChange={e => setProfileForm(p => ({ ...p, birthDate: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Género</label>
+                    <select
+                      value={profileForm.gender}
+                      onChange={e => setProfileForm(p => ({ ...p, gender: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Femenino">Femenino</option>
+                      <option value="Masculino">Masculino</option>
+                      <option value="Otro">Otro</option>
+                      <option value="Prefiero no decirlo">Prefiero no decirlo</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Ciudad</label>
+                    <input
+                      value={profileForm.city}
+                      onChange={e => setProfileForm(p => ({ ...p, city: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Ocupación</label>
+                    <input
+                      value={profileForm.occupation}
+                      onChange={e => setProfileForm(p => ({ ...p, occupation: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Dirección Completa</label>
+                    <input
+                      value={profileForm.address}
+                      onChange={e => setProfileForm(p => ({ ...p, address: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Contacto Emergencia</label>
+                    <input
+                      value={profileForm.emergencyContactName}
+                      onChange={e => setProfileForm(p => ({ ...p, emergencyContactName: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Teléfono Emergencia</label>
+                    <input
+                      value={profileForm.emergencyContactPhone}
+                      onChange={e => setProfileForm(p => ({ ...p, emergencyContactPhone: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-700 outline-none focus:ring-4 focus:ring-primary/10 transition-all text-sm font-semibold"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Account Security Information details */}
-              <div className="rounded-[2.5rem] bg-slate-50 border border-slate-200/60 p-8 sm:p-12">
+              <div className="bg-slate-50/80 border border-slate-200/60 rounded-2xl sm:rounded-3xl p-6 sm:p-10 md:p-12 w-full">
                 <h3 className="text-xl font-bold text-slate-800 mb-2">Información de Cuenta</h3>
                 <p className="text-slate-500 text-sm mb-6">Gestiona la seguridad y accesos de tu cuenta.</p>
                 <div className="space-y-4">
@@ -1528,13 +3265,68 @@ const PublicProfile = () => {
                   </div>
                   <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
                     <div className="flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-blue-500 shrink-0" />
-                      <span className="text-xs sm:text-sm font-bold text-slate-700">Última evaluación: {me?.intakeCompleted ? 'Completada' : 'Pendiente'}</span>
+                      <GitBranch className="h-5 w-5 text-emerald-600 shrink-0" />
+                      <div>
+                        <span className="block text-xs sm:text-sm font-bold text-slate-700">Estado del Test en Árbol</span>
+                        <span className="block text-[11px] font-medium text-slate-400">
+                          {me?.intakeCompleted ? 'Test del árbol realizado' : 'Test del árbol pendiente'}
+                        </span>
+                      </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const res = await api.patch<any>('/api/portal/me/', {
+                          intakeCompleted: !me?.intakeCompleted
+                        });
+                        if (res.ok) {
+                          setMe(res.data);
+                        }
+                      }}
+                      title={me?.intakeCompleted ? 'Test realizado (Clic para cambiar)' : 'Test pendiente (Clic para cambiar)'}
+                      className="flex items-center gap-3 cursor-pointer group"
+                    >
+                      <span className={cn(
+                        "text-xs font-bold transition-colors",
+                        me?.intakeCompleted ? "text-emerald-700" : "text-slate-400"
+                      )}>
+                        {me?.intakeCompleted ? 'Realizado' : 'Pendiente'}
+                      </span>
+
+                      {/* Interruptor Switch Track */}
+                      <div className={cn(
+                        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors duration-300",
+                        me?.intakeCompleted ? "bg-emerald-600" : "bg-slate-300"
+                      )}>
+                        <span
+                          className={cn(
+                            "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out",
+                            me?.intakeCompleted ? "translate-x-5" : "translate-x-0"
+                          )}
+                        />
+                      </div>
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB 5: Tree Diagnostic Test */}
+          {isMe && activeTab === 'test' && (
+            <TreeDiagnosticTest
+              firstName={me?.firstName || name?.split(' ')[0] || ''}
+              userKey={me?.email || name || 'usuario'}
+              onCompleted={() => {
+                if (isAuthed) {
+                  api.get('/api/portal/me/').then(res => {
+                    if (res.ok) setMe(res.data);
+                  });
+                }
+              }}
+              onClose={() => setActiveTab('wellbeing')}
+            />
           )}
         </div>
       </div>

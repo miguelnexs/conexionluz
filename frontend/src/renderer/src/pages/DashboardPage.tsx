@@ -12,54 +12,30 @@ import { useTranslation } from 'react-i18next'
 import { api } from '@/api/client'
 import { cn } from '../utils/cn'
 
-type DashboardCounts = {
-  courses: number
-  therapists: number
-  services: number
-  talks: number
-  testimonials: number
-  stories: number
-  sessions?: number
-  patients?: number
+type AnalyticsData = {
+  sessions: number
+  patients: number
+  weeklySessions: {
+    labels: string[]
+    data: number[]
+  }
+  serviceDistribution: Record<string, number>
 }
-
-// Custom data for visual analytics charts
-const WEEKLY_SESSIONS = [
-  { day: 'Lun', sessions: 12, growth: '+15%' },
-  { day: 'Mar', sessions: 19, growth: '+25%' },
-  { day: 'Mié', sessions: 15, growth: '-8%' },
-  { day: 'Jue', sessions: 25, growth: '+40%' },
-  { day: 'Vie', sessions: 22, growth: '+10%' },
-  { day: 'Sáb', sessions: 30, growth: '+50%' },
-  { day: 'Dom', sessions: 18, growth: '-12%' }
-]
-
-const SPECIALTY_DISTRIBUTION = [
-  { name: 'Sanación Reconectiva', count: 35, color: 'bg-teal-500' },
-  { name: 'Reiki & Armonización', count: 28, color: 'bg-emerald-500' },
-  { name: 'Meditaciones Guiadas', count: 22, color: 'bg-indigo-500' },
-  { name: 'Yoga & Consciencia', count: 18, color: 'bg-purple-500' }
-]
 
 export function DashboardPage(): JSX.Element {
   const { t } = useTranslation()
   const [counts, setCounts] = useState<DashboardCounts | null>(null)
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [hoveredDay, setHoveredDay] = useState<any | null>(null)
 
   useEffect(() => {
     void (async () => {
       const res = await api.get<DashboardCounts>('/api/dashboard/')
-      if (!res.ok) return
+      if (res.ok) setCounts(res.data)
       
       const anaRes = await api.get<any>('/api/analytics/')
       if (anaRes.ok) {
-        setCounts({
-          ...res.data,
-          sessions: anaRes.data.sessions,
-          patients: anaRes.data.patients
-        })
-      } else {
-        setCounts(res.data)
+        setAnalytics(anaRes.data)
       }
     })()
   }, [])
@@ -92,16 +68,59 @@ export function DashboardPage(): JSX.Element {
     show: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 200, damping: 25 } }
   }
 
-  // Linear path nodes list (Lun - Dom)
-  const chartPoints = [
-    { cx: 30, cy: 110, val: 12, day: 'Lun' },
-    { cx: 100, cy: 75, val: 19, day: 'Mar' },
-    { cx: 170, cy: 95, val: 15, day: 'Mié' },
-    { cx: 240, cy: 68, val: 25, day: 'Jue' },
-    { cx: 310, cy: 78, val: 22, day: 'Vie' },
-    { cx: 380, cy: 40, val: 30, day: 'Sáb' },
-    { cx: 450, cy: 60, val: 18, day: 'Dom' }
-  ]
+  // Dynamic Chart Data
+  const rawLabels = analytics?.weeklySessions?.labels || ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+  const rawData = analytics?.weeklySessions?.data || [0, 0, 0, 0, 0, 0, 0]
+  
+  const maxY = Math.max(...rawData, 5)
+  const chartPoints = rawLabels.map((day, i) => {
+    const val = rawData[i]
+    return {
+      cx: 30 + i * 70,
+      cy: 150 - (val / maxY) * 110,
+      val,
+      day
+    }
+  })
+
+  const generatePath = (points: {cx: number, cy: number}[]) => {
+    if (points.length === 0) return '';
+    let d = `M ${points[0].cx},${points[0].cy} `;
+    for (let i = 1; i < points.length; i++) {
+      const p0 = points[i - 1];
+      const p1 = points[i];
+      const dx = (p1.cx - p0.cx) / 2;
+      d += `C ${p0.cx + dx},${p0.cy} ${p1.cx - dx},${p1.cy} ${p1.cx},${p1.cy} `;
+    }
+    return d;
+  }
+
+  const chartPath = generatePath(chartPoints)
+  const areaPath = `${chartPath} L 450,150 L 30,150 Z`
+
+  const WEEKLY_SESSIONS = rawLabels.map((day, i) => {
+    const val = rawData[i]
+    const prev = i > 0 ? rawData[i - 1] : val
+    let growth = ''
+    if (val > prev) growth = `+${Math.round(((val - prev) / (prev || 1)) * 100)}%`
+    else if (val < prev) growth = `${Math.round(((val - prev) / (prev || 1)) * 100)}%`
+    else growth = '0%'
+    return { day, sessions: val, growth }
+  })
+
+  const specialtyColors = ['bg-teal-500', 'bg-emerald-500', 'bg-indigo-500', 'bg-purple-500', 'bg-rose-500', 'bg-amber-500']
+  const SPECIALTY_DISTRIBUTION = Object.entries(analytics?.serviceDistribution || {})
+    .map(([name, count], index) => ({
+      name,
+      count: count as number,
+      color: specialtyColors[index % specialtyColors.length]
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+
+  if (SPECIALTY_DISTRIBUTION.length === 0) {
+    SPECIALTY_DISTRIBUTION.push({ name: 'Sin datos', count: 0, color: 'bg-slate-300' })
+  }
 
   // Quick Action Buttons
   const QUICK_ACTIONS = [
@@ -315,56 +334,56 @@ export function DashboardPage(): JSX.Element {
               <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 500 150" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.35" />
                     <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.0" />
                   </linearGradient>
+                  <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                  <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+                    <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="hsl(var(--primary))" floodOpacity="0.3" />
+                  </filter>
                 </defs>
                 {/* Horizontal Guide lines */}
                 <line x1="0" y1="30" x2="500" y2="30" stroke="currentColor" className="text-border/40" strokeDasharray="4 4" />
                 <line x1="0" y1="80" x2="500" y2="80" stroke="currentColor" className="text-border/40" strokeDasharray="4 4" />
                 <line x1="0" y1="130" x2="500" y2="130" stroke="currentColor" className="text-border/40" strokeDasharray="4 4" />
 
-                {/* Glow Area Path under the line (Linear connection) */}
+                {/* Glow Area Path under the line (Smooth connection) */}
                 <path 
-                  d="M 30,110 L 100,75 L 170,95 L 240,68 L 310,78 L 380,40 L 450,60 L 450,150 L 30,150 Z" 
+                  d={areaPath} 
                   fill="url(#areaGrad)" 
                 />
 
-                {/* Neon Glow behind the main line */}
+                {/* Main Curved Line Path with shadow */}
                 <path 
-                  d="M 30,110 L 100,75 L 170,95 L 240,68 L 310,78 L 380,40 L 450,60" 
+                  d={chartPath} 
                   fill="none" 
                   stroke="hsl(var(--primary))" 
-                  strokeWidth="8"
-                  className="opacity-20"
+                  strokeWidth="4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                />
-
-                {/* Main Curved Line Path */}
-                <path 
-                  d="M 30,110 L 100,75 L 170,95 L 240,68 L 310,78 L 380,40 L 450,60" 
-                  fill="none" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  filter="url(#shadow)"
                 />
               </svg>
 
-              {/* Absolute circular HTML dots - they remain perfectly round without stretching */}
+              {/* Absolute circular HTML dots - perfectly round with glowing effects */}
               {chartPoints.map((pt, idx) => {
                 const leftPct = (pt.cx / 500) * 100
                 const bottomPct = ((150 - pt.cy) / 150) * 100
                 return (
                   <div 
                     key={idx}
-                    className="absolute -translate-x-1/2 translate-y-1/2 z-20"
+                    className="absolute -translate-x-1/2 translate-y-1/2 z-20 group"
                     style={{ left: `${leftPct}%`, bottom: `${bottomPct}%` }}
                   >
+                    {/* Glowing aura around point */}
+                    <div className="absolute inset-0 bg-primary/40 blur-md rounded-full scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
                     <motion.button
-                      whileHover={{ scale: 1.3 }}
-                      className="h-4.5 w-4.5 rounded-full border-3 border-primary bg-background shadow-md transition-all cursor-pointer focus:outline-none"
+                      whileHover={{ scale: 1.4 }}
+                      className="relative h-4 w-4 rounded-full border-[3.5px] border-primary bg-background shadow-[0_0_10px_rgba(var(--primary),0.5)] transition-all cursor-pointer focus:outline-none"
                       onMouseEnter={() => setHoveredDay(pt)}
                       onMouseLeave={() => setHoveredDay(null)}
                     />
@@ -372,21 +391,25 @@ export function DashboardPage(): JSX.Element {
                 )
               })}
 
-              {/* Tooltip dynamic window */}
+              {/* Tooltip dynamic window (Glassmorphic) */}
               <AnimatePresence>
                 {hoveredDay && (
                   <motion.div 
-                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                    initial={{ opacity: 0, scale: 0.8, y: 15 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                    className="absolute bg-popover text-popover-foreground border shadow-md rounded-xl p-3 text-xs font-bold flex flex-col gap-1 z-30 pointer-events-none -translate-x-1/2"
+                    exit={{ opacity: 0, scale: 0.8, y: 15 }}
+                    transition={{ type: "spring", stiffness: 350, damping: 20 }}
+                    className="absolute bg-background/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl p-3 text-xs font-bold flex flex-col gap-1 z-30 pointer-events-none -translate-x-1/2"
                     style={{ 
                       left: `${(hoveredDay.cx / 500) * 100}%`, 
-                      bottom: `${((150 - hoveredDay.cy) / 150) * 100 + 8}%` 
+                      bottom: `${((150 - hoveredDay.cy) / 150) * 100 + 10}%` 
                     }}
                   >
-                    <span className="text-[10px] text-muted-foreground uppercase">{hoveredDay.day}</span>
-                    <span className="text-sm font-black text-primary whitespace-nowrap">{hoveredDay.val} Sesiones</span>
+                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-background/80 backdrop-blur-xl border-b border-r border-white/20 dark:border-white/10 rotate-45" />
+                    <div className="relative z-10 flex flex-col items-center">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{hoveredDay.day}</span>
+                      <span className="text-base font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent whitespace-nowrap drop-shadow-sm">{hoveredDay.val} Sesiones</span>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -426,13 +449,20 @@ export function DashboardPage(): JSX.Element {
                       <span className="text-foreground/80">{spec.name}</span>
                       <span className="text-muted-foreground">{percentage}% ({spec.count})</span>
                     </div>
-                    <div className="h-2 w-full rounded-full bg-border/40 overflow-hidden">
+                    <div className="h-2.5 w-full rounded-full bg-border/40 overflow-hidden relative shadow-inner">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${percentage}%` }}
-                        transition={{ delay: 0.2 + i * 0.1, duration: 0.8, ease: 'easeOut' }}
-                        className={`h-full rounded-full ${spec.color}`}
-                      />
+                        transition={{ delay: 0.2 + i * 0.1, duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                        className={`h-full rounded-full ${spec.color} shadow-[0_0_8px_rgba(0,0,0,0.3)] relative overflow-hidden`}
+                      >
+                        {/* Shimmer effect inside the bar using framer motion */}
+                        <motion.div 
+                          className="absolute top-0 bottom-0 left-0 w-[200%] bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                          animate={{ x: ["-100%", "100%"] }}
+                          transition={{ repeat: Infinity, duration: 2, ease: "linear", delay: 1 }}
+                        />
+                      </motion.div>
                     </div>
                   </div>
                 )
@@ -443,9 +473,12 @@ export function DashboardPage(): JSX.Element {
           <div className="mt-6 border-t pt-4 flex items-center justify-between text-xs text-muted-foreground font-semibold">
             <div className="flex items-center gap-1.5">
               <Award className="h-4 w-4 text-emerald-500" />
-              <span>Alta Preferencia</span>
+              <span>Distribución Real</span>
             </div>
-            <span>Total: 103 Sesiones</span>
+            <span>
+              Total:{' '}
+              {SPECIALTY_DISTRIBUTION.reduce((acc, curr) => acc + curr.count, 0)} Sesiones
+            </span>
           </div>
         </motion.div>
       </div>

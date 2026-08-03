@@ -40,4 +40,11 @@ Thumbs.db
 .env.test.local
 .env.production.local
 certbot/
+.expo/
+.expo-shared/
+
+# Allow images in source assets and public folders
+!**/assets/**
+!**/public/**
+
 

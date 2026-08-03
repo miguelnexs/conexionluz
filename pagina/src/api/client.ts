@@ -5,6 +5,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function getBaseUrl(): string {
+  // In development the Vite dev-server proxy forwards /api/* to Django,
+  // so we use an empty base (same origin). In production the full URL
+  // must be set via the VITE_API_URL environment variable.
+  if (import.meta.env.DEV) return ''
   const value = import.meta.env.VITE_API_URL
   return (value && value.trim()) || ''
 }

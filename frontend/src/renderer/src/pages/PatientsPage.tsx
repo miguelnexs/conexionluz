@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { api } from '@/api/client'
-import { Plus, Trash2, Pencil, UserRound, AlertTriangle, X, CheckCircle2, Clock } from 'lucide-react'
+import { Plus, Trash2, Pencil, UserRound, AlertTriangle, X, CheckCircle2, Clock, GitBranch } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 type Patient = {
@@ -180,28 +180,36 @@ export function PatientsPage(): JSX.Element {
             <div className="mt-4 space-y-1">
               <div className="text-lg font-semibold">{`${p.firstName} ${p.lastName}`.trim()}</div>
               {p.documentNumber ? <div className="text-xs text-muted-foreground">{p.documentNumber}</div> : null}
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5">
+                  <GitBranch className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-bold text-foreground">Test del Árbol:</span>
+                </div>
+                
                 <button
                   type="button"
                   disabled={togglingIntakeId === p.id}
                   onClick={() => void toggleIntake(p)}
-                  title={p.intakeCompleted ? 'Marcar como pendiente' : 'Marcar como completado'}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all hover:scale-105 active:scale-95 disabled:opacity-60 cursor-pointer ${
-                    p.intakeCompleted
-                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/25'
-                      : 'bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                  }`}
+                  title={p.intakeCompleted ? 'Test del árbol realizado (Clic para marcar pendiente)' : 'Test del árbol pendiente (Clic para marcar realizado)'}
+                  className="flex items-center gap-2 group cursor-pointer disabled:opacity-50"
                 >
-                  {p.intakeCompleted ? (
-                    <CheckCircle2 className="h-3 w-3" />
-                  ) : (
-                    <Clock className="h-3 w-3" />
-                  )}
-                  {togglingIntakeId === p.id
-                    ? '...'
-                    : p.intakeCompleted
-                    ? t('patients_admin.intake_done')
-                    : t('patients_admin.intake_pending')}
+                  <span className={`text-xs font-bold transition-colors ${
+                    p.intakeCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+                  }`}>
+                    {togglingIntakeId === p.id ? '...' : p.intakeCompleted ? 'Realizado' : 'Pendiente'}
+                  </span>
+
+                  {/* Interruptor Switch Track */}
+                  <div className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors duration-300 ${
+                    p.intakeCompleted ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+                  }`}>
+                    {/* Switch Thumb */}
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${
+                        p.intakeCompleted ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </div>
                 </button>
               </div>
             </div>

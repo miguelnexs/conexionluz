@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
+import { CourseEnrollments } from './CourseEnrollments'
 import axios from 'axios'
 import {
   DndContext,
@@ -1220,6 +1221,8 @@ export function CourseFormPage({ mode }: Props): JSX.Element {
               </SortableContext>
             </DndContext>
           </div>
+
+          {courseId && <CourseEnrollments courseId={courseId} />}
         </motion.div>
 
         <div className="space-y-6">

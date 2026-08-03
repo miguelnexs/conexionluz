@@ -68,42 +68,101 @@ const ServicesPage = () => {
     <PublicLayout contentClassName="p-0">
       
       {/* Hero Section */}
-      <section className="relative pt-24 pb-20 overflow-hidden bg-white">
-        {/* Animated background elements */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float" />
-          <div className="absolute top-1/2 -right-24 w-72 h-72 bg-accent/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-violet-500/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
+      <section className="py-16 md:py-24 bg-gradient-to-br from-primary/10 via-white to-accent/10 relative overflow-hidden">
+        {/* Decorative floating shapes */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-12 left-8 w-36 h-36 bg-primary/5 rounded-full animate-float" />
+          <div className="absolute bottom-16 right-12 w-28 h-28 bg-accent/5 rounded-full animate-float" style={{ animationDelay: '2s' }} />
+          <div className="absolute top-1/3 left-1/4 w-20 h-20 bg-amber-400/5 rounded-full animate-float" style={{ animationDelay: '4s' }} />
+          <div className="absolute top-1/4 right-1/3 w-14 h-14 bg-primary/5 rounded-full animate-float" style={{ animationDelay: '3s' }} />
+          <div className="absolute bottom-1/3 left-[15%] w-10 h-10 bg-accent/8 rounded-full animate-float" style={{ animationDelay: '5s' }} />
+          {/* Subtle gradient orbs */}
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute -bottom-32 -left-32 w-[28rem] h-[28rem] bg-accent/5 rounded-full blur-3xl" />
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+            {/* Badge */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/10"
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-6 py-2.5 shadow-md border border-primary/10"
             >
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-xs font-black uppercase tracking-widest text-primary">Excelencia Terapéutica</span>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+              </span>
+              <span className="text-sm font-semibold text-gray-700 tracking-wide">Excelencia Terapéutica</span>
             </motion.div>
 
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
+            {/* Title */}
+            <motion.h1
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-5xl md:text-7xl font-black text-gray-900 leading-[1.1] tracking-tight"
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight"
             >
-              Servicios que <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Transforman</span> Vidas
+              <span className="text-gray-800">Servicios que </span>
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Transforman</span>
+              <span className="text-gray-800"> Vidas</span>
             </motion.h1>
 
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-lg md:text-xl text-gray-500 leading-relaxed max-w-2xl mx-auto"
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto"
             >
               Unimos la ciencia del bienestar con un acompañamiento profundamente humano para guiarte en tu proceso de sanación y evolución personal.
             </motion.p>
+
+            {/* CTA buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex flex-col sm:flex-row gap-3 justify-center pt-2"
+            >
+              <Link
+                to="/mi-perfil"
+                className="bg-white/80 backdrop-blur-sm text-gray-700 px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border border-gray-200"
+              >
+                Ir a mi perfil
+              </Link>
+              <Link
+                to="/agenda"
+                className="bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 inline-flex items-center justify-center gap-2"
+              >
+                Agendar cita
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </motion.div>
+
+            {/* Stats row */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.45 }}
+              className="flex flex-wrap items-center justify-center gap-6 md:gap-10 pt-6"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{services.length || '—'}</span>
+                <span className="text-xs md:text-sm text-gray-500 font-medium">Servicios disponibles</span>
+              </div>
+              <div className="w-px h-10 bg-gray-200 hidden sm:block" />
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">100%</span>
+                <span className="text-xs md:text-sm text-gray-500 font-medium">Personalizado</span>
+              </div>
+              <div className="w-px h-10 bg-gray-200 hidden sm:block" />
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Online</span>
+                <span className="text-xs md:text-sm text-gray-500 font-medium">& Presencial</span>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>

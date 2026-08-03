@@ -4,7 +4,7 @@ const TOKEN_KEY = 'cl_admin_token'
 
 export function getBaseUrl(): string {
   const value = (import.meta as any).env?.VITE_API_URL as string | undefined
-  return (value && value.trim()) || 'https://conexionluz.com'
+  return (value && value.trim()) || 'http://127.0.0.1:8001'
 }
 
 function getAuthHeaders(): Record<string, string> {
@@ -21,10 +21,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T
       headers: isFormData
         ? { ...getAuthHeaders(), ...(init?.headers || {}) }
         : {
-            'Content-Type': 'application/json',
-            ...getAuthHeaders(),
-            ...(init?.headers || {})
-          }
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+          ...(init?.headers || {})
+        }
     })
 
     const text = await res.text()

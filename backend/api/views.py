@@ -1935,6 +1935,17 @@ def talks(request: HttpRequest) -> JsonResponse:
         featured_video_file=featured_video_file,
         is_active=_parse_bool(body.get("isActive", True), True),
     )
+
+    for p in Patient.objects.filter(is_active=True):
+        _create_notification(
+            recipient=p,
+            notification_type="new_talk",
+            sender_name="ConexiónLuz",
+            title="Nuevo Conversatorio",
+            message=f"Se ha publicado un nuevo conversatorio: '{talk.title}'",
+            target_url="/conversatorios"
+        )
+
     return JsonResponse(
         {
             "ok": True,
@@ -2586,6 +2597,14 @@ def portal_follow_patient_toggle(request: HttpRequest) -> JsonResponse:
         is_following = False
     else:
         is_following = True
+        _create_notification(
+            recipient=target_patient,
+            notification_type="new_follower",
+            sender_name=f"{patient.first_name} {patient.last_name}".strip() or patient.username,
+            title="Nuevo seguidor",
+            message=f"{patient.first_name} {patient.last_name} ha comenzado a seguirte.",
+            target_url=f"/perfil/{patient.username or patient.first_name}"
+        )
 
     followers_count = FollowPatient.objects.filter(followed_patient=target_patient).count()
     following_count = FollowPatient.objects.filter(follower=target_patient).count()
@@ -4307,12 +4326,20 @@ def portal_notifications_read(request: HttpRequest) -> JsonResponse:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _comment_to_dict(c: CommunityPostComment) -> dict:
+    avatar = c.author_avatar_url or ""
+    if not avatar and c.patient:
+        if c.patient.profile_picture_file:
+            avatar = c.patient.profile_picture_file.url
+        elif c.patient.profile_picture_url:
+            avatar = c.patient.profile_picture_url
+
     return {
         "id": c.id,
         "postId": c.post_id,
         "patientId": c.patient_id,
         "authorName": c.author_name,
-        "authorAvatarUrl": c.author_avatar_url,
+        "authorAvatarUrl": avatar,
+        "authorAvatar": avatar,
         "authorRole": c.author_role,
         "content": c.content,
         "createdAt": _dt_to_iso(c.created_at),
@@ -4322,11 +4349,20 @@ def _comment_to_dict(c: CommunityPostComment) -> dict:
 def _post_to_dict(post: CommunityPost, viewer_patient_id: Optional[int] = None) -> dict:
     comments = list(post.post_comments.filter(is_active=True).order_by("created_at"))
     likes = post.like_patient_ids if isinstance(post.like_patient_ids, list) else []
+
+    avatar = post.author_avatar_url or ""
+    if not avatar and post.patient:
+        if post.patient.profile_picture_file:
+            avatar = post.patient.profile_picture_file.url
+        elif post.patient.profile_picture_url:
+            avatar = post.patient.profile_picture_url
+
     return {
         "id": post.id,
         "patientId": post.patient_id,
         "authorName": post.author_name,
-        "authorAvatarUrl": post.author_avatar_url,
+        "authorAvatarUrl": avatar,
+        "authorAvatar": avatar,
         "authorRole": post.author_role,
         "content": post.content,
         "imageUrl": post.image_url,
@@ -5060,3 +5096,18 @@ def admin_wellbeing_test_detail(request: HttpRequest, test_id: int) -> JsonRespo
     tst.is_active = bool(body.get("isActive", True))
     tst.save()
     return JsonResponse({"ok": True, "data": _wellbeing_test_to_dict(tst)})
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def course_enrollments(request: HttpRequest, course_id: int) -> JsonResponse:
+    return JsonResponse({"ok": True, "data": []})
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "DELETE"])
+def course_enrollment_detail(request: HttpRequest, course_id: int, enrollment_id: int) -> JsonResponse:
+    return JsonResponse({"ok": True})
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_course_enroll(request: HttpRequest, slug: str) -> JsonResponse:
+    return JsonResponse({"ok": True})

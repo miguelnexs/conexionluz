@@ -3,6 +3,8 @@ import PublicLayout from '../components/PublicLayout';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, CreditCard, Lock, Sparkles } from 'lucide-react';
 
+import { api } from '../api/client';
+
 const getPurchaseKey = (slug: string) => `conexionluz:purchased:${slug}`;
 const getTokenKey = () => 'conexionluz:token';
 
@@ -28,10 +30,16 @@ const CheckoutPage = () => {
 
   if (!product) return <Navigate to="/cursos" replace />;
 
-  const handleSimulatePay = () => {
-    localStorage.setItem(getPurchaseKey(product.slug), '1');
+  const handleSimulatePay = async () => {
     const hasToken = typeof window !== 'undefined' && Boolean(localStorage.getItem(getTokenKey()));
-    navigate(hasToken ? '/mi-perfil' : '/login', { replace: true, state: { from: '/mi-perfil' } });
+    if (!hasToken) {
+      navigate('/login', { replace: true, state: { from: `/checkout/${product.slug}` } });
+      return;
+    }
+
+    await api.post(`/api/portal/courses/${product.slug}/enroll/`, {});
+    localStorage.setItem(getPurchaseKey(product.slug), '1');
+    navigate('/mi-perfil', { replace: true });
   };
 
   return (
