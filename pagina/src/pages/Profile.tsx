@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import PublicLayout from '../components/PublicLayout';
 import { Link, Navigate, useLocation } from 'react-router-dom';
+import { safeSaveFeedPosts } from '../hooks/useCommunityPosts';
+import AWEDailyWidget from '../components/awe/AWEDailyWidget';
+import OnboardingWelcomeWizard from '../components/awe/OnboardingWelcomeWizard';
 import {
   BookOpen,
   Lock,
@@ -243,18 +246,28 @@ const QUESTION_TREE: Record<string, TreeNode> = {
     stepNumber: 2,
     stageName: 'Camino de Crecimiento',
     icon: '✨',
-        }
-        @keyframes loadBar {
-          0% { width: 0%; }
-          100% { width: 100%; }
-        }
-        @keyframes iconFloat {
-          0%,100% { transform: translateY(0); }
-          50% { transform: translateY(-12px); }
-        }
-      `}</style>
-    </div>
-  );
+    title: '¿Hacia dónde quieres enfocar tu proceso personal?',
+    subtitle: 'El crecimiento comienza reconociendo lo que más anhela tu presente.',
+    compassionNote: 'Cada paso que das en tu autoconocimiento transforma tu perspectiva de vida.',
+    options: [
+      {
+        id: 'opt_gr_purpose',
+        label: 'Claridad de Propósito y Sentido',
+        emoji: '🌟',
+        description: 'Deseo conectar con un propósito más profundo y dar dirección clara a mi vida.',
+        nextNodeId: 'node_frequency',
+        scores: { stress: 15, mood: 35, sleep: 10, energy: 30, focus: 40 },
+      },
+      {
+        id: 'opt_gr_habits',
+        label: 'Hábitos Saludables y Consistencia',
+        emoji: '🌿',
+        description: 'Quiero construir rutinas que me nutran sin exigencias ni culpabilidad.',
+        nextNodeId: 'node_frequency',
+        scores: { stress: 20, mood: 20, sleep: 20, energy: 35, focus: 30 },
+      },
+    ],
+  },
 };
 
 // ─── Intake Diagnostic Screen ─────────────────────────────────────────────────
@@ -883,7 +896,24 @@ const ProfilePage = () => {
       });
       const data = await res.json();
       if (data.ok && me) {
-        setMe({ ...me, profilePictureUrl: data.data.profilePictureUrl });
+        const newPic = data.data.profilePictureUrl;
+        setMe({ ...me, profilePictureUrl: newPic });
+        const saved = localStorage.getItem('conexionluz:feed_posts');
+        if (saved) {
+          try {
+            const posts = JSON.parse(saved);
+            const userName = `${me.firstName} ${me.lastName}`.trim();
+            const updated = posts.map((post: any) => {
+              if (post.authorName === userName || post.patientId === me.id) {
+                return { ...post, authorAvatar: newPic, authorAvatarUrl: newPic };
+              }
+              return post;
+            });
+            safeSaveFeedPosts(updated);
+          } catch (err) {
+            console.error(err);
+          }
+        }
       } else {
         alert(data.error || 'Error uploading picture');
       }
@@ -921,11 +951,21 @@ const ProfilePage = () => {
     setLoadingMe(false);
   };
 
+  const [aweProfileData, setAweProfileData] = useState<{
+    psych_profile: string;
+    current_emotions: string[];
+    risk_level: string;
+    preferred_moment: string;
+  } | null>(null);
+
   useEffect(() => {
     void loadMe();
     if (!isAuthed) return;
     api.get<{hasCheckedIn: boolean, energyLevel: string|null}>('/api/portal/daily-checkin/').then(res => {
       if (res.ok) setDailyCheckin(res.data);
+    });
+    api.get<{ok: boolean, profile: any}>('/api/portal/awe/profile/').then(res => {
+      if (res.ok && res.data.profile) setAweProfileData(res.data.profile);
     });
   }, [isAuthed]);
 
@@ -935,13 +975,20 @@ const ProfilePage = () => {
   if (!isAuthed) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   if (loadingMe) return <div className="min-h-screen bg-white" />;
 
-  // Render Full Page Tree Diagnostic Test if first time or selected tab
-  if ((me && me.intakeCompleted === false) || activeTab === 'test') {
+  const justRegistered = Boolean((location.state as any)?.justRegistered);
+
+  // Render Full Page Onboarding Welcome Wizard if first time, just registered, or selected tab
+  if ((me && (!me.intakeCompleted || justRegistered)) || activeTab === 'test') {
     return (
-      <TreeDiagnosticTest
+      <OnboardingWelcomeWizard
         firstName={me?.firstName || ''}
-        onCompleted={() => void loadMe()}
-        onClose={() => setActiveTab('wellbeing')}
+        onCompleted={() => {
+          if (location.state) {
+            window.history.replaceState({}, document.title);
+          }
+          void loadMe();
+        }}
+        onClose={activeTab === 'test' ? () => setActiveTab('wellbeing') : undefined}
       />
     );
   }
@@ -987,7 +1034,7 @@ const ProfilePage = () => {
             }
             return post;
           });
-          localStorage.setItem('conexionluz:feed_posts', JSON.stringify(updated));
+          safeSaveFeedPosts(updated);
         } catch (e) {
           console.error(e);
         }
@@ -1000,7 +1047,7 @@ const ProfilePage = () => {
 
   return (
     <PublicLayout contentClassName="p-0">
-      <div className="min-h-screen bg-[#fcfcfc]">
+      <div className="min-h-screen bg-[#fcfcfc] overflow-x-hidden">
         {/* Header */}
         <header
           className="relative py-10 md:py-16 overflow-hidden"
@@ -1037,8 +1084,8 @@ const ProfilePage = () => {
                       onClick={() => setActiveTab('test')}
                       className="inline-flex items-center gap-2 px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all cursor-pointer"
                     >
-                      <GitBranch className="h-4 w-4" />
-                      Realizar Test en Árbol
+                      <Sparkles className="h-4 w-4" />
+                      Calibrar Mi Sabiduría AWE
                     </button>
                     <button
                       onClick={logout}
@@ -1055,37 +1102,166 @@ const ProfilePage = () => {
         </header>
 
         {/* Dashboard */}
-        <main className="w-full max-w-7xl mx-auto px-4 md:px-6 pb-20 mt-6">
+        <main className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 pb-20 mt-6 overflow-x-hidden">
           <div className="w-full">
             {/* Tabs */}
-            <div className="px-4 md:px-8 mb-8 sm:mb-12">
-              <div className="flex w-full sm:w-fit items-center gap-1 p-1 bg-gray-100/50 rounded-xl sm:rounded-2xl flex-wrap sm:flex-nowrap">
+            <div className="mb-8 sm:mb-12">
+              <div className="grid grid-cols-2 sm:flex sm:w-fit items-center gap-1 p-1 bg-gray-100/50 rounded-xl sm:rounded-2xl">
               {[
                 { id: 'wellbeing', label: 'Mi Bienestar', icon: Activity },
                 { id: 'courses', label: 'Mis Cursos', icon: BookOpen },
-                { id: 'test', label: 'Test en Árbol', icon: GitBranch },
+                { id: 'test', label: 'Calibrar AWE', icon: Sparkles },
                 { id: 'settings', label: 'Ajustes', icon: Settings },
               ].map(t => (
                 <button
                   key={t.id}
                   onClick={() => setActiveTab(t.id as any)}
                   className={cn(
-                    'flex flex-1 sm:flex-initial items-center justify-center gap-1.5 px-3 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all duration-300',
+                    'flex items-center justify-center gap-1.5 px-3 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 w-full',
                     activeTab === t.id
                       ? 'bg-white shadow-md text-gray-900 scale-[1.02]'
                       : 'text-gray-500 hover:text-gray-800'
                   )}
                 >
-                  <t.icon className={cn('h-3.5 w-3.5 sm:h-4 sm:w-4', activeTab === t.id ? 'text-primary' : 'text-gray-400')} />
-                  {t.label}
+                  <t.icon className={cn('h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0', activeTab === t.id ? 'text-primary' : 'text-gray-400')} />
+                  <span className="truncate">{t.label}</span>
                 </button>
               ))}
+              </div>
             </div>
 
             {/* Tab panels */}
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               {activeTab === 'wellbeing' && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  {/* Estado de Bienestar y Calibración AWE Card */}
+                  <div className="rounded-2xl sm:rounded-[2.5rem] bg-white border border-emerald-100/80 p-6 sm:p-8 md:p-10 shadow-md relative overflow-hidden">
+                    <div className="absolute top-0 right-0 h-40 w-40 bg-emerald-50/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+
+                    <div className="relative z-10 space-y-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-2xl shrink-0">
+                            🌱
+                          </div>
+                          <div>
+                            <span className="text-xs font-black uppercase tracking-widest text-emerald-600 block">
+                              Calibración Adaptativa Motor AWE
+                            </span>
+                            <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                              Tu Estado de Bienestar Actual
+                            </h3>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => setActiveTab('test')}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-all border border-emerald-200 cursor-pointer"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Re-calibrar Evaluación
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Perfil Psicológico */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50/50 to-teal-50/30 border border-emerald-100">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 block mb-1">
+                            Perfil Terapéutico
+                          </span>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-xl">
+                              {aweProfileData?.psych_profile === 'Vigilante' ? '🧘' : aweProfileData?.psych_profile === 'Guerrero Agotado' ? '🔋' : aweProfileData?.psych_profile === 'Corazón Abierto' ? '🫂' : aweProfileData?.psych_profile === 'Mente Analítica' ? '🧠' : '🌟'}
+                            </span>
+                            <h4 className="font-black text-slate-800 text-base">
+                              {aweProfileData?.psych_profile || 'Buscador de Sentido'}
+                            </h4>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            Personalizado según tus metas en la plataforma.
+                          </p>
+                        </div>
+
+                        {/* Nivel de Intensidad */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-teal-50/50 to-emerald-50/30 border border-teal-100">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-teal-800 block mb-1">
+                            Carga Emocional
+                          </span>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-xl">
+                              {aweProfileData?.risk_level === 'intenso' ? '⚡' : aweProfileData?.risk_level === 'moderado' ? '🌤️' : '🍃'}
+                            </span>
+                            <h4 className="font-black text-slate-800 text-base capitalize">
+                              {aweProfileData?.risk_level || 'Leve'}
+                            </h4>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            Graduación de los ejercicios del motor AWE.
+                          </p>
+                        </div>
+
+                        {/* Horario Preferido */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-emerald-50/30 border border-slate-200/60">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 block mb-1">
+                            Horario Preferido
+                          </span>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-xl">
+                              {aweProfileData?.preferred_moment === 'mañana' ? '🌅' : aweProfileData?.preferred_moment === 'tarde' ? '☀️' : aweProfileData?.preferred_moment === 'noche' ? '🌙' : '✨'}
+                            </span>
+                            <h4 className="font-black text-slate-800 text-base capitalize">
+                              {aweProfileData?.preferred_moment || 'Cualquier Momento'}
+                            </h4>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            Momento óptimo para tus reflexiones diarias.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Emociones y Síntomas Detectados */}
+                      <div className="pt-4 border-t border-slate-100">
+                        <span className="text-xs font-bold text-slate-700 block mb-3">
+                          Síntomas y Emociones Frecuentes Registradas en tu Formulario:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {aweProfileData?.current_emotions && aweProfileData.current_emotions.length > 0 ? (
+                            aweProfileData.current_emotions.map((emoKey) => {
+                              const emo = {
+                                ansiedad: { label: 'Ansiedad o Inquietud', icon: '🌀' },
+                                agotamiento: { label: 'Agotamiento Físico/Mental', icon: '🔋' },
+                                tristeza: { label: 'Tristeza o Vacío', icon: '🌧️' },
+                                miedo: { label: 'Miedo al Futuro', icon: '🛡️' },
+                                enojo: { label: 'Frustración o Irritabilidad', icon: '⚡' },
+                                soledad: { label: 'Sensación de Soledad', icon: '🍃' },
+                                culpa: { label: 'Culpa o Autocrítica', icon: '🪞' },
+                                confusion: { label: 'Confusión o Desorientación', icon: '🔍' },
+                                esperanza: { label: 'Deseo de Cambio y Esperanza', icon: '🌱' },
+                                gratitud: { label: 'Gratitud por un Nuevo Comienzo', icon: '✨' },
+                              }[emoKey] || { label: emoKey, icon: '🌱' };
+                              return (
+                                <span
+                                  key={emoKey}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-sm"
+                                >
+                                  <span>{emo.icon}</span>
+                                  <span>{emo.label}</span>
+                                </span>
+                              );
+                            })
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">
+                              Sin síntomas agudos registrados en la evaluación inicial.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Adaptive Wisdom Engine (AWE) Widget */}
+                  <AWEDailyWidget className="shadow-xl" />
+
                   {/* Daily Check-in Widget */}
                   {dailyCheckin.hasCheckedIn && dailyCheckin.energyLevel ? (
                     <div className="rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all">
@@ -1134,11 +1310,11 @@ const ProfilePage = () => {
                           </p>
                         </div>
                         
-                        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-4 pt-8 sm:pt-10 border-t border-gray-100">
-                          <Link to="/agenda" className="flex-1 text-center px-6 py-4 rounded-xl sm:rounded-2xl bg-gray-900 text-white font-black hover:scale-[1.02] active:scale-95 shadow-lg shadow-gray-900/20 transition-all">
+                        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 pt-8 sm:pt-10 border-t border-gray-100">
+                          <Link to="/agenda" className="flex-1 text-center px-4 py-3 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl bg-gray-900 text-white font-black hover:scale-[1.02] active:scale-95 shadow-lg shadow-gray-900/20 transition-all text-sm sm:text-base leading-tight">
                             Agendar sesión de apoyo
                           </Link>
-                          <Link to="/cursos" className="flex-1 text-center px-6 py-4 rounded-xl sm:rounded-2xl bg-primary/10 text-primary font-black hover:bg-primary/20 active:scale-95 transition-all">
+                          <Link to="/cursos" className="flex-1 text-center px-4 py-3 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl bg-primary/10 text-primary font-black hover:bg-primary/20 active:scale-95 transition-all text-sm sm:text-base leading-tight">
                             Explorar recursos y cursos
                           </Link>
                         </div>
@@ -1342,10 +1518,10 @@ const ProfilePage = () => {
                     <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Información de Cuenta</h3>
                     <p className="text-gray-500 text-sm mb-6">Gestiona la seguridad y accesos de tu cuenta.</p>
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 bg-white rounded-xl sm:rounded-2xl border border-gray-50 overflow-x-auto">
-                        <div className="flex items-center gap-3 whitespace-nowrap">
-                          <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                          <span className="text-xs sm:text-sm font-bold text-gray-700">Email verificado: {me?.email}</span>
+                      <div className="flex items-start p-4 bg-white rounded-xl sm:rounded-2xl border border-gray-50">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                          <span className="text-xs sm:text-sm font-bold text-gray-700 break-all">Email verificado: {me?.email}</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between p-4 bg-white rounded-xl sm:rounded-2xl border border-gray-50">

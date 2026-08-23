@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Sun } from 'lucide-react';
+import { Menu, X, Sun, Sparkles } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Header = () => {
@@ -8,12 +8,56 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
 
+  const [lumiBalance, setLumiBalance] = useState<number>(() => {
+    const cached = typeof window !== 'undefined' ? localStorage.getItem('conexionluz:lumi_wallet_balance') : null;
+    return cached ? Number(cached) : 0;
+  });
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const checkCachedBalance = () => {
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem('conexionluz:lumi_wallet_balance');
+        if (cached) {
+          const val = Number(cached);
+          if (!isNaN(val)) {
+            setLumiBalance(prev => (prev !== val ? val : prev));
+          }
+        }
+      }
+    };
+
+    const handleLumiUpdate = (e: Event) => {
+      const customEv = e as CustomEvent;
+      if (typeof customEv.detail === 'number') {
+        setLumiBalance(customEv.detail);
+      }
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'conexionluz:lumi_wallet_balance' && e.newValue) {
+        const val = Number(e.newValue);
+        if (!isNaN(val)) {
+          setLumiBalance(val);
+        }
+      }
+    };
+
+    window.addEventListener('lumi-balance-updated', handleLumiUpdate);
+    window.addEventListener('storage', handleStorage);
+
+    const interval = setInterval(checkCachedBalance, 4000);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('lumi-balance-updated', handleLumiUpdate);
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(interval);
+    };
   }, []);
 
   const navItems = [
@@ -74,11 +118,24 @@ const Header = () => {
             ))}
           </div>
 
-          {/* CTA Button */}
-          <div className="hidden md:block">
+          {/* CTA Button & Lumi Wallet */}
+          <div className="hidden md:flex items-center gap-3">
+            <Link
+              to="/comprar-lumis"
+              className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 px-3.5 py-1.5 rounded-full font-black text-xs shadow-sm hover:shadow-md hover:scale-[1.03] transition-all duration-300 group cursor-pointer"
+              title="Tienda de Lumis - Recargar con COP"
+            >
+              <div className="relative flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-emerald-600 group-hover:rotate-12 transition-transform" />
+                <div className="absolute inset-0 bg-emerald-400/20 rounded-full blur-2xs animate-pulse" />
+              </div>
+              <span className="font-black text-slate-900 text-xs">{lumiBalance}</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">Lumis</span>
+            </Link>
+
             <Link
               to="/agenda"
-              className="bg-gradient-to-r from-primary to-accent text-white px-6 py-2 rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+              className="bg-gradient-to-r from-primary to-accent text-white px-6 py-2 rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 text-sm"
             >
               Agendar Cita
             </Link>

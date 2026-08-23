@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import PublicLayout from '../components/PublicLayout';
-import { Calendar as CalendarIcon, Users, Clock, Search, Bell, CheckCircle, Info, CalendarDays, PlayCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Users, Clock, Search, Bell, CheckCircle, Info, CalendarDays, PlayCircle, Sparkles } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -464,6 +464,9 @@ const ConversatoriosPage = () => {
                         <div className="flex items-center gap-2 mb-2">
                           {getStatusBadge(conv.status)}
                           <span className="text-sm text-accent font-medium uppercase tracking-wider">{conv.topic}</span>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full ml-auto">
+                            <Sparkles className="h-3 w-3 text-emerald-600" /> ✨ 100 Lumis
+                          </span>
                         </div>
                         <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-primary transition-colors">
                           {conv.title}

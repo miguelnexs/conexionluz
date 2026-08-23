@@ -1,0 +1,5777 @@
+{
+  "meta": {
+    "version": "1.0",
+    "nombre": "Adaptive Wisdom Engine — Base de Conocimiento Terapéutico",
+    "autor": "Conexión Luz®",
+    "total_recursos": 200,
+    "escuelas": [
+      "stoicism",
+      "tcc",
+      "humanismo",
+      "positiva",
+      "logoterapia"
+    ],
+    "tipos": [
+      "reflexion",
+      "consejo",
+      "esperanza",
+      "ejercicio",
+      "respiracion",
+      "microhabito",
+      "pregunta",
+      "motivacional"
+    ],
+    "nota": "Todo el contenido es original, inspirado en principios terapéuticos. No son citas textuales."
+  },
+  "perfiles_disponibles": [
+    "Vigilante",
+    "Guerrero Agotado",
+    "Buscador de Sentido",
+    "Corazón Abierto",
+    "Mente Analítica"
+  ],
+  "temas": [
+    "aceptación",
+    "serenidad",
+    "fortaleza",
+    "control",
+    "virtud",
+    "paciencia",
+    "prudencia",
+    "pensamientos",
+    "distorsiones",
+    "reestructuración",
+    "hábitos",
+    "afrontamiento",
+    "empatía",
+    "crecimiento",
+    "autenticidad",
+    "autoestima",
+    "gratitud",
+    "optimismo",
+    "bienestar",
+    "fortalezas",
+    "sentido",
+    "propósito",
+    "resiliencia",
+    "libertad"
+  ],
+  "emociones": [
+    "ansiedad",
+    "tristeza",
+    "enojo",
+    "miedo",
+    "soledad",
+    "culpa",
+    "esperanza",
+    "gratitud",
+    "serenidad",
+    "confusión",
+    "agotamiento",
+    "vergüenza"
+  ],
+  "niveles_riesgo": [
+    "leve",
+    "moderado",
+    "severo",
+    "critico"
+  ],
+  "momentos": [
+    "mañana",
+    "tarde",
+    "noche",
+    "cualquiera"
+  ],
+  "semanas_terapeuticas": {
+    "1": "Validación emocional",
+    "2": "Aceptación",
+    "3": "Hábitos saludables",
+    "4": "Fortalezas personales",
+    "5": "Propósito de vida",
+    "6": "Crecimiento continuo"
+  },
+  "recursos": [
+    {
+      "id": 1,
+      "tipo": "reflexion",
+      "escuela": "stoicism",
+      "tema": "aceptación",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "mañana",
+      "duracion": "45 segundos",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "control",
+        "serenidad"
+      ],
+      "texto": "Existe una diferencia fundamental entre lo que ocurre a tu alrededor y la forma en que decides responderle. El mundo exterior no tiene poder directo sobre tu paz interior a menos que tú le concedas ese permiso. Hoy puedes elegir observar sin reaccionar de inmediato.",
+      "accion": "Antes de responder a cualquier situación difícil hoy, detente un momento y pregúntate: ¿Estoy respondiendo o simplemente reaccionando?",
+      "pregunta": "¿Qué pasaría si dejaras de intentar controlar lo que no está en tus manos y enfocaras esa energía en lo que sí puedes transformar?"
+    },
+    {
+      "id": 2,
+      "tipo": "reflexion",
+      "escuela": "stoicism",
+      "tema": "serenidad",
+      "emocion": [
+        "estrés",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "descanso",
+        "serenidad"
+      ],
+      "texto": "El agotamiento profundo que sientes no es debilidad. Es la señal de que has estado dando más de lo que te han devuelto. La serenidad no es indiferencia; es la capacidad de soltar el día con gratitud por lo vivido y confianza en que mañana traerá nuevas oportunidades.",
+      "accion": "Esta noche, antes de dormir, anota una sola cosa que hayas hecho bien hoy, aunque sea pequeña.",
+      "pregunta": "¿Qué parte de ti merece descanso esta noche sin condiciones?"
+    },
+    {
+      "id": 3,
+      "tipo": "reflexion",
+      "escuela": "stoicism",
+      "tema": "fortaleza",
+      "emocion": [
+        "miedo",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "valor",
+        "claridad"
+      ],
+      "texto": "La valentía no es la ausencia del miedo. Es la comprensión de que algo vale más que el miedo. Cuando sientes que el miedo te paraliza, recuerda que cada persona que admiras también conoce esa parálisis. La diferencia es que decidieron avanzar de todos modos.",
+      "accion": "Identifica hoy una cosa pequeña que hayas evitado por miedo y da el primer paso, aunque sea mínimo.",
+      "pregunta": "¿Qué estarías haciendo si supieras que el miedo no es una señal de peligro real, sino de crecimiento próximo?"
+    },
+    {
+      "id": 4,
+      "tipo": "reflexion",
+      "escuela": "stoicism",
+      "tema": "control",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "dicotomía",
+        "claridad"
+      ],
+      "texto": "La mente analítica puede caer en la trampa de querer resolver todo, comprender todo, controlar todo. Pero el universo no fue diseñado para ser dominado, sino para ser navegado. La distinción entre lo que depende de ti y lo que no es la brújula más poderosa que tienes.",
+      "accion": "Haz una lista de las tres cosas que más te preocupan hoy. Junto a cada una escribe: ¿depende de mí o no? Actúa solo sobre las primeras.",
+      "pregunta": "¿Cuánta energía estarías liberando si dejaras de intentar controlar lo que está fuera de tu alcance?"
+    },
+    {
+      "id": 5,
+      "tipo": "reflexion",
+      "escuela": "stoicism",
+      "tema": "virtud",
+      "emocion": [
+        "culpa",
+        "vergüenza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "valores",
+        "integridad"
+      ],
+      "texto": "Actuar desde la virtud no significa ser perfecto. Significa comprometerte con lo mejor que puedes ser en este momento, con los recursos que tienes ahora. La virtud no es un destino, es una dirección. Y hoy puedes elegir apuntar hacia ella.",
+      "accion": "Esta tarde, haz una sola cosa que esté completamente alineada con quién quieres ser, sin importar cuán pequeña sea.",
+      "pregunta": "¿Cuál de tus valores fundamentales no has honrado esta semana y qué podrías hacer hoy para reconectarte con él?"
+    },
+    {
+      "id": 6,
+      "tipo": "reflexion",
+      "escuela": "stoicism",
+      "tema": "paciencia",
+      "emocion": [
+        "enojo",
+        "frustración"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "cualquiera",
+      "duracion": "45 segundos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "tiempo",
+        "proceso"
+      ],
+      "texto": "La impaciencia es el olvido de que todo proceso tiene su tiempo natural. Las estaciones no se apresuran. El árbol no empuja sus frutos antes de que maduren. Tu proceso de sanación, crecimiento o cambio también tiene un ritmo propio que merece ser respetado.",
+      "accion": "La próxima vez que sientas urgencia o impaciencia, detente y respira tres veces lentamente antes de actuar.",
+      "pregunta": "¿Qué estarías perdiendo si las cosas importantes de tu vida llegaran antes de que estuvieras verdaderamente listo?"
+    },
+    {
+      "id": 7,
+      "tipo": "reflexion",
+      "escuela": "stoicism",
+      "tema": "prudencia",
+      "emocion": [
+        "confusión",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        6
+      ],
+      "tags": [
+        "sabiduría",
+        "decisiones"
+      ],
+      "texto": "La prudencia no es indecisión disfrazada. Es la capacidad de actuar después de observar con claridad, sentir con honestidad y pensar con profundidad. Las mejores decisiones de tu vida no serán las más rápidas, sino las más conscientes.",
+      "accion": "Antes de tomar una decisión importante hoy, permítete 24 horas de observación sin presión.",
+      "pregunta": "¿Qué diferencia habría en tus decisiones si dejaras que la sabiduría en lugar del miedo te guiara?"
+    },
+    {
+      "id": 8,
+      "tipo": "reflexion",
+      "escuela": "stoicism",
+      "tema": "aceptación",
+      "emocion": [
+        "tristeza",
+        "soledad"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "impermanencia",
+        "paz"
+      ],
+      "texto": "La tristeza no es tu enemiga. Es el lenguaje que usa el alma cuando algo que amabas ha cambiado de forma. No necesitas apresurar su paso. Solo necesitas darle espacio para que te muestre lo que aún valoras profundamente. Ahí, en ese dolor, también hay amor.",
+      "accion": "Esta noche, permítete sentir la tristeza sin intentar suprimirla. Coloca una mano en tu corazón y di: 'Te escucho.'",
+      "pregunta": "¿Qué está intentando decirte esta tristeza sobre lo que más importa en tu vida?"
+    },
+    {
+      "id": 9,
+      "tipo": "reflexion",
+      "escuela": "stoicism",
+      "tema": "serenidad",
+      "emocion": [
+        "agotamiento",
+        "estrés"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "descanso",
+        "límites"
+      ],
+      "texto": "Hay una forma de agotamiento que va más allá del cuerpo. Es el agotamiento del alma que ha dado sin recibir, que ha ayudado sin pedir ayuda, que ha soportado sin quejarse. Ese agotamiento merece ser visto, no como debilidad, sino como la señal más honesta de que es tiempo de cuidarte.",
+      "accion": "Hoy date permiso de decir no a al menos una cosa que no tienes energía para sostener.",
+      "pregunta": "¿Cuándo fue la última vez que te preguntaste cómo estás tú, no cómo están los demás?"
+    },
+    {
+      "id": 10,
+      "tipo": "reflexion",
+      "escuela": "stoicism",
+      "tema": "fortaleza",
+      "emocion": [
+        "miedo",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "resiliencia",
+        "historia"
+      ],
+      "texto": "Ya has sobrevivido cosas que en algún momento creyste imposibles de superar. Esa es la evidencia más poderosa de tu fortaleza interior. No la has construido leyendo libros de autoayuda, sino caminando por territorios difíciles y llegando al otro lado.",
+      "accion": "Escribe dos o tres momentos difíciles que ya has superado. Leerlos te recuerda quién realmente eres.",
+      "pregunta": "¿Qué habilidad has desarrollado sin darte cuenta durante tus momentos más difíciles?"
+    },
+    {
+      "id": 11,
+      "tipo": "reflexion",
+      "escuela": "tcc",
+      "tema": "pensamientos",
+      "emocion": [
+        "ansiedad",
+        "miedo"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "cognición",
+        "automático"
+      ],
+      "texto": "Los pensamientos automáticos son como transmisiones de radio que tu mente sintoniza sin que lo decidas. No porque aparezcan significa que son verdaderos. Son hipótesis, interpretaciones filtradas por tu historia. Aprender a observarlos en lugar de identificarte con ellos es el primer paso hacia la libertad mental.",
+      "accion": "La próxima vez que un pensamiento perturbador aparezca, escríbelo y luego pregúntate: ¿qué evidencia real tengo de que esto es verdad?",
+      "pregunta": "¿Cuántos de tus pensamientos son hechos y cuántos son interpretaciones teñidas por el miedo?"
+    },
+    {
+      "id": 12,
+      "tipo": "reflexion",
+      "escuela": "tcc",
+      "tema": "distorsiones",
+      "emocion": [
+        "ansiedad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "catastrofización",
+        "perspectiva"
+      ],
+      "texto": "La catastrofización es cuando tu mente salta directamente al peor escenario posible como si fuera el más probable. Es una trampa cognitiva sofisticada: tu cerebro cree que imaginando el peor caso se está protegiendo. Pero solo logra crear sufrimiento anticipado por algo que quizás nunca ocurra.",
+      "accion": "Cuando notes catastrofización, pregúntate: ¿cuál es el escenario más probable y cuál el más realista?",
+      "pregunta": "¿Qué porcentaje de tus peores predicciones del año pasado se cumplieron realmente?"
+    },
+    {
+      "id": 13,
+      "tipo": "reflexion",
+      "escuela": "tcc",
+      "tema": "reestructuración",
+      "emocion": [
+        "tristeza",
+        "culpa"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "reencuadre",
+        "narrativa"
+      ],
+      "texto": "La historia que te cuentas sobre lo que te ha pasado tiene más poder sobre tu bienestar que los hechos mismos. No porque los hechos no importen, sino porque la interpretación que les das determina cómo te afectan. Puedes reescribir la narrativa sin negar lo ocurrido.",
+      "accion": "Toma un evento difícil de tu vida y escribe tres perspectivas diferentes sobre lo que ocurrió.",
+      "pregunta": "¿Qué versión de tu historia te está sirviendo y cuál te está limitando?"
+    },
+    {
+      "id": 14,
+      "tipo": "reflexion",
+      "escuela": "tcc",
+      "tema": "hábitos",
+      "emocion": [
+        "agotamiento",
+        "frustración"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "rutina",
+        "pequeños pasos"
+      ],
+      "texto": "Los grandes cambios no ocurren con un gran esfuerzo puntual. Ocurren cuando acciones pequeñas se repiten con suficiente consistencia hasta que se vuelven automáticas. No subestimes el poder de un hábito mínimo realizado cada día sobre uno perfecto que nunca se sostiene.",
+      "accion": "Elige un hábito mínimo que puedas sostener incluso en tus peores días. Comprométete con él por 30 días.",
+      "pregunta": "¿Qué hábito pequeño pero consistente cambiaría significativamente tu calidad de vida?"
+    },
+    {
+      "id": 15,
+      "tipo": "reflexion",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "estrategia",
+        "regulación"
+      ],
+      "texto": "No todas las formas de afrontar el dolor son igual de útiles. Algunas estrategias te dan alivio inmediato pero complican el problema a largo plazo. Conocer tu propio patrón de afrontamiento, sin juzgarlo, te da el poder de elegir de manera más consciente cuándo el estrés se intensifica.",
+      "accion": "Haz una lista de tus estrategias habituales ante el estrés. Marca cuáles te ayudan a largo plazo y cuáles no.",
+      "pregunta": "¿Qué estrategia de afrontamiento que has usado alguna vez fue realmente efectiva?"
+    },
+    {
+      "id": 16,
+      "tipo": "reflexion",
+      "escuela": "tcc",
+      "tema": "pensamientos",
+      "emocion": [
+        "culpa",
+        "vergüenza"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "autoestima",
+        "crítica interna"
+      ],
+      "texto": "El crítico interno es la voz que te exige perfección, que te recuerda cada error, que compara tu historia con la de otros. Ese crítico no fue creado para destruirte. Fue creado para protegerte. Pero el método que usa a menudo hace más daño que bien.",
+      "accion": "Cuando el crítico interno hable, pregúntale: ¿qué intentas proteger? Luego respóndele con amabilidad.",
+      "pregunta": "¿Cómo le hablarías a un amigo querido que está pasando por lo mismo que tú estás viviendo?"
+    },
+    {
+      "id": 17,
+      "tipo": "reflexion",
+      "escuela": "tcc",
+      "tema": "distorsiones",
+      "emocion": [
+        "soledad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "lectura mental",
+        "interpretación"
+      ],
+      "texto": "La 'lectura mental' es asumir que sabes lo que otros piensan sin que te lo hayan dicho. Esta distorsión crea distancia, alimenta conflictos y genera expectativas que los demás no conocen. Solo sabes con certeza lo que alguien piensa cuando te lo dice directamente.",
+      "accion": "Esta semana, en lugar de asumir lo que alguien piensa o siente, pregúntale directamente.",
+      "pregunta": "¿Cuántos conflictos en tu vida han surgido de interpretaciones no verificadas?"
+    },
+    {
+      "id": 18,
+      "tipo": "reflexion",
+      "escuela": "tcc",
+      "tema": "reestructuración",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "alternativas",
+        "flexibilidad"
+      ],
+      "texto": "La rigidez mental es el terreno donde florece la ansiedad. La mente que puede generar múltiples perspectivas ante una situación difícil tiene más recursos para encontrar soluciones y menos probabilidad de quedar atrapada en un solo punto de vista catastrófico.",
+      "accion": "Ante un problema actual, genera deliberadamente tres perspectivas completamente diferentes sobre él.",
+      "pregunta": "¿Qué otro significado podría tener esta situación que no hayas considerado?"
+    },
+    {
+      "id": 19,
+      "tipo": "reflexion",
+      "escuela": "tcc",
+      "tema": "hábitos",
+      "emocion": [
+        "esperanza",
+        "gratitud"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "45 segundos",
+      "semana_terapeutica": [
+        3,
+        4,
+        5
+      ],
+      "tags": [
+        "rutina matutina",
+        "comienzo"
+      ],
+      "texto": "Las primeras horas del día tienen una influencia desproporcionada sobre cómo te sentirás el resto del día. No porque el destino esté sellado, sino porque los primeros estímulos y pensamientos establecen el tono emocional que acompañará tus decisiones. Tu mañana merece una intención clara.",
+      "accion": "Esta mañana, antes de ver el teléfono, realiza 5 minutos de una práctica que te nutra: respirar, escribir o simplemente estar presente.",
+      "pregunta": "¿Qué pequeño ritual matutino podría transformar la calidad de tus días?"
+    },
+    {
+      "id": 20,
+      "tipo": "reflexion",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "miedo",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "técnicas",
+        "regulación"
+      ],
+      "texto": "Cuando la ansiedad es intensa, la mente entra en un bucle que se alimenta a sí mismo. Interrumpir ese bucle requiere cambiar el canal de atención. No porque el problema desaparezca, sino porque desde un estado más calmado puedes verlo con más claridad y más opciones.",
+      "accion": "Esta noche, si la ansiedad es intensa, practica: inhala 4 segundos, mantén 4, exhala 6. Repite 5 veces.",
+      "pregunta": "¿Qué herramienta de regulación emocional funciona mejor para ti en los momentos más difíciles?"
+    },
+    {
+      "id": 21,
+      "tipo": "reflexion",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "soledad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "conexión",
+        "comprensión"
+      ],
+      "texto": "Ser escuchado de verdad —sin consejos, sin soluciones, sin juicio— es una de las experiencias más sanadoras que existen. No porque el problema desaparezca, sino porque el peso de cargarlo solo se alivia cuando alguien se sienta contigo en medio de él. Mereces ese tipo de presencia.",
+      "accion": "Esta semana, busca a alguien de confianza y pídele que simplemente te escuche sin darte consejos.",
+      "pregunta": "¿Quién en tu vida tiene la capacidad de estar presente contigo sin intentar arreglar lo que sientes?"
+    },
+    {
+      "id": 22,
+      "tipo": "reflexion",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "esperanza",
+        "gratitud"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "potencial",
+        "actualización"
+      ],
+      "texto": "Dentro de ti existe una tendencia natural hacia el crecimiento, igual que en un árbol que siempre busca la luz aunque esté en la sombra. No siempre lo sientes. Habrá momentos en que todo parezca quieto o regresado. Pero esa tendencia es parte de tu naturaleza más esencial y nunca desaparece completamente.",
+      "accion": "Hoy, identifica un área de tu vida donde sientas esa llamada al crecimiento, aunque sea pequeña.",
+      "pregunta": "¿En qué dirección está intentando crecer la parte más viva de ti?"
+    },
+    {
+      "id": 23,
+      "tipo": "reflexion",
+      "escuela": "humanismo",
+      "tema": "autenticidad",
+      "emocion": [
+        "vergüenza",
+        "culpa"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "máscara",
+        "verdadero yo"
+      ],
+      "texto": "Cuánta energía se gasta en ser lo que otros esperan que seas. El peso de la máscara social se acumula con el tiempo hasta convertirse en una fuente de agotamiento profundo y una desconexión sutil de quien realmente eres. La autenticidad no es descortesía. Es el coraje de mostrarte tal como eres.",
+      "accion": "Hoy, en al menos una interacción, expresa una opinión o emoción real en lugar de la respuesta socialmente esperada.",
+      "pregunta": "¿En qué contextos de tu vida tienes que esconder partes importantes de quien eres?"
+    },
+    {
+      "id": 24,
+      "tipo": "reflexion",
+      "escuela": "humanismo",
+      "tema": "aceptación",
+      "emocion": [
+        "culpa",
+        "vergüenza"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "autocompasión",
+        "incondicional"
+      ],
+      "texto": "El amor propio incondicional no significa estar satisfecho con todo lo que haces. Significa reconocer que tienes valor inherente como ser humano, independientemente de tus logros, errores, aspecto o rol social. Ese valor no se gana ni se pierde. Existe porque existes.",
+      "accion": "Esta noche, di frente al espejo o en tu mente: 'Me acepto incluyendo mis imperfecciones. Sigo siendo suficiente.'",
+      "pregunta": "¿Qué condiciones te has impuesto a ti mismo para merecer sentirte bien contigo mismo?"
+    },
+    {
+      "id": 25,
+      "tipo": "reflexion",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "enojo",
+        "frustración"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "compasión",
+        "comprensión"
+      ],
+      "texto": "Comprender por qué alguien actúa de cierta manera no significa aprobar lo que hace. La comprensión es simplemente el acto de reconocer que cada persona tiene una historia que explica sus comportamientos, aunque esa historia no los justifique. Comprender antes de juzgar te libera a ti, no solo a quien comprendes.",
+      "accion": "Ante alguien que te ha molestado, intenta imaginar qué podría estar viviendo que explique su conducta.",
+      "pregunta": "¿Qué historia podría estar detrás del comportamiento de alguien que te ha herido recientemente?"
+    },
+    {
+      "id": 26,
+      "tipo": "reflexion",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "agotamiento",
+        "tristeza"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "resurgir",
+        "renovación"
+      ],
+      "texto": "El descanso no es la ausencia de crecimiento. Es una fase esencial de él. Los campos necesitan periodos de barbecho para rendir mejor la próxima temporada. Tu sistema nervioso, tu creatividad y tu capacidad de conexión también necesitan pausas para regenerarse.",
+      "accion": "Esta semana, programa al menos un bloque de tiempo para no hacer nada productivo. Solo existir.",
+      "pregunta": "¿Cuándo fue la última vez que te permitiste descansar sin sentirte culpable por ello?"
+    },
+    {
+      "id": 27,
+      "tipo": "reflexion",
+      "escuela": "humanismo",
+      "tema": "autenticidad",
+      "emocion": [
+        "confusión",
+        "soledad"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "identidad",
+        "valores"
+      ],
+      "texto": "La confusión sobre quién eres suele surgir cuando has vivido mucho tiempo respondiendo a las expectativas de otros en lugar de tus propios valores. Reconectar con tu autenticidad no es un proceso rápido. Es una excavación lenta y gentil hacia lo que siempre estuvo ahí debajo.",
+      "accion": "Escribe tres cosas que harías si no te importara lo que piensan los demás.",
+      "pregunta": "¿Qué parte de ti has estado silenciando para ser más aceptado por los demás?"
+    },
+    {
+      "id": 28,
+      "tipo": "reflexion",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "tristeza",
+        "soledad"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "conexión",
+        "humanidad"
+      ],
+      "texto": "En los momentos más oscuros, recordar que millones de personas en este momento también están despertando en la noche con el corazón pesado puede traer una extraña y profunda consolación. No estás solo en tu lucha. Eso no la hace menor, pero sí la hace más compartida.",
+      "accion": "Esta noche, envía un mensaje corto a alguien que crees que podría necesitar saber que piensas en ella.",
+      "pregunta": "¿En quién podrías pensar que está viviendo algo difícil similar a lo tuyo y que merece una palabra de apoyo?"
+    },
+    {
+      "id": 29,
+      "tipo": "reflexion",
+      "escuela": "humanismo",
+      "tema": "aceptación",
+      "emocion": [
+        "tristeza",
+        "culpa"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "imperfección",
+        "humanidad"
+      ],
+      "texto": "La perfección es una construcción mental, no una posibilidad real. Y cuando la perseguimos con demasiada intensidad, no nos volvemos mejores, nos volvemos más ansiosos, más rígidos y menos capaces de disfrutar lo que tenemos. Abrazar tu imperfección con ternura es un acto revolucionario en un mundo que exige el rendimiento constante.",
+      "accion": "Hoy, comete un error a propósito en algo sin importancia y practica no disculparte excesivamente.",
+      "pregunta": "¿Qué perfección estás persiguiendo que te está costando demasiado en paz y espontaneidad?"
+    },
+    {
+      "id": 30,
+      "tipo": "reflexion",
+      "escuela": "humanismo",
+      "tema": "autenticidad",
+      "emocion": [
+        "soledad",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "identidad",
+        "propósito"
+      ],
+      "texto": "Encontrar quién eres no es un evento. Es un proceso de toda la vida que consiste en ir eliminando capas de lo que no eres, lo que te impusieron, lo que adoptaste por necesidad o miedo, hasta que lo que queda es algo genuino, propio, que resuena cuando lo miras directamente.",
+      "accion": "Esta noche, escribe tres cosas que son genuinamente tuyas, que no adoptaste de otros sino que nacen de ti.",
+      "pregunta": "Si pudieras despojarte de todas las expectativas que otros tienen de ti, ¿qué quedaría?"
+    },
+    {
+      "id": 31,
+      "tipo": "reflexion",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "recursos",
+        "perspectiva"
+      ],
+      "texto": "La gratitud no es negar el dolor. Es la capacidad de sostener dos realidades al mismo tiempo: que algo duele y que algo también vale. No se trata de obligarte a sentirte bien cuando no lo estás. Se trata de ampliar el campo de visión para que incluya también lo que existe y funciona.",
+      "accion": "Esta noche escribe tres cosas específicas —personas, momentos o recursos— por las que sientes gratitud, aunque sean pequeñas.",
+      "pregunta": "¿Qué tienes hoy que quizás dabas por sentado y que muchos quisieran tener?"
+    },
+    {
+      "id": 32,
+      "tipo": "reflexion",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "miedo",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "posibilidad",
+        "realismo"
+      ],
+      "texto": "El optimismo realista no es ingenuidad ni negación. Es la capacidad de reconocer las dificultades mientras te mantienes abierto a las posibilidades que también existen. No es creer que todo saldrá bien automáticamente, sino confiar en que tienes recursos para navegar lo que venga.",
+      "accion": "Esta mañana identifica una posibilidad real en tu situación actual que no has explorado completamente.",
+      "pregunta": "¿Qué oportunidad existe en este momento difícil que aún no has querido ver?"
+    },
+    {
+      "id": 33,
+      "tipo": "reflexion",
+      "escuela": "positiva",
+      "tema": "bienestar",
+      "emocion": [
+        "agotamiento",
+        "estrés"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "PERMA",
+        "florecimiento"
+      ],
+      "texto": "El bienestar no es la ausencia de dificultades. Es la presencia de elementos que nutren tu vida: relaciones significativas, actividades que te comprometen, logros que son tuyos, emociones positivas cultivadas conscientemente y un sentido de propósito. ¿Cuántos de estos elementos están presentes en tu vida hoy?",
+      "accion": "Evalúa brevemente cada dimensión del bienestar: vínculos, compromiso, logros, emociones, propósito. ¿Cuál necesita más atención?",
+      "pregunta": "¿En qué dimensión de tu bienestar estás invirtiendo demasiado poco?"
+    },
+    {
+      "id": 34,
+      "tipo": "reflexion",
+      "escuela": "positiva",
+      "tema": "fortalezas",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "recursos internos",
+        "talentos"
+      ],
+      "texto": "Tenemos el hábito de catalogar nuestras debilidades con gran precisión mientras somos vagos y torpes al describir nuestras fortalezas. Pero tus fortalezas son más que talentos: son formas de ser, de relacionarte y de ver el mundo que te pertenecen de manera única y que son tu recurso más genuino.",
+      "accion": "Escribe cinco fortalezas tuyas. No habilidades, sino cualidades de carácter. Pídele a alguien cercano que te diga las suyas para ti.",
+      "pregunta": "¿Cuál de tus fortalezas estás subutilizando en este momento de tu vida?"
+    },
+    {
+      "id": 35,
+      "tipo": "reflexion",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "soledad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "vínculos",
+        "memorias"
+      ],
+      "texto": "Hay momentos en el pasado que aún te calientan el corazón cuando los visitas: un amanecer, una conversación, una risa compartida. La gratitud también puede vivir en el pasado. Recordar con gratitud no es quedarse atascado; es reconocer que la vida ya te ha dado cosas que valen.",
+      "accion": "Esta noche, visualiza con detalle un recuerdo positivo y permítete sentir la calidez de ese momento durante 2 minutos.",
+      "pregunta": "¿Cuál es uno de los recuerdos más significativos de tu vida que aún te hace sonreír?"
+    },
+    {
+      "id": 36,
+      "tipo": "reflexion",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "frustración",
+        "desesperanza"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Buscador de Sentido"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "esperanza activa",
+        "posibilidad"
+      ],
+      "texto": "La esperanza no es un lujo emocional. Es una herramienta de supervivencia. Cuando el pesimismo se instala como realidad, el cerebro deja de buscar soluciones porque ya no cree que existan. Mantener aunque sea una pequeña llama de posibilidad es, literalmente, lo que permite seguir avanzando.",
+      "accion": "Identifica una sola cosa pequeña que podría mejorar en tu situación. Enfócate en esa y no en todo el panorama.",
+      "pregunta": "¿Qué pequeña posibilidad existe en este momento que todavía no has explorado completamente?"
+    },
+    {
+      "id": 37,
+      "tipo": "reflexion",
+      "escuela": "positiva",
+      "tema": "bienestar",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "45 segundos",
+      "semana_terapeutica": [
+        3,
+        4,
+        5
+      ],
+      "tags": [
+        "flujo",
+        "compromiso"
+      ],
+      "texto": "El estado de flujo —ese momento en que estás tan absorbido en lo que haces que el tiempo desaparece— es uno de los estados más nutritivos para el bienestar humano. Ocurre cuando el desafío está justo al límite de tu capacidad. No muy fácil (aburrimiento), no muy difícil (ansiedad).",
+      "accion": "Hoy, identifica una actividad que te coloca en estado de flujo e incorpórala a tu semana intencionalmente.",
+      "pregunta": "¿Cuándo fue la última vez que perdiste la noción del tiempo porque estabas completamente inmerso en algo?"
+    },
+    {
+      "id": 38,
+      "tipo": "reflexion",
+      "escuela": "positiva",
+      "tema": "fortalezas",
+      "emocion": [
+        "vergüenza",
+        "inseguridad"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "autoestima",
+        "confianza"
+      ],
+      "texto": "La autoconfianza auténtica no viene de convencerte de que eres mejor que los demás. Viene de conocerte bien: saber qué puedes ofrecer, dónde tus límites son reales y dónde son miedos disfrazados, y actuar desde ese conocimiento con honestidad.",
+      "accion": "Escribe tres áreas de tu vida donde has demostrado competencia real. Léelas en voz alta.",
+      "pregunta": "¿Qué fortaleza tuya ves claramente en otros pero no te permites reconocer en ti mismo?"
+    },
+    {
+      "id": 39,
+      "tipo": "reflexion",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2,
+        4
+      ],
+      "tags": [
+        "futuro",
+        "crecimiento"
+      ],
+      "texto": "La tristeza tiene mucho que enseñarte. Pero el aprendizaje está completo cuando esa tristeza te lleva a algo: a una comprensión más profunda, a una redirección, a un valor que quieres honrar más. Cuando la tristeza se queda indefinidamente sin moverse, es señal de que algo más necesita atención.",
+      "accion": "Esta noche, pregúntate qué necesita ocurrir para que la tristeza pueda comenzar a moverse.",
+      "pregunta": "¿Hacia qué te está señalando esta tristeza que aún no has querido mirar?"
+    },
+    {
+      "id": 40,
+      "tipo": "reflexion",
+      "escuela": "positiva",
+      "tema": "bienestar",
+      "emocion": [
+        "soledad",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Corazón Abierto"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "conexión",
+        "recuperación"
+      ],
+      "texto": "Los vínculos humanos son uno de los predictores más poderosos del bienestar. No la cantidad, sino la calidad: tener al menos una persona con quien puedas ser completamente honesto es suficiente para generar un colchón emocional que amortigua la adversidad.",
+      "accion": "Esta semana, invierte tiempo de calidad en una relación importante para ti, sin pantallas, sin prisa.",
+      "pregunta": "¿Con quién en tu vida tienes ese tipo de conexión honesta y cuándo fue la última vez que la nutriste?"
+    },
+    {
+      "id": 41,
+      "tipo": "reflexion",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "tristeza",
+        "soledad",
+        "desesperanza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        1,
+        5
+      ],
+      "tags": [
+        "propósito",
+        "Frankl"
+      ],
+      "texto": "Cuando la vida pierde sentido, el sufrimiento se vuelve insoportable. Cuando el sufrimiento tiene un propósito, se convierte en algo que puede ser sostenido. No se trata de encontrar un gran propósito cósmico de inmediato, sino de identificar aunque sea un pequeño hilo de sentido en este momento preciso.",
+      "accion": "Esta noche, escribe una respuesta a esta pregunta: ¿por qué vale la pena llegar a mañana?",
+      "pregunta": "¿Qué pequeño hilo de sentido existe en tu vida ahora mismo, aunque todo lo demás parezca oscuro?"
+    },
+    {
+      "id": 42,
+      "tipo": "reflexion",
+      "escuela": "logoterapia",
+      "tema": "propósito",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "vocación",
+        "dirección"
+      ],
+      "texto": "El propósito no siempre llega como una revelación dramática. A menudo se descubre en retrospectiva: cuando miras hacia atrás y notas lo que siempre te importó, lo que repetidamente regresabas, lo que te hacía sentir vivo incluso cuando era difícil. Eso es una pista poderosa.",
+      "accion": "Escribe qué temas, actividades o personas han capturado tu atención con mayor frecuencia a lo largo de tu vida.",
+      "pregunta": "¿Qué actividad o causa te haría sentir que tu tiempo en este mundo valió la pena?"
+    },
+    {
+      "id": 43,
+      "tipo": "reflexion",
+      "escuela": "logoterapia",
+      "tema": "resiliencia",
+      "emocion": [
+        "agotamiento",
+        "tristeza"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Buscador de Sentido"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        4
+      ],
+      "tags": [
+        "Frankl",
+        "sufrimiento",
+        "sentido"
+      ],
+      "texto": "Hay una verdad difícil pero liberadora: no siempre puedes cambiar lo que te ocurre, pero siempre puedes elegir la actitud con la que lo enfrentas. Esta libertad interior, la última que nadie puede quitarte, es también la más profunda fuente de dignidad humana.",
+      "accion": "Ante la dificultad actual que estás viviendo, pregúntate: ¿qué postura interior quiero adoptar frente a esto?",
+      "pregunta": "¿Qué actitud interior te daría más dignidad y paz en esta situación?"
+    },
+    {
+      "id": 44,
+      "tipo": "reflexion",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "miedo",
+        "confusión"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "autorrealización",
+        "existencia"
+      ],
+      "texto": "La pregunta '¿para qué estoy aquí?' no necesita una respuesta filosófica grandiosa. Necesita una respuesta práctica y cotidiana: ¿qué estoy haciendo con este día? ¿Qué pequeño acto de cuidado, de creación o de conexión puedo ofrecer hoy? El sentido se construye en lo ordinario.",
+      "accion": "Hoy, realiza un acto pequeño pero deliberado de contribución hacia alguien o hacia algo más grande que tú.",
+      "pregunta": "¿Qué acto cotidiano podría convertirse en una práctica de sentido si lo realizaras con más conciencia?"
+    },
+    {
+      "id": 45,
+      "tipo": "reflexion",
+      "escuela": "logoterapia",
+      "tema": "libertad",
+      "emocion": [
+        "ansiedad",
+        "frustración"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "elección",
+        "responsabilidad"
+      ],
+      "texto": "Ser libre no significa estar libre de obligaciones. Significa elegir cómo llevar esas obligaciones: con resentimiento o con entrega, con victimismo o con responsabilidad. Esta elección invisible que haces constantemente es la que define la textura real de tu vida interior.",
+      "accion": "Elige una responsabilidad cotidiana que realizas con desgana y decídete a hacerla hoy con plena presencia y intención.",
+      "pregunta": "¿Qué obligaciones de tu vida estarías viviendo de manera diferente si las vivieras como elecciones propias?"
+    },
+    {
+      "id": 46,
+      "tipo": "reflexion",
+      "escuela": "logoterapia",
+      "tema": "propósito",
+      "emocion": [
+        "esperanza",
+        "serenidad"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "legado",
+        "contribución"
+      ],
+      "texto": "Lo que le das al mundo —tus palabras, tu tiempo, tu atención, tu trabajo— forma parte de algo más grande que tú. Cada acto de cuidado genuino deja una huella invisible pero real. No necesitas ser famoso ni grande para contribuir significativamente al tejido de la humanidad.",
+      "accion": "Esta mañana, reflexiona sobre qué forma de contribución únicamente tuya estás en posición de ofrecer hoy.",
+      "pregunta": "¿Qué legado invisible vas dejando en las personas que tienen la fortuna de encontrarte en su camino?"
+    },
+    {
+      "id": 47,
+      "tipo": "reflexion",
+      "escuela": "logoterapia",
+      "tema": "resiliencia",
+      "emocion": [
+        "agotamiento",
+        "desesperanza"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "critico",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "supervivencia",
+        "razón para vivir"
+      ],
+      "texto": "Cuando todo parece demasiado pesado, cuando el agotamiento es total y la esperanza parece haberse evaporado, recuerda que incluso en ese punto límite hay un hilo invisible que te ancla. Puede ser una persona, un ser vivo que depende de ti, un sueño que aún no ha terminado. Ese hilo es suficiente para seguir.",
+      "accion": "Esta noche, escribe el nombre de algo o alguien por quien vale la pena seguir aquí.",
+      "pregunta": "¿Cuál es el hilo más delgado que te mantiene conectado a seguir?"
+    },
+    {
+      "id": 48,
+      "tipo": "reflexion",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "culpa",
+        "vergüenza"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "redención",
+        "contribución"
+      ],
+      "texto": "El sufrimiento causado por los propios errores tiene una salida: contribuir. Lo que ya no puedes deshacer puede transformarse en la fuente de tu mayor comprensión hacia quienes enfrentan situaciones similares. Tu historia de error puede ser la llave que abre una puerta en la vida de otro.",
+      "accion": "Piensa en un error significativo de tu vida y pregúntate: ¿cómo podría esta experiencia ser de utilidad para alguien?",
+      "pregunta": "¿De qué manera tu experiencia de dolor podría convertirse en un recurso para otros?"
+    },
+    {
+      "id": 49,
+      "tipo": "reflexion",
+      "escuela": "logoterapia",
+      "tema": "libertad",
+      "emocion": [
+        "frustración",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Vigilante"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "elección",
+        "poder"
+      ],
+      "texto": "La responsabilidad radical consiste en asumir que eres el autor de tu vida, incluso en las partes que no elegiste. No culpar, no victimizarte, pero tampoco ignorar lo que ocurrió. Simplemente preguntar: desde donde estoy, con lo que tengo, ¿qué elijo hacer ahora? Esta pregunta te devuelve el timón.",
+      "accion": "Ante una situación de tu vida que sientes como impuesta, pregúntate: ¿qué parte de esto sí puedo elegir, aunque sea pequeña?",
+      "pregunta": "¿En qué área de tu vida has estado esperando que algo externo cambie en lugar de ejercer tu propia elección?"
+    },
+    {
+      "id": 50,
+      "tipo": "reflexion",
+      "escuela": "logoterapia",
+      "tema": "propósito",
+      "emocion": [
+        "tristeza",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "claridad",
+        "valores"
+      ],
+      "texto": "Para clarificar propósito, pregúntate: ¿Qué haría si no necesitara el dinero? ¿Por qué causa estaría dispuesto a sufrir? ¿Qué problema del mundo me duele más personalmente? ¿Qué habilidad mía combinada con esa causa podría crear algo de valor? La intersección de estas respuestas suele apuntar hacia el propósito.",
+      "accion": "Responde las cuatro preguntas con honestidad. No busques la respuesta 'correcta', sino la más verdadera.",
+      "pregunta": "¿Qué respuesta a una de estas cuatro preguntas ya conoces pero te da miedo admitir?"
+    },
+    {
+      "id": 51,
+      "tipo": "consejo",
+      "escuela": "tcc",
+      "tema": "pensamientos",
+      "emocion": [
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "registro",
+        "técnica"
+      ],
+      "texto": "Cuando un pensamiento ansioso aparece, resiste el impulso de combatirlo o de ceder a él. En su lugar, obsérvalo como si fuera una nube pasando por el cielo. Nómbralo: 'Estoy teniendo el pensamiento de que...' Esta distancia mínima puede cambiar radicalmente tu relación con él.",
+      "accion": "Practica esta técnica con el próximo pensamiento ansioso que aparezca hoy.",
+      "pregunta": "¿Qué diferencia hay entre tener un pensamiento y creer que ese pensamiento es la realidad?"
+    },
+    {
+      "id": 52,
+      "tipo": "consejo",
+      "escuela": "tcc",
+      "tema": "hábitos",
+      "emocion": [
+        "agotamiento",
+        "estrés"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "mañana",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "activación conductual",
+        "pequeños pasos"
+      ],
+      "texto": "Cuando la depresión o el agotamiento profundo aparecen, el movimiento es el antídoto más poderoso aunque parezca imposible. No un gran movimiento. Un movimiento mínimo: levantarse de la silla, caminar hasta la ventana, tomar un vaso de agua. La motivación no precede a la acción; la acción precede a la motivación.",
+      "accion": "Identifica el movimiento más pequeño posible que puedas hacer ahora mismo y hazlo.",
+      "pregunta": "¿Cuál sería el paso más pequeño posible en la dirección correcta?"
+    },
+    {
+      "id": 53,
+      "tipo": "consejo",
+      "escuela": "stoicism",
+      "tema": "control",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "dicotomía",
+        "acción"
+      ],
+      "texto": "Al inicio de cada día, dedica 5 minutos a hacer una lista de lo que te preocupa. Luego divide cada ítem en dos columnas: Depende de mí / No depende de mí. Solo planifica acciones para los de la primera columna. Usa el resto de la energía en practicar la soltura.",
+      "accion": "Realiza este ejercicio de dicotomía con las tres preocupaciones más presentes de esta semana.",
+      "pregunta": "¿Cuánta de tu energía mental está actualmente en la columna 'no depende de mí'?"
+    },
+    {
+      "id": 54,
+      "tipo": "consejo",
+      "escuela": "humanismo",
+      "tema": "autenticidad",
+      "emocion": [
+        "soledad",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "escritura",
+        "autoconocimiento"
+      ],
+      "texto": "La escritura libre es una de las herramientas más poderosas para reconectarte contigo mismo. No para redactar bien, sino para dar permiso a lo que está dentro de salir sin filtro. 10 minutos de escritura sin editar puede revelarte cosas que meses de reflexión racional no alcanzarían.",
+      "accion": "Pon un temporizador de 10 minutos y escribe sin parar lo que sientes y piensas, sin releer ni corregir.",
+      "pregunta": "¿Qué saldrá si te permites escribir sin censura durante 10 minutos?"
+    },
+    {
+      "id": 55,
+      "tipo": "consejo",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "diario",
+        "práctica"
+      ],
+      "texto": "El diario de gratitud es una práctica respaldada por evidencia para mejorar el bienestar subjetivo. No se trata de listar cosas genéricas. Se trata de escribir con detalle suficiente para que el evento o la persona que agradeces pueda ser revivido emocionalmente, no solo recordado intelectualmente.",
+      "accion": "Esta noche, escribe un evento específico de hoy que agradeces y el porqué con el mayor detalle posible.",
+      "pregunta": "¿Qué pasaría en tu estado emocional si hicieras este ejercicio durante 21 días consecutivos?"
+    },
+    {
+      "id": 56,
+      "tipo": "consejo",
+      "escuela": "tcc",
+      "tema": "distorsiones",
+      "emocion": [
+        "ansiedad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "cuestionamiento",
+        "evidencia"
+      ],
+      "texto": "El cuestionamiento socrático examina sistemáticamente un pensamiento perturbador: ¿Qué evidencia tengo de que esto es verdad? ¿Qué evidencia tengo de que no lo es? ¿Estoy usando todos los hechos o solo los que apoyan mi miedo? ¿Hay una explicación alternativa?",
+      "accion": "Selecciona un pensamiento perturbador de esta semana y aplícale las cuatro preguntas anteriores.",
+      "pregunta": "¿Qué tan riguroso eres con la evidencia de tus pensamientos negativos comparado con la evidencia de tus pensamientos positivos?"
+    },
+    {
+      "id": 57,
+      "tipo": "consejo",
+      "escuela": "stoicism",
+      "tema": "serenidad",
+      "emocion": [
+        "estrés",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "revisión diaria",
+        "reflexión"
+      ],
+      "texto": "La práctica de revisión nocturna estoica consiste en repasar el día antes de dormir con tres preguntas: ¿Qué hice bien? ¿Qué podría haber hecho mejor? ¿Qué oportunidad de actuar virtuosamente tuve y cómo la aproveché? No para juzgarte, sino para aprender.",
+      "accion": "Esta noche, dedica 5 minutos a responder estas tres preguntas sobre tu día.",
+      "pregunta": "¿Qué hábito de reflexión nocturna transformaría tu proceso de aprendizaje personal?"
+    },
+    {
+      "id": 58,
+      "tipo": "consejo",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "desesperanza",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "15 minutos",
+      "semana_terapeutica": [
+        1,
+        5
+      ],
+      "tags": [
+        "conversación de sentido",
+        "propósito"
+      ],
+      "texto": "Cuando el sentido escasea, una práctica poderosa es responder por escrito: ¿Qué momentos de mi vida me hicieron sentir que valía la pena? ¿Cuándo me sentí más vivo? ¿Qué contribuciones me enorgullecen aunque nadie las vea? Las respuestas revelan dónde vive tu sentido.",
+      "accion": "Dedica 15 minutos a responder estas tres preguntas con honestidad.",
+      "pregunta": "¿Cuándo fue la última vez que te sentiste completamente vivo, presente y significativo?"
+    },
+    {
+      "id": 59,
+      "tipo": "consejo",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "enojo",
+        "frustración"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "comunicación",
+        "CNV"
+      ],
+      "texto": "Antes de una conversación difícil, prepárate con estas cuatro preguntas: ¿Qué observo objetivamente? ¿Qué siento ante eso? ¿Qué necesito yo en esta situación? ¿Qué le pediría específicamente a la otra persona? Estructurar así tus pensamientos transforma la confrontación en conexión.",
+      "accion": "Usa este esquema para preparar una conversación difícil que has estado postergando.",
+      "pregunta": "¿Qué necesidad propia no estás expresando en las conversaciones que más te cuestan?"
+    },
+    {
+      "id": 60,
+      "tipo": "consejo",
+      "escuela": "positiva",
+      "tema": "fortalezas",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "inventario",
+        "talentos"
+      ],
+      "texto": "Cuando no sabes qué hacer con tu vida o te sientes perdido, un ejercicio poderoso es inventariar tus picos de experiencia: los momentos donde sentiste mayor energía, mayor competencia y mayor satisfacción. Los patrones que emergen no son coincidencias, son pistas sobre tu naturaleza.",
+      "accion": "Lista 10 momentos en tu vida donde te sentiste más vivo. Busca el patrón común entre ellos.",
+      "pregunta": "¿Qué tienen en común los momentos en que te has sentido más tú mismo?"
+    },
+    {
+      "id": 61,
+      "tipo": "consejo",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "técnicas",
+        "emergencia"
+      ],
+      "texto": "Para momentos de ansiedad intensa, el método 5-4-3-2-1 activa el sistema nervioso parasimpático: Nombra 5 cosas que puedes VER, 4 que puedes TOCAR, 3 que puedes ESCUCHAR, 2 que puedes OLER, 1 que puedes SABOREAR. Este ejercicio usa los sentidos para anclar la mente en el presente.",
+      "accion": "Practica el método 5-4-3-2-1 ahora mismo, incluso si no estás ansioso, para que esté disponible cuando lo necesites.",
+      "pregunta": "¿Qué técnica de regulación has descubierto que funciona mejor para ti en momentos de alta ansiedad?"
+    },
+    {
+      "id": 62,
+      "tipo": "consejo",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "tristeza",
+        "desesperanza"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Corazón Abierto"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "carta futura",
+        "esperanza"
+      ],
+      "texto": "Escríbete una carta desde tu versión futura: desde la persona que has llegado a ser dentro de 3 años. Esa versión que ya atravesó este período difícil. Cuéntate lo que aprendiste, cómo te sentiste cuando saliste del otro lado, lo que agradeces haber vivido. Esta práctica activa la esperanza de manera concreta.",
+      "accion": "Esta noche, escribe una carta de 15 minutos desde tu yo futuro al yo de ahora.",
+      "pregunta": "¿Qué te diría tu versión más sabia, que ya ha atravesado esto, a tu yo de ahora?"
+    },
+    {
+      "id": 63,
+      "tipo": "consejo",
+      "escuela": "tcc",
+      "tema": "reestructuración",
+      "emocion": [
+        "culpa",
+        "vergüenza"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "autocompasión",
+        "reencuadre"
+      ],
+      "texto": "La técnica del 'mejor amigo' consiste en imaginar que un amigo querido está pasando exactamente por lo que tú estás viviendo. ¿Qué le dirías? ¿Con qué tono? ¿Qué enfatizarías y qué minimizarías? Lo que le dirías a ese amigo es generalmente lo que tú mismo necesitas escuchar.",
+      "accion": "Escribe una carta de tres párrafos dirigida a ti mismo como si fueras tu mejor amigo hablándote sobre lo que estás viviendo.",
+      "pregunta": "¿Por qué te es tan difícil ser contigo mismo tan compasivo como lo serías con las personas que amas?"
+    },
+    {
+      "id": 64,
+      "tipo": "consejo",
+      "escuela": "stoicism",
+      "tema": "fortaleza",
+      "emocion": [
+        "miedo",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        4
+      ],
+      "tags": [
+        "premeditación",
+        "preparación"
+      ],
+      "texto": "La premeditación estoica no es catastrofismo. Es considerar de manera racional y serena los posibles resultados difíciles de algo importante, para estar emocionalmente preparado en caso de que ocurran. La persona que ha imaginado el peor caso posible y ha decidido cómo lo afrontaría, tiene menos miedo.",
+      "accion": "Antes de una situación que te genera ansiedad, pregúntate: ¿cuál sería el peor resultado posible y cómo lo afrontaría si ocurriera?",
+      "pregunta": "¿Qué ocurriría si te permitieras pensar en el peor escenario con calma para liberarte del miedo a él?"
+    },
+    {
+      "id": 65,
+      "tipo": "consejo",
+      "escuela": "humanismo",
+      "tema": "aceptación",
+      "emocion": [
+        "tristeza",
+        "culpa"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "autocompasión",
+        "Rogers"
+      ],
+      "texto": "Carl Rogers propuso que la paradoja del cambio es que solo puedo cambiar cuando me acepto plenamente como soy ahora. La resistencia a lo que somos crea una tensión que impide el movimiento. La aceptación radical de lo que eres en este momento abre la puerta que la autocrítica mantiene cerrada.",
+      "accion": "Escribe una lista de cosas de ti mismo que has estado rechazando. Al lado de cada una, practica escribir: 'También soy esto, y está bien.'",
+      "pregunta": "¿Qué parte de ti sigues rechazando que, si aceptaras, te liberaría?"
+    },
+    {
+      "id": 66,
+      "tipo": "consejo",
+      "escuela": "positiva",
+      "tema": "bienestar",
+      "emocion": [
+        "estrés",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "autocuidado",
+        "energía"
+      ],
+      "texto": "Las micro-recuperaciones son pausas breves durante el día diseñadas para restaurar la energía sin requerir mucho tiempo. Funcionan porque el sistema nervioso se restaura con alta frecuencia de pausas cortas mejor que con una sola pausa larga. Cinco minutos cada hora es más efectivo que una hora al final del día.",
+      "accion": "Programa tres pausas de 5 minutos hoy para no hacer nada productivo: solo respirar, estirarte o simplemente estar.",
+      "pregunta": "¿Con qué frecuencia te das permiso de parar, aunque sea brevemente, durante tu día de trabajo?"
+    },
+    {
+      "id": 67,
+      "tipo": "consejo",
+      "escuela": "logoterapia",
+      "tema": "propósito",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "15 minutos",
+      "semana_terapeutica": [
+        5
+      ],
+      "tags": [
+        "claridad",
+        "valores"
+      ],
+      "texto": "Para clarificar propósito, pregúntate: ¿Qué haría si no necesitara el dinero? ¿Por qué causa estaría dispuesto a sufrir? ¿Qué problema del mundo me duele más personalmente? ¿Qué habilidad mía combinada con esa causa podría crear algo de valor? La intersección de estas respuestas suele apuntar hacia el propósito.",
+      "accion": "Responde las cuatro preguntas con honestidad. No busques la respuesta 'correcta', sino la más verdadera.",
+      "pregunta": "¿Qué respuesta a una de estas cuatro preguntas ya conoces pero te da miedo admitir?"
+    },
+    {
+      "id": 68,
+      "tipo": "consejo",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "esperanza",
+        "gratitud"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "visión",
+        "futuro"
+      ],
+      "texto": "La visualización del 'yo ideal' es un ejercicio donde imaginas con el mayor detalle posible quién quieres ser en 5 años: cómo piensas, cómo te relacionas, qué tipo de vida llevas, qué valores honras. Esta imagen actúa como un imán que orienta tus decisiones cotidianas hacia esa dirección.",
+      "accion": "Dedica 5 minutos a describir con el mayor detalle posible cómo es tu yo ideal en 5 años.",
+      "pregunta": "¿Qué diferencia hay entre quien eres hoy y quien quieres ser, y cuál es el primer paso para reducir esa brecha?"
+    },
+    {
+      "id": 69,
+      "tipo": "consejo",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "estrés",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "persona",
+        "carta de gratitud"
+      ],
+      "texto": "La carta de gratitud es una práctica con evidencia poderosa de impacto en el bienestar: escribe a alguien que haya influido positivamente en tu vida y que nunca le hayas agradecido suficientemente. Sé específico. Si puedes, léesela en persona. El efecto es transformador para ambos.",
+      "accion": "Escribe una carta de gratitud a alguien específico de tu vida. Sé detallado y genuino.",
+      "pregunta": "¿Hay alguien en tu vida a quien nunca le has expresado completamente cuánto significó para ti?"
+    },
+    {
+      "id": 70,
+      "tipo": "consejo",
+      "escuela": "logoterapia",
+      "tema": "resiliencia",
+      "emocion": [
+        "agotamiento",
+        "tristeza"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        1,
+        4
+      ],
+      "tags": [
+        "narrativa de superación",
+        "fortaleza"
+      ],
+      "texto": "Escribe la historia de la dificultad más grande que has superado en tu vida. No como un testimonio de lo que sufriste, sino como la historia del protagonista que la atravesó con recursos que quizás no sabías que tenías. Este ejercicio activa la memoria de la propia resiliencia.",
+      "accion": "Escribe en 5-10 oraciones la historia de una dificultad que superaste, enfocándote en cómo lo lograste.",
+      "pregunta": "¿Qué recursos usaste para superar esa dificultad que siguen disponibles para ti hoy?"
+    },
+    {
+      "id": 71,
+      "tipo": "esperanza",
+      "escuela": "logoterapia",
+      "tema": "resiliencia",
+      "emocion": [
+        "desesperanza",
+        "tristeza"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Buscador de Sentido"
+      ],
+      "nivel": "critico",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "supervivencia",
+        "luz"
+      ],
+      "texto": "Incluso en los momentos en que la oscuridad parece total, hay algo en ti que sigue respirando, que sigue buscando, que sigue aquí. Ese algo no es pequeño. Es la parte más resistente y más valiosa de tu ser. Esta noche no necesitas resolver nada. Solo necesitas seguir.",
+      "accion": "Esta noche, pon una mano en tu pecho y siente tu corazón latiendo. Eso es suficiente por ahora.",
+      "pregunta": null
+    },
+    {
+      "id": 72,
+      "tipo": "esperanza",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "amanecer",
+        "renovación"
+      ],
+      "texto": "El amanecer de mañana no sabe nada de las dificultades de hoy. Llega de todas formas, con luz nueva, con posibilidades que esta noche no puedes ver. No porque el problema haya desaparecido, sino porque tú habrás descansado y la perspectiva cambia. Mañana es un comienzo genuino.",
+      "accion": "Duerme esta noche con la intención de levantarte mañana y dar un solo paso diferente.",
+      "pregunta": null
+    },
+    {
+      "id": 73,
+      "tipo": "esperanza",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "tristeza",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        5
+      ],
+      "tags": [
+        "potencial",
+        "posibilidad"
+      ],
+      "texto": "Dentro de ti existe la capacidad de sorprenderte a ti mismo. Las personas que más te inspiran también tuvieron momentos donde no sabían cómo seguir. Lo que las hizo extraordinarias no fue la ausencia de esos momentos, sino la decisión de continuar aunque no vieran el camino completo.",
+      "accion": "Piensa en alguien que admiras. Recuerda que ellos también estuvieron en lugares oscuros antes de donde están ahora.",
+      "pregunta": null
+    },
+    {
+      "id": 74,
+      "tipo": "esperanza",
+      "escuela": "stoicism",
+      "tema": "fortaleza",
+      "emocion": [
+        "miedo",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        4
+      ],
+      "tags": [
+        "recursos",
+        "capacidad"
+      ],
+      "texto": "Hay en ti una fuerza que no conoces completamente porque solo se revela cuando la necesitas. No necesitas saber de qué estás hecho antes de que llegue el momento difícil. En ese momento, descubrirás que eres capaz de más de lo que imaginabas. Esto ya lo has demostrado antes.",
+      "accion": "Recuerda una vez que superaste algo que parecía imposible. Ese recurso sigue ahí.",
+      "pregunta": null
+    },
+    {
+      "id": 75,
+      "tipo": "esperanza",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "herramientas",
+        "confianza"
+      ],
+      "texto": "No estás enfrentando esto sin recursos. Tienes una historia de resolución de problemas. Tienes personas en tu vida aunque sea una. Tienes la capacidad de aprender y adaptarte. Tienes este momento para elegir un próximo paso diferente. Esos son recursos reales, no imaginarios.",
+      "accion": "Haz una lista de tres recursos reales con los que cuentas en este momento.",
+      "pregunta": null
+    },
+    {
+      "id": 76,
+      "tipo": "esperanza",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "tristeza",
+        "desesperanza"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        5
+      ],
+      "tags": [
+        "propósito",
+        "razón"
+      ],
+      "texto": "Mientras haya algo o alguien por quien esto valga la pena, hay razón para seguir. No necesitas que todo valga la pena. Solo necesita valer la pena algo. Ese algo puede ser pequeño. Una planta que cuidas. Un ser vivo que te espera. Un sueño que aún no has terminado de soñar.",
+      "accion": "Escribe el nombre o la imagen de esa cosa o persona por quien vale la pena seguir aquí.",
+      "pregunta": null
+    },
+    {
+      "id": 77,
+      "tipo": "esperanza",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "culpa"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        3
+      ],
+      "tags": [
+        "amor",
+        "vínculos"
+      ],
+      "texto": "Has sido amado. Puede que no de la manera perfecta que necesitabas. Puede que no por las personas correctas. Pero hay momentos en tu historia donde alguien eligió estar ahí para ti. Esos momentos son reales. Y ese amor vivió en ti, aunque hayan pasado muchos años.",
+      "accion": "Recuerda un momento en que alguien estuvo presente para ti de manera significativa.",
+      "pregunta": null
+    },
+    {
+      "id": 78,
+      "tipo": "esperanza",
+      "escuela": "humanismo",
+      "tema": "aceptación",
+      "emocion": [
+        "vergüenza",
+        "soledad"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "pertenencia",
+        "humanidad"
+      ],
+      "texto": "Perteneces a la humanidad no porque seas perfecto sino porque existes. Tu lucha, tu imperfección, tu confusión no te excluyen; te incluyen en la experiencia humana más universal que existe. Nadie que te conociera de verdad te pediría que fueras diferente a lo que eres.",
+      "accion": "Esta noche, dite a ti mismo: 'Pertenezco aquí, tal como soy.'",
+      "pregunta": null
+    },
+    {
+      "id": 79,
+      "tipo": "esperanza",
+      "escuela": "stoicism",
+      "tema": "serenidad",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "paz",
+        "presente"
+      ],
+      "texto": "Ahora mismo, en este preciso instante, estás bien. El sufrimiento que sientes es real, pero en este momento exacto tienes lo que necesitas para seguir. La calma no está en el futuro. Está disponible ahora, en el espacio entre tus pensamientos.",
+      "accion": "Toma tres respiraciones lentas y observa que en cada una de ellas estás completo.",
+      "pregunta": null
+    },
+    {
+      "id": 80,
+      "tipo": "esperanza",
+      "escuela": "tcc",
+      "tema": "pensamientos",
+      "emocion": [
+        "tristeza",
+        "desesperanza"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Corazón Abierto"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "temporalidad",
+        "cambio"
+      ],
+      "texto": "Lo que sientes ahora no es para siempre. El cerebro tiene una capacidad extraordinaria de adaptarse, regenerarse y encontrar nuevos equilibrios cuando se le da tiempo y apoyo. El estado actual, aunque se sienta permanente, es temporal. Esto también pasará.",
+      "accion": "Recuerda un período difícil de tu vida del que ya saliste. Ese 'también pasó' es evidencia.",
+      "pregunta": null
+    },
+    {
+      "id": 81,
+      "tipo": "esperanza",
+      "escuela": "logoterapia",
+      "tema": "resiliencia",
+      "emocion": [
+        "agotamiento",
+        "tristeza"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "critico",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "seguir",
+        "mañana"
+      ],
+      "texto": "No tienes que resolver todo esta noche. Solo tienes que llegar a mañana. Eso es suficiente. Y para llegar a mañana, lo único que necesitas es seguir respirando y permitirte descansar. El resto puede esperar.",
+      "accion": "Esta noche, deja ir todo lo que no puedes resolver ahora. Solo descansa.",
+      "pregunta": null
+    },
+    {
+      "id": 82,
+      "tipo": "esperanza",
+      "escuela": "positiva",
+      "tema": "fortalezas",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "recursos",
+        "valor"
+      ],
+      "texto": "Tienes más capacidades de las que usas. Más sabiduría de la que reconoces. Más fortaleza de la que piensas. No porque debas ser perfecto, sino porque has acumulado todo eso sin darte cuenta en cada experiencia que ya atravesaste.",
+      "accion": "Haz una lista de tres cosas que sabes hacer bien, aunque sean pequeñas.",
+      "pregunta": null
+    },
+    {
+      "id": 83,
+      "tipo": "esperanza",
+      "escuela": "stoicism",
+      "tema": "aceptación",
+      "emocion": [
+        "frustración",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "calma",
+        "perspectiva"
+      ],
+      "texto": "El tiempo pone todo en perspectiva. Lo que hoy parece un obstáculo insalvable, en muchos casos, mañana será solo un capítulo en tu historia. No el final. Un capítulo. Y los capítulos difíciles a menudo son los que más enseñan.",
+      "accion": "Visualiza este momento desde la perspectiva de tu yo de dentro de 5 años.",
+      "pregunta": null
+    },
+    {
+      "id": 84,
+      "tipo": "esperanza",
+      "escuela": "tcc",
+      "tema": "hábitos",
+      "emocion": [
+        "agotamiento",
+        "tristeza"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        3
+      ],
+      "tags": [
+        "pequeño paso",
+        "inicio"
+      ],
+      "texto": "No necesitas transformar todo hoy. Solo necesitas hacer una cosa diferente. Una sola. Ese acto de un solo paso, repetido cada día, acumula un impulso que eventualmente cambia la dirección de todo.",
+      "accion": "Decide ahora cuál será tu único paso diferente de hoy.",
+      "pregunta": null
+    },
+    {
+      "id": 85,
+      "tipo": "esperanza",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "soledad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "amor",
+        "presente"
+      ],
+      "texto": "El amor que has dado no desaparece. Queda en el mundo de maneras que no siempre puedes ver. Cada vez que elegiste cuidar a alguien, dejaste una huella real. Eso tiene valor aunque nadie lo reconozca en voz alta.",
+      "accion": "Recuerda un acto de amor genuino que hayas dado, aunque nunca haya sido reconocido.",
+      "pregunta": null
+    },
+    {
+      "id": 86,
+      "tipo": "esperanza",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        5
+      ],
+      "tags": [
+        "significado",
+        "ordinario"
+      ],
+      "texto": "El sentido no siempre espera en grandes revelaciones. A veces está en una conversación honesta, en una tarea hecha con cuidado, en un momento de atención plena. Hoy existe sentido accesible si lo buscas en lo pequeño.",
+      "accion": "Identifica un momento de hoy que tuvo más sentido del que le diste.",
+      "pregunta": null
+    },
+    {
+      "id": 87,
+      "tipo": "esperanza",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "ansiedad",
+        "miedo"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "confianza",
+        "posibilidad"
+      ],
+      "texto": "No todo lo que temes se convertirá en realidad. Y de lo que sí ocurra, tienes más capacidad de afrontarlo de lo que crees ahora. Esta combinación —menos catástrofes de las imaginadas y más recursos de los esperados— es la evidencia de que puedes confiar un poco más en el futuro.",
+      "accion": "Recuerda dos cosas que temiste y que no resultaron tan catastróficas como imaginabas.",
+      "pregunta": null
+    },
+    {
+      "id": 88,
+      "tipo": "esperanza",
+      "escuela": "stoicism",
+      "tema": "fortaleza",
+      "emocion": [
+        "tristeza",
+        "frustración"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Vigilante"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        4
+      ],
+      "tags": [
+        "resistencia",
+        "carácter"
+      ],
+      "texto": "El carácter que estás construyendo en este momento difícil no te lo podrán quitar nunca. La resiliencia no se aprende en los libros. Se forja exactamente en momentos como este. Eso que estás haciendo ahora —seguir, a pesar de todo— tiene un valor que solo podrás medir más adelante.",
+      "accion": "Reconoce internamente el mérito de seguir aunque sea difícil.",
+      "pregunta": null
+    },
+    {
+      "id": 89,
+      "tipo": "esperanza",
+      "escuela": "tcc",
+      "tema": "reestructuración",
+      "emocion": [
+        "tristeza",
+        "culpa"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "perspectiva",
+        "narrativa"
+      ],
+      "texto": "La historia que te estás contando sobre este momento no es la única historia posible. Existe otra perspectiva donde lo que vives ahora es el comienzo de algo importante, no el final de todo. Esa perspectiva no niega el dolor; lo convierte en material para algo que aún no puedes ver.",
+      "accion": "Escribe una frase que comience con: 'Y si esto fuera el comienzo de...'",
+      "pregunta": null
+    },
+    {
+      "id": 90,
+      "tipo": "esperanza",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "agotamiento",
+        "tristeza"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Buscador de Sentido"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        1,
+        4
+      ],
+      "tags": [
+        "recuperación",
+        "renacimiento"
+      ],
+      "texto": "El invierno no significa que la primavera no llegará. Solo significa que ahora es invierno. Y el invierno tiene su propia sabiduría: es el tiempo de la raíz, del procesamiento silencioso, de la preparación invisible para lo que viene. No te rindas en el invierno.",
+      "accion": "Permítete estar en este invierno sin forzar la primavera antes de tiempo.",
+      "pregunta": null
+    },
+    {
+      "id": 91,
+      "tipo": "ejercicio",
+      "escuela": "stoicism",
+      "tema": "aceptación",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "práctica",
+        "dicotomía"
+      ],
+      "texto": "**Ejercicio: La Dicotomía Estoica**\n\nSiéntate en un lugar tranquilo con papel y lápiz. Escribe la situación que más te preocupa actualmente. Debajo, traza una línea vertical dividiendo la hoja en dos columnas.\n\nColumna izquierda: 'Lo que depende de mí.' Escribe cada acción concreta que puedes tomar.\nColumna derecha: 'Lo que no depende de mí.' Escribe todo lo demás.\n\nAhora tacha con calma la columna derecha y comprométete a enfocar tu energía solo en la izquierda.",
+      "accion": "Realiza este ejercicio ahora o en los próximos 30 minutos.",
+      "pregunta": "¿Qué cambiaría en tu experiencia de ansiedad si hicieras esto cada mañana?"
+    },
+    {
+      "id": 92,
+      "tipo": "ejercicio",
+      "escuela": "tcc",
+      "tema": "distorsiones",
+      "emocion": [
+        "ansiedad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "registro",
+        "reestructuración"
+      ],
+      "texto": "**Ejercicio: Registro de Pensamientos en 5 Columnas**\n\nAnota:\n1. Situación: ¿Qué ocurrió exactamente?\n2. Pensamiento automático: ¿Qué pensé?\n3. Emoción: ¿Qué sentí? (y del 0 al 100 qué tan intensa fue)\n4. Distorsión: ¿Qué tipo de error de pensamiento hay?\n5. Pensamiento alternativo: ¿Qué pensamiento más equilibrado existe?\n\nHaz esto con una situación que te generó malestar hoy.",
+      "accion": "Completa el registro con una situación real de las últimas 24 horas.",
+      "pregunta": "¿Qué patrón de distorsión aparece con más frecuencia en tu vida?"
+    },
+    {
+      "id": 93,
+      "tipo": "ejercicio",
+      "escuela": "humanismo",
+      "tema": "autenticidad",
+      "emocion": [
+        "confusión",
+        "soledad"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "15 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "valores",
+        "mapa interior"
+      ],
+      "texto": "**Ejercicio: El Mapa de Valores**\n\nEscribe durante 10 minutos sobre las siguientes preguntas sin editar:\n- ¿Qué te duele cuando lo ignoran en ti?\n- ¿Qué admiras profundamente en otras personas?\n- ¿Cuándo te has sentido más íntegro y completo?\n- ¿Qué no podrías nunca hacer aunque te lo pagaran bien?\n\nLas respuestas revelan tus valores centrales. Subráyalos.",
+      "accion": "Realiza el ejercicio esta noche en un lugar tranquilo.",
+      "pregunta": "¿Cuántos de tus valores centrales están siendo honrados en tu vida actual?"
+    },
+    {
+      "id": 94,
+      "tipo": "ejercicio",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "tres cosas buenas",
+        "bienestar"
+      ],
+      "texto": "**Ejercicio: Tres Cosas Buenas**\n\nAl final del día, escribe tres cosas buenas que ocurrieron hoy. Pueden ser pequeñas. Para cada una, añade:\n- ¿Por qué ocurrió?\n- ¿Cuál fue tu papel en que ocurriera?\n\nEste ejercicio, realizado 21 días consecutivos, ha demostrado en investigaciones aumentar el bienestar subjetivo de manera sostenida.",
+      "accion": "Comienza esta noche. Escribe tus tres cosas buenas de hoy.",
+      "pregunta": "¿Qué ocurriría en tu cerebro si hicieras esto cada noche durante un mes?"
+    },
+    {
+      "id": 95,
+      "tipo": "ejercicio",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "tristeza",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "20 minutos",
+      "semana_terapeutica": [
+        5
+      ],
+      "tags": [
+        "propósito",
+        "legado"
+      ],
+      "texto": "**Ejercicio: La Carta desde el Lecho de Muerte**\n\nImagínate al final de tu vida, lúcido y en paz. Desde ese lugar, escríbete una carta al tú de hoy. Incluye:\n- Lo que más agradeces haber hecho\n- Lo que lamentas no haber intentado\n- El consejo más importante que puedes darte\n- Quién y qué resultó haber importado más\n\nLee la carta con calma. Las respuestas son tu propósito.",
+      "accion": "Realiza este ejercicio en un momento de quietud y privacidad.",
+      "pregunta": "¿Qué cambiaría en tus decisiones actuales si vivieras con esta perspectiva más frecuentemente?"
+    },
+    {
+      "id": 96,
+      "tipo": "ejercicio",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "ansiedad",
+        "miedo"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "emergencia",
+        "regulación"
+      ],
+      "texto": "**Ejercicio: Activación del Nervio Vago**\n\nCuando la ansiedad sea intensa:\n\n1. Exhala completamente por la boca.\n2. Inhala lentamente por la nariz contando hasta 4.\n3. Retén el aire contando hasta 2.\n4. Exhala lentamente por la boca contando hasta 7.\n5. Repite este ciclo 5 veces.\n\nLa exhalación prolongada activa el sistema nervioso parasimpático y detiene la respuesta de alarma.",
+      "accion": "Practica este ciclo ahora, aunque no estés en crisis, para que quede aprendido.",
+      "pregunta": "¿Qué diferencia notaste en tu cuerpo después de practicar este ejercicio?"
+    },
+    {
+      "id": 97,
+      "tipo": "ejercicio",
+      "escuela": "humanismo",
+      "tema": "aceptación",
+      "emocion": [
+        "vergüenza",
+        "culpa"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "autocompasión",
+        "práctica"
+      ],
+      "texto": "**Ejercicio: Las Manos de la Autocompasión**\n\n1. Coloca ambas manos sobre tu corazón.\n2. Siente el calor de tus propias manos.\n3. Repite suavemente: 'Esto es sufrimiento. El sufrimiento es parte de la experiencia humana. Puedo ser amable conmigo en este momento.'\n4. Permanece así 2 minutos con los ojos cerrados.\n5. Luego pregúntate: ¿qué necesita la persona que ahora mismo soy?\n\nResponde con amabilidad.",
+      "accion": "Realiza este ejercicio en un momento en que notes autocrítica intensa.",
+      "pregunta": "¿Qué cambiaría en tu vida si te trataras con la misma compasión que tratas a quienes más quieres?"
+    },
+    {
+      "id": 98,
+      "tipo": "ejercicio",
+      "escuela": "stoicism",
+      "tema": "serenidad",
+      "emocion": [
+        "estrés",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "descarga",
+        "revisión nocturna"
+      ],
+      "texto": "**Ejercicio: El Diario de Soltar**\n\nAntes de dormir:\n1. Escribe todo lo que tienes en mente: preocupaciones, pendientes, emociones no expresadas.\n2. Lee la lista.\n3. Para cada ítem pregúntate: ¿puedo hacer algo al respecto ahora mismo? Si no, escribe al lado: 'Mañana' o 'Suéltalo'.\n4. Cierra el cuaderno con la intención de que esas preocupaciones queden ahí hasta mañana.\n5. Respira profundo tres veces.",
+      "accion": "Realiza este ejercicio esta noche.",
+      "pregunta": "¿Qué necesita tu mente para poder soltar el día cuando llega la noche?"
+    },
+    {
+      "id": 99,
+      "tipo": "ejercicio",
+      "escuela": "positiva",
+      "tema": "fortalezas",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "15 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "fortalezas",
+        "aplicación"
+      ],
+      "texto": "**Ejercicio: Fortalezas en Acción**\n\n1. Escribe las cinco cualidades de carácter que crees que son más genuinamente tuyas.\n2. Para cada una, recuerda un momento concreto en que esa fortaleza fue relevante.\n3. Ahora escribe cómo podrías usar cada una de esas fortalezas en algún desafío actual de tu vida.\n\nLas fortalezas no son solo para los momentos buenos. Son más útiles en los momentos difíciles.",
+      "accion": "Realiza este ejercicio esta tarde en 15 minutos.",
+      "pregunta": "¿Cuál de tus fortalezas llevas demasiado tiempo sin usar?"
+    },
+    {
+      "id": 100,
+      "tipo": "ejercicio",
+      "escuela": "logoterapia",
+      "tema": "propósito",
+      "emocion": [
+        "tristeza",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "15 minutos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "sentido cotidiano",
+        "micro-propósito"
+      ],
+      "texto": "**Ejercicio: El Sentido en Lo Cotidiano**\n\nDurante una semana, al final de cada día registra:\n- Un momento donde sentí que lo que hacía importaba\n- Un momento donde me sentí genuinamente útil\n- Un momento de conexión real con alguien\n- Un momento donde algo hermoso capturó mi atención\n\nAl final de la semana, lee todo. Los patrones revelan dónde vive tu sentido en lo ordinario.",
+      "accion": "Empieza esta noche con el registro del día de hoy.",
+      "pregunta": "¿Dónde en tu vida cotidiana ya existe sentido aunque no lo hayas reconocido?"
+    },
+    {
+      "id": 101,
+      "tipo": "ejercicio",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "soledad"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "15 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "carta",
+        "agradecimiento"
+      ],
+      "texto": "**Ejercicio: La Carta de Gratitud Enviada**\n\nEscribe una carta detallada a alguien que haya marcado positivamente tu vida y que quizás nunca supiste lo importante que fue para ti. No tiene que ser alguien de quien aún estés cerca. Puede ser un maestro, un amigo de la infancia, un familiar.\n\nEscríbela con todos los detalles: qué hizo, cuándo, cómo te afectó. Si es posible, envíala o léesela.",
+      "accion": "Dedica este tiempo a escribir esa carta con toda la honestidad y detalle posibles.",
+      "pregunta": "¿Quién merece saber el impacto que tuvo en tu vida?"
+    },
+    {
+      "id": 102,
+      "tipo": "ejercicio",
+      "escuela": "tcc",
+      "tema": "pensamientos",
+      "emocion": [
+        "ansiedad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "árbol de pensamientos",
+        "raíz"
+      ],
+      "texto": "**Ejercicio: El Árbol de Pensamientos**\n\nElige un pensamiento perturbador. Escríbelo en el centro de una hoja.\n\nAhora pregúntate: 'Si esto fuera verdad, ¿qué significaría?' Escribe la respuesta. Luego pregúntalo de nuevo sobre esa respuesta. Y una vez más.\n\nEste proceso de 'flecha hacia abajo' te lleva a la creencia central subyacente, que es la raíz del pensamiento perturbador. Esa raíz es lo que realmente necesita examinarse.",
+      "accion": "Realiza este ejercicio con un pensamiento que aparece frecuentemente.",
+      "pregunta": "¿Qué creencia más profunda está generando ese pensamiento repetitivo?"
+    },
+    {
+      "id": 103,
+      "tipo": "ejercicio",
+      "escuela": "stoicism",
+      "tema": "virtud",
+      "emocion": [
+        "culpa",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "valores",
+        "brújula"
+      ],
+      "texto": "**Ejercicio: La Brújula de los Valores**\n\nCuando estés en una encrucijada, escribe en papel:\n1. ¿Qué haría la persona que quiero ser?\n2. ¿Qué respuesta me enorgullecería en el futuro?\n3. ¿Cuál de las opciones está más alineada con mis valores más profundos?\n\nEsta brújula interna raramente falla cuando se consulta desde la calma, con honestidad y sin presión inmediata.",
+      "accion": "Ante la decisión más difícil de tu vida actual, responde estas tres preguntas con honestidad.",
+      "pregunta": "¿Cuándo fue la última vez que tomaste una decisión importante guiado por tus valores en lugar del miedo?"
+    },
+    {
+      "id": 104,
+      "tipo": "ejercicio",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "esperanza",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "yo ideal",
+        "futuro"
+      ],
+      "texto": "**Ejercicio: El Yo Ideal**\n\n1. Cierra los ojos y visualiza quién quieres ser en 3 años.\n2. Observa cómo piensas, cómo te relacionas, cómo pasas el tiempo.\n3. ¿Qué valores honras? ¿Qué has dejado atrás? ¿Qué has construido?\n4. Escribe durante 5 minutos describiendo a esa persona en primera persona ('Soy alguien que...')\n5. Identifica UNA acción de hoy que te acerque a ese yo.",
+      "accion": "Realiza esta visualización esta mañana y escribe la descripción.",
+      "pregunta": "¿Cuál es la diferencia más importante entre quien eres ahora y quien quieres ser?"
+    },
+    {
+      "id": 105,
+      "tipo": "ejercicio",
+      "escuela": "logoterapia",
+      "tema": "resiliencia",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        1,
+        4
+      ],
+      "tags": [
+        "narrativa de superación",
+        "fortaleza"
+      ],
+      "texto": "**Ejercicio: La Historia del Superviviente**\n\nEscribe en 10 oraciones la historia de la dificultad más grande que has superado.\n\nPero escríbela en tercera persona: 'Había una persona que...' Esto crea una distancia útil y te permite ver tu propia historia como lo que es: la historia de alguien que venció algo difícil.\n\nAl final, describe qué capacidades usó esa persona. Esas capacidades son las tuyas.",
+      "accion": "Escribe esta historia en los próximos 10 minutos.",
+      "pregunta": "¿Qué recursos usaste que siguen disponibles para ti hoy?"
+    },
+    {
+      "id": 106,
+      "tipo": "ejercicio",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "ansiedad",
+        "miedo"
+      ],
+      "perfil": [
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "15 minutos",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "exposición",
+        "jerarquía"
+      ],
+      "texto": "**Ejercicio: Jerarquía de Exposición**\n\nElige algo que evitas por ansiedad. Diseña una escalera de 5 peldaños del menos ansioso al más ansioso.\n\nEjemplo para ansiedad social:\n1. Saludar a un vecino\n2. Hacer una pregunta en una tienda\n3. Llamar por teléfono a un desconocido\n4. Conversar en una reunión pequeña\n5. Hablar en una reunión grande\n\nComienza por el primer peldaño esta semana.",
+      "accion": "Identifica tu jerarquía de exposición para la situación que más evitas.",
+      "pregunta": "¿Cuánto tiempo llevas evitando eso y cuánta energía te cuesta esa evitación?"
+    },
+    {
+      "id": 107,
+      "tipo": "ejercicio",
+      "escuela": "positiva",
+      "tema": "bienestar",
+      "emocion": [
+        "estrés",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "PERMA",
+        "diagnóstico"
+      ],
+      "texto": "**Ejercicio: El Diagnóstico de Bienestar PERMA**\n\nEvalúa del 1 al 10 cada dimensión:\n- P: Emociones Positivas frecuentes en tu vida\n- E: Compromiso en actividades que te absorben\n- R: Relaciones significativas y de soporte\n- M: Sentido y propósito\n- A: Logros que te pertenecen genuinamente\n\n¿Cuál tiene la puntuación más baja? Esa merece una acción concreta esta semana.",
+      "accion": "Completa el diagnóstico con honestidad y elige UNA dimensión para mejorar.",
+      "pregunta": "¿Qué acción específica mejoraría tu dimensión más débil esta semana?"
+    },
+    {
+      "id": 108,
+      "tipo": "ejercicio",
+      "escuela": "stoicism",
+      "tema": "paciencia",
+      "emocion": [
+        "frustración",
+        "estrés"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "perspectiva",
+        "10 años"
+      ],
+      "texto": "**Ejercicio: La Vista de los 10 Años**\n\nEscribe el problema o situación que más te frustra actualmente.\n\nLuego responde:\n- En 10 años, ¿qué importancia tendrá esto?\n- ¿Seguiré recordando esta situación?\n- ¿Habrá cambiado mi perspectiva sobre ella?\n\nSi la respuesta es probablemente no, el problema merece menos energía de la que le estás dando. Si la respuesta es sí, ¿qué acción concreta tomarás hoy?",
+      "accion": "Aplica la perspectiva de 10 años al problema que más te frustra esta semana.",
+      "pregunta": "¿Cuántos de los problemas que te agobiaban hace 5 años siguen siendo relevantes hoy?"
+    },
+    {
+      "id": 109,
+      "tipo": "ejercicio",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "enojo",
+        "frustración"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "perspectiva del otro",
+        "comprensión"
+      ],
+      "texto": "**Ejercicio: En Sus Zapatos**\n\nPiensa en alguien con quien tengas un conflicto o fricción actual.\n\nDurante 10 minutos, escribe desde su perspectiva: ¿Qué está sintiendo? ¿Qué necesita? ¿Qué historia personal puede estar influyendo en su comportamiento? ¿Qué miedos podría tener?\n\nNo se trata de justificar su conducta sino de ampliar tu comprensión de la situación.",
+      "accion": "Realiza este ejercicio con la persona que más te genera conflicto actualmente.",
+      "pregunta": "¿Qué cambió en tu perspectiva después de hacer este ejercicio?"
+    },
+    {
+      "id": 110,
+      "tipo": "ejercicio",
+      "escuela": "logoterapia",
+      "tema": "libertad",
+      "emocion": [
+        "frustración",
+        "tristeza"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "responsabilidad",
+        "elección"
+      ],
+      "texto": "**Ejercicio: El Inventario de Elecciones**\n\nEscribe tres situaciones de tu vida que sientes que no elegiste o que te fueron impuestas.\n\nPara cada una, identifica:\n- ¿Hay algo en esta situación que sí puedo elegir?\n- ¿Qué actitud puedo adoptar ante esto?\n- ¿Qué pequeña acción tengo disponible?\n\nLa libertad a menudo no está en cambiar la situación sino en encontrar el espacio de elección dentro de ella.",
+      "accion": "Completa el inventario con las tres situaciones seleccionadas.",
+      "pregunta": "¿En qué áreas de tu vida estás esperando que algo externo cambie para poder sentirte libre?"
+    },
+    {
+      "id": 111,
+      "tipo": "respiracion",
+      "escuela": "stoicism",
+      "tema": "serenidad",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "4-7-8",
+        "calma"
+      ],
+      "texto": "**Respiración 4-7-8 para la Calma**\n\nEsta técnica activa el sistema nervioso parasimpático:\n\n🌬️ Inhala por la nariz: 4 tiempos\n⏸️ Retén el aire: 7 tiempos\n💨 Exhala lentamente por la boca: 8 tiempos\n\nRepite 4 ciclos completos.\n\nEs normal sentir un leve mareo al principio. Si ocurre, pausa y continúa con respiración normal. Practica esta técnica 2 veces al día para mejores resultados.",
+      "accion": "Practica ahora 4 ciclos completos de esta respiración.",
+      "pregunta": "¿Cuándo en tu día sería más útil tener esta técnica disponible?"
+    },
+    {
+      "id": 112,
+      "tipo": "respiracion",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "ansiedad",
+        "miedo"
+      ],
+      "perfil": [
+        "Vigilante"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "emergencia",
+        "pánico"
+      ],
+      "texto": "**Respiración de Emergencia para Crisis de Ansiedad**\n\nCuando el pánico se intensifica:\n\n1️⃣ Exhala todo el aire primero (esto es clave)\n2️⃣ Inhala suavemente por la nariz contando hasta 3\n3️⃣ Exhala despacio por la boca contando hasta 5\n4️⃣ Repite 10 veces sin prisa\n\nMientras respiras, coloca una mano en el pecho y una en el vientre. El vientre debe moverse más que el pecho.",
+      "accion": "Practica este ciclo ahora para que esté disponible en momentos de crisis.",
+      "pregunta": "¿Cuál es la señal de tu cuerpo que más claramente indica que necesitas hacer este ejercicio?"
+    },
+    {
+      "id": 113,
+      "tipo": "respiracion",
+      "escuela": "humanismo",
+      "tema": "aceptación",
+      "emocion": [
+        "tristeza",
+        "soledad"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "amor",
+        "corazón"
+      ],
+      "texto": "**Respiración del Corazón Abierto**\n\nSiéntate cómodamente. Cierra los ojos.\n\n❤️ Coloca ambas manos sobre tu pecho\n🌬️ Inhala hacia el corazón: imagina que la respiración llena esa zona de calor\n💨 Exhala enviando ese calor hacia fuera\n🔄 Repite 6 veces\n\nDespués: evoca un momento de amor o cuidado genuino que hayas vivido. Deja que esa sensación llene tu pecho mientras continúas respirando.",
+      "accion": "Practica esta respiración esta noche antes de dormir.",
+      "pregunta": "¿Qué recuerdo de amor genuino podrías evocar durante esta práctica?"
+    },
+    {
+      "id": 114,
+      "tipo": "respiracion",
+      "escuela": "positiva",
+      "tema": "bienestar",
+      "emocion": [
+        "agotamiento",
+        "estrés"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "leve",
+      "energia": "baja",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "energía",
+        "recarga"
+      ],
+      "texto": "**Respiración Energizante**\n\nPerfecta para el bajón de la tarde:\n\n1️⃣ Siéntate erguido o ponte de pie\n2️⃣ Inhala rápido y profundo por la nariz: 2 tiempos\n3️⃣ Exhala completamente: 4 tiempos\n4️⃣ Repite 8 veces\n5️⃣ Luego haz 5 respiraciones lentas y normales\n\nComplementa estirando los brazos hacia arriba mientras inhales y bajándolos mientras exhales.",
+      "accion": "Practica ahora para ver cómo cambia tu estado energético.",
+      "pregunta": "¿En qué momento del día tu energía cae más y necesitas esta práctica?"
+    },
+    {
+      "id": 115,
+      "tipo": "respiracion",
+      "escuela": "stoicism",
+      "tema": "fortaleza",
+      "emocion": [
+        "miedo",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        4
+      ],
+      "tags": [
+        "valor",
+        "preparación"
+      ],
+      "texto": "**Respiración del Guerrero Tranquilo**\n\nAntes de una situación desafiante:\n\n🌬️ De pie, postura firme pero no rígida\n1️⃣ Inhala lentamente por la nariz: 5 tiempos\n2️⃣ Retén: 3 tiempos\n3️⃣ Exhala lentamente por la nariz: 7 tiempos\n4️⃣ Repite 5 veces\n\nMientras respiras, visualiza que inhales calma y fuerza, y exhalas miedo y tensión.",
+      "accion": "Practica esta respiración antes de cualquier situación estresante hoy.",
+      "pregunta": "¿Qué postura corporal te da más sensación de confianza y calma?"
+    },
+    {
+      "id": 116,
+      "tipo": "respiracion",
+      "escuela": "humanismo",
+      "tema": "autenticidad",
+      "emocion": [
+        "confusión",
+        "estrés"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "claridad",
+        "intuición"
+      ],
+      "texto": "**Respiración de la Claridad Interior**\n\nCuando la mente está llena de ruido:\n\n1️⃣ Siéntate en silencio y cierra los ojos\n2️⃣ Inhala contando hasta 4, expandiendo vientre y pecho\n3️⃣ Retén 2 tiempos\n4️⃣ Exhala lentamente 6 tiempos vaciando pecho luego vientre\n5️⃣ Al final de la exhalación, haz una pausa natural de 2 tiempos\n6️⃣ Repite 6 ciclos\n\nDespués permanece en silencio 1 minuto. En ese silencio suele surgir lo que necesitabas saber.",
+      "accion": "Practica ahora y luego observa qué surge en el silencio posterior.",
+      "pregunta": "¿Qué suele aparecer cuando silencias el ruido mental durante unos minutos?"
+    },
+    {
+      "id": 117,
+      "tipo": "respiracion",
+      "escuela": "tcc",
+      "tema": "hábitos",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Vigilante"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "rituales",
+        "constancia"
+      ],
+      "texto": "**Respiración de Inicio de Día**\n\nAntes de revisar el teléfono, antes de comenzar cualquier actividad:\n\n🌅 De pie o sentado\n1️⃣ Tres respiraciones naturales para despertar\n2️⃣ Cuatro respiraciones lentas: inhala 4, exhala 6\n3️⃣ Durante la última exhalación, establece una intención para el día en una sola frase\n4️⃣ Repite esa frase mentalmente tres veces\n\nEjemplos: 'Hoy seré paciente.' 'Hoy pondré mi atención en lo que depende de mí.'",
+      "accion": "Practica esta respiración mañana antes de hacer cualquier otra cosa.",
+      "pregunta": "¿Cuál sería tu intención para este día?"
+    },
+    {
+      "id": 118,
+      "tipo": "respiracion",
+      "escuela": "logoterapia",
+      "tema": "propósito",
+      "emocion": [
+        "tristeza",
+        "desesperanza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        1,
+        5
+      ],
+      "tags": [
+        "conexión",
+        "sentido"
+      ],
+      "texto": "**Respiración del Hilo de Sentido**\n\nCuando todo parece sin sentido:\n\n1️⃣ Siéntate o acuéstate cómodamente\n2️⃣ Cierra los ojos y coloca las manos sobre el corazón\n3️⃣ Inhala lentamente: 4 tiempos\n4️⃣ Mientras retienes 2 tiempos, evoca mentalmente algo o alguien por quien esto vale la pena\n5️⃣ Exhala lentamente 6 tiempos\n6️⃣ Repite 7 veces\n\nNo te presiones. Un pequeño hilo es suficiente.",
+      "accion": "Practica esta noche con calma y paciencia.",
+      "pregunta": "¿Qué imagen o nombre aparece cuando buscas ese pequeño hilo de sentido?"
+    },
+    {
+      "id": 119,
+      "tipo": "respiracion",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "agradecimiento",
+        "calma"
+      ],
+      "texto": "**Respiración de Agradecimiento**\n\nUna práctica de cierre de día:\n\n🙏 Siéntate cómodamente\n1️⃣ Inhala pensando: '¿Qué recibí hoy?'\n2️⃣ Retén brevemente recordando ese momento\n3️⃣ Exhala suavemente con una sensación interna de gracias\n4️⃣ Repite con tres cosas diferentes: algo del cuerpo, algo del entorno, algo de una persona\n\nEl cerebro que practica gratitud aprende a encontrarla.",
+      "accion": "Practica esta noche antes de dormir.",
+      "pregunta": "¿Qué pequeña cosa de hoy merece más gratitud de la que le estás dando?"
+    },
+    {
+      "id": 120,
+      "tipo": "respiracion",
+      "escuela": "stoicism",
+      "tema": "control",
+      "emocion": [
+        "enojo",
+        "frustración"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "cualquiera",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "enojo",
+        "pausa"
+      ],
+      "texto": "**Respiración de la Pausa Consciente**\n\nCuando sientes que el enojo podría llevarte a actuar de manera que luego lamentes:\n\n🛑 PARA. No digas ni hagas nada.\n1️⃣ Lleva la atención a tu respiración\n2️⃣ Exhala primero todo el aire\n3️⃣ Inhala lentamente 4 tiempos\n4️⃣ Exhala aún más lentamente 8 tiempos\n5️⃣ Repite 3 veces\n6️⃣ Pregúntate: ¿qué respuesta me enorgullecería mañana?\n\nEsta pausa de 90 segundos puede cambiar el rumbo de una conversación o relación entera.",
+      "accion": "Practica este ciclo ahora para que esté listo cuando más lo necesites.",
+      "pregunta": "¿En qué situación de tu vida esta pausa de 90 segundos cambiaría todo?"
+    },
+    {
+      "id": 121,
+      "tipo": "respiracion",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "esperanza",
+        "inicio"
+      ],
+      "texto": "**Respiración de la Posibilidad**\n\nEsta práctica entrena la mente para ver lo que es posible:\n\n1️⃣ Inhala suavemente y en cada inhalación piensa: 'Existe la posibilidad de...'\n2️⃣ Llena ese espacio con algo que desearías que ocurriera hoy o esta semana\n3️⃣ En la exhalación, suelta la necesidad de que ocurra pero mantén la apertura a que podría ocurrir\n4️⃣ Repite 5 veces con 5 posibilidades diferentes\n\nNo tienes que creer completamente. Solo mantenerte abierto.",
+      "accion": "Practica esta mañana antes de iniciar el día.",
+      "pregunta": "¿Qué posibilidades estás cerrando antes de tiempo por miedo o resignación?"
+    },
+    {
+      "id": 122,
+      "tipo": "respiracion",
+      "escuela": "logoterapia",
+      "tema": "resiliencia",
+      "emocion": [
+        "agotamiento",
+        "tristeza"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "ancla",
+        "tierra"
+      ],
+      "texto": "**Respiración del Ancla**\n\nCuando todo se siente inestable y necesitas estar presente:\n\n1️⃣ Siéntate con los pies firmes en el suelo\n2️⃣ Siente el peso de tu cuerpo sobre la silla\n3️⃣ Inhala contando hasta 4, sintiendo cómo el cuerpo se expande\n4️⃣ Exhala contando hasta 6, sintiendo cómo el cuerpo se asienta más firmemente\n5️⃣ Repite 8 veces\n6️⃣ Después, nombra en voz baja: 'Estoy aquí. Estoy bien ahora mismo.'",
+      "accion": "Practica esta noche cuando sientas que el suelo se mueve bajo tus pies.",
+      "pregunta": "¿Qué te ancla cuando todo a tu alrededor parece inestable?"
+    },
+    {
+      "id": 123,
+      "tipo": "respiracion",
+      "escuela": "tcc",
+      "tema": "pensamientos",
+      "emocion": [
+        "ansiedad",
+        "confusión"
+      ],
+      "perfil": [
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "observación",
+        "distancia"
+      ],
+      "texto": "**Respiración del Observador**\n\nPara crear distancia de los pensamientos ansiosos:\n\n1️⃣ Cierra los ojos\n2️⃣ Inhala lentamente 4 tiempos\n3️⃣ Mientras exhalas 6 tiempos, visualiza tus pensamientos como hojas flotando en un río\n4️⃣ Tú estás en la orilla, observando\n5️⃣ No saltes al río a atrapar ninguna hoja\n6️⃣ Repite durante 5 minutos\n\nSi un pensamiento te captura, simplemente nótalo y vuelve a la orilla del río.",
+      "accion": "Practica esta técnica cuando notes que los pensamientos te atrapan.",
+      "pregunta": "¿Cuándo en tu día los pensamientos te absorben más y necesitas este tipo de distancia?"
+    },
+    {
+      "id": 124,
+      "tipo": "respiracion",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "soledad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "compasión",
+        "humanidad compartida"
+      ],
+      "texto": "**Respiración de la Humanidad Compartida**\n\nCuando te sientas profundamente solo:\n\n1️⃣ Cierra los ojos\n2️⃣ Inhala pensando: 'En este momento, miles de personas en el mundo sienten algo similar a lo que yo siento'\n3️⃣ Exhala pensando: 'No estoy solo en esto. El sufrimiento es una experiencia humana compartida'\n4️⃣ Inhala: 'Que yo pueda ser más amable conmigo'\n5️⃣ Exhala: 'Que otros que sufren puedan ser más amables consigo mismos'\n6️⃣ Repite 5 ciclos",
+      "accion": "Practica esta noche cuando la soledad sea más intensa.",
+      "pregunta": "¿Qué cambia en tu sensación de soledad cuando recuerdas que es una experiencia humana universal?"
+    },
+    {
+      "id": 125,
+      "tipo": "respiracion",
+      "escuela": "stoicism",
+      "tema": "virtud",
+      "emocion": [
+        "culpa",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "claridad",
+        "decisiones"
+      ],
+      "texto": "**Respiración de la Brújula Interior**\n\nAntes de una decisión importante o cuando sientes confusión moral:\n\n1️⃣ Siéntate en silencio\n2️⃣ Inhala lentamente 5 tiempos\n3️⃣ Mientras retienes 3 tiempos, pregúntate: '¿Qué haría la persona que quiero ser?'\n4️⃣ Exhala lentamente 7 tiempos\n5️⃣ En el siguiente ciclo, pregunta: '¿Qué elegiría si no tuviera miedo?'\n6️⃣ Repite 4 veces con calma\n\nLas respuestas que surgen en este espacio suelen ser más sabias que las de la mente activa.",
+      "accion": "Practica antes de la próxima decisión difícil que debas tomar.",
+      "pregunta": "¿Qué sabiduría interior surge cuando reduces el ruido mental?"
+    },
+    {
+      "id": 126,
+      "tipo": "respiracion",
+      "escuela": "positiva",
+      "tema": "fortalezas",
+      "emocion": [
+        "confusión",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "recursos",
+        "fortaleza"
+      ],
+      "texto": "**Respiración de los Recursos**\n\nCuando sientes que no tienes con qué seguir:\n\n1️⃣ Siéntate cómodamente, ojos cerrados\n2️⃣ En cada inhalación (4 tiempos), visualiza un recurso tuyo: una fortaleza, una persona, un aprendizaje\n3️⃣ En cada exhalación (6 tiempos), siente ese recurso disponible en tu interior\n4️⃣ Nombra el recurso mentalmente: 'Tengo curiosidad', 'Tengo perseverancia', 'Tengo a...'\n5️⃣ Repite 6 veces con 6 recursos diferentes\n\nAl final, observa cuánto tienes disponible.",
+      "accion": "Practica esta respiración mañana antes de comenzar el día.",
+      "pregunta": "¿Cuántos recursos tuyos has estado ignorando últimamente?"
+    },
+    {
+      "id": 127,
+      "tipo": "respiracion",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "tristeza",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        5
+      ],
+      "tags": [
+        "propósito",
+        "conexión"
+      ],
+      "texto": "**Respiración del Propósito Cotidiano**\n\nPara conectar con el sentido en lo ordinario:\n\n1️⃣ Siéntate tranquilamente\n2️⃣ Inhala pensando: '¿Por qué estoy haciendo lo que hago?'\n3️⃣ Exhala: Deja que emerja una razón más allá de lo funcional\n4️⃣ Inhala: '¿A quién sirve lo que hago?'\n5️⃣ Exhala: Conecta con esa persona o causa\n6️⃣ Inhala: '¿Qué valor aporta mi presencia hoy?'\n7️⃣ Exhala: Abre tu corazón a esa posibilidad\n\nRepite 3 veces el ciclo completo.",
+      "accion": "Practica esta tarde cuando el trabajo se sienta vacío de significado.",
+      "pregunta": "¿Qué propósito más profundo podría estar detrás de lo que haces cada día?"
+    },
+    {
+      "id": 128,
+      "tipo": "respiracion",
+      "escuela": "tcc",
+      "tema": "reestructuración",
+      "emocion": [
+        "tristeza",
+        "culpa"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "autocompasión",
+        "gentileza"
+      ],
+      "texto": "**Respiración de la Voz Amable**\n\nCuando el crítico interno es muy ruidoso:\n\n1️⃣ Cierra los ojos y coloca una mano en el pecho\n2️⃣ Inhala 4 tiempos\n3️⃣ Mientras retienes 2 tiempos, imagina la voz más amable y sabia que conoces\n4️⃣ Exhala 6 tiempos\n5️⃣ Deja que esa voz diga algo amable sobre lo que estás viviendo\n6️⃣ Repite 5 veces, dejando que el mensaje cambie naturalmente\n\nNo fuerces las palabras. Solo crea el espacio para que lleguen.",
+      "accion": "Practica esta noche cuando la autocrítica sea más intensa.",
+      "pregunta": "¿Qué diría esa voz amable sobre lo que estás viviendo ahora mismo?"
+    },
+    {
+      "id": 129,
+      "tipo": "respiracion",
+      "escuela": "stoicism",
+      "tema": "aceptación",
+      "emocion": [
+        "frustración",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "soltar",
+        "presente"
+      ],
+      "texto": "**Respiración del Presente Estoico**\n\nCuando la mente viaja al futuro con ansiedad:\n\n1️⃣ Inhala lentamente 4 tiempos\n2️⃣ En la inhalación piensa: 'Solo este momento existe realmente'\n3️⃣ Exhala lentamente 6 tiempos\n4️⃣ En la exhalación piensa: 'El futuro no es aún real. Este momento sí lo es'\n5️⃣ Repite 6 veces\n\nCada vez que notes que la mente vuela al futuro, no te juzgues. Solo observa y vuelve con la respiración.",
+      "accion": "Practica esta tarde cuando la preocupación por el futuro sea intensa.",
+      "pregunta": "¿Cuánto del sufrimiento actual viene del futuro imaginado en lugar del presente real?"
+    },
+    {
+      "id": 130,
+      "tipo": "respiracion",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "esperanza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Guerrero Agotado"
+      ],
+      "nivel": "leve",
+      "energia": "baja",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "renovación",
+        "comienzo"
+      ],
+      "texto": "**Respiración de la Renovación**\n\nPara comenzar el día con apertura:\n\n1️⃣ De pie, con los brazos sueltos al lado del cuerpo\n2️⃣ Inhala lentamente 5 tiempos mientras elevas los brazos hacia arriba\n3️⃣ Retén 2 tiempos en la cima, sintiendo expansión\n4️⃣ Exhala lentamente 7 tiempos mientras bajas los brazos\n5️⃣ Al final de la exhalación, inclina ligeramente la cabeza como señal de apertura\n6️⃣ Repite 4 veces\n\nEsta práctica combina movimiento y respiración para activar la apertura al día.",
+      "accion": "Practica esta mañana antes de comenzar cualquier actividad.",
+      "pregunta": "¿Qué posibilidad estás abriendo al comenzar el día de esta manera?"
+    },
+    {
+      "id": 131,
+      "tipo": "microhabito",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "leve",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "diario",
+        "consistencia"
+      ],
+      "texto": "**Micro-hábito: 3 Cosas Buenas al Cerrar el Día**\n\nAntes de dormir, escribe exactamente 3 cosas buenas que ocurrieron hoy. No importa su tamaño. Lo que importa es la consistencia. Si es necesario, guarda el cuaderno en la mesilla de noche para recordarlo.",
+      "accion": "Instala este hábito esta misma noche. Empieza con hoy.",
+      "pregunta": "¿Qué cambiaría en tu estado mental si hicieras esto 30 noches seguidas?"
+    },
+    {
+      "id": 132,
+      "tipo": "microhabito",
+      "escuela": "stoicism",
+      "tema": "serenidad",
+      "emocion": [
+        "estrés",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "silencio",
+        "inicio"
+      ],
+      "texto": "**Micro-hábito: 5 Minutos de Silencio Matutino**\n\nAntes de revisar cualquier pantalla por la mañana, siéntate en silencio 5 minutos. No medites formalmente si no quieres. Solo siéntate sin pantallas, sin ruido activo, observando tu respiración o el entorno.\n\nEste simple hábito crea un filtro mental que mejora la calidad de las primeras decisiones del día.",
+      "accion": "Pruébalo mañana. Pon el teléfono en otra habitación durante esos 5 minutos.",
+      "pregunta": "¿Qué suele ser lo primero que hace tu mente cuando no le das ningún estímulo externo?"
+    },
+    {
+      "id": 133,
+      "tipo": "microhabito",
+      "escuela": "tcc",
+      "tema": "hábitos",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Vigilante"
+      ],
+      "nivel": "leve",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "1 minuto",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "movimiento",
+        "energía"
+      ],
+      "texto": "**Micro-hábito: La Caminata de 10 Minutos**\n\nUna caminata de 10 minutos al día, realizada de manera consistente, tiene efectos demostrables sobre el estado de ánimo, la ansiedad y la cognición. No requiere ropa deportiva ni un plan elaborado. Solo salir y caminar.\n\nSi es posible, hazla en la naturaleza o en un espacio con vegetación.",
+      "accion": "Hoy, incorpora una caminata de 10 minutos en tu horario.",
+      "pregunta": "¿A qué hora del día podrías hacer esta caminata de manera más consistente?"
+    },
+    {
+      "id": 134,
+      "tipo": "microhabito",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "soledad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "baja",
+      "momento": "tarde",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "conexión",
+        "vínculo"
+      ],
+      "texto": "**Micro-hábito: El Mensaje de Presencia**\n\nUna vez por semana, envía a alguien un mensaje breve y genuino: no para pedir o resolver algo, sino simplemente para decir que piensas en esa persona y te importa. Sin expectativa de respuesta. Solo la acción de tender el vínculo.\n\nEste hábito construye paulatinamente la red de soporte emocional que todos necesitamos.",
+      "accion": "Envía hoy ese mensaje a alguien que hace tiempo no contactas.",
+      "pregunta": "¿A quién de tu vida llevas demasiado tiempo sin decirle que te importa?"
+    },
+    {
+      "id": 135,
+      "tipo": "microhabito",
+      "escuela": "positiva",
+      "tema": "fortalezas",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "fortaleza diaria",
+        "práctica"
+      ],
+      "texto": "**Micro-hábito: La Fortaleza del Día**\n\nElige una fortaleza de carácter diferente cada semana. Durante esa semana, busca una oportunidad al día de usarla intencionalmente en el contexto más pequeño posible.\n\nSi la fortaleza es la bondad, practica un acto de bondad específico. Si es la curiosidad, haz una pregunta genuina que nunca habrías hecho.",
+      "accion": "Elige tu fortaleza de esta semana y decide cómo la aplicarás hoy.",
+      "pregunta": "¿Cuál fortaleza de carácter te gustaría desarrollar más conscientemente?"
+    },
+    {
+      "id": 136,
+      "tipo": "microhabito",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "agotamiento",
+        "tristeza"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "baja",
+      "momento": "mañana",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        5
+      ],
+      "tags": [
+        "intención",
+        "propósito"
+      ],
+      "texto": "**Micro-hábito: La Intención del Día**\n\nCada mañana, antes de comenzar el día, escribe o di en voz alta una frase que exprese la intención o el sentido de ese día específico.\n\nEjemplos: 'Hoy seré más paciente con los demás.' 'Hoy prestaré atención a lo pequeño.' 'Hoy haré algo bueno para alguien sin que lo sepa.'\n\nEste acto de micro-propósito orienta las decisiones del día.",
+      "accion": "¿Cuál es tu intención para hoy? Exprésala ahora.",
+      "pregunta": "¿Qué diferencia notarías si comenzaras cada día con una intención consciente?"
+    },
+    {
+      "id": 137,
+      "tipo": "microhabito",
+      "escuela": "stoicism",
+      "tema": "control",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Vigilante"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "dicotomía",
+        "enfoque"
+      ],
+      "texto": "**Micro-hábito: El Filtro de Control**\n\nCada mañana, antes de revisar el correo o las noticias, hazte esta pregunta: ¿Qué está dentro de mi control hoy?\n\nAnota tres cosas específicas que puedes influir directamente. Esas son tu foco de energía. Las demás reciben solo la atención mínima necesaria.\n\nEste hábito gradualmente reorienta la mente ansiosa hacia la acción efectiva.",
+      "accion": "Escribe ahora las tres cosas dentro de tu control que merecen tu mayor atención hoy.",
+      "pregunta": "¿Qué estarías logrando si enfocara tu energía solo en lo que depende de ti?"
+    },
+    {
+      "id": 138,
+      "tipo": "microhabito",
+      "escuela": "tcc",
+      "tema": "reestructuración",
+      "emocion": [
+        "tristeza",
+        "culpa"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "autocompasión",
+        "autorregulación"
+      ],
+      "texto": "**Micro-hábito: El Check-in Emocional**\n\nUna vez al día, pregúntate: ¿Cómo me siento ahora mismo en una sola palabra? Luego: ¿Qué necesito en este momento?\n\nNo tienes que actuar sobre lo que descubres. A veces nombrar la emoción y reconocer la necesidad es suficiente para que la intensidad disminuya.",
+      "accion": "Hazte el check-in ahora mismo. ¿Cómo estás y qué necesitas?",
+      "pregunta": "¿Con qué frecuencia te detienes para preguntarte genuinamente cómo te sientes?"
+    },
+    {
+      "id": 139,
+      "tipo": "microhabito",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "aprendizaje",
+        "curiosidad"
+      ],
+      "texto": "**Micro-hábito: El Aprendizaje Diario**\n\nAprende algo nuevo cada día, aunque sea pequeño. Un concepto, una palabra, un hecho, una perspectiva de alguien diferente a ti. No para ser más productivo, sino para mantener activa la curiosidad, que es una de las protecciones más poderosas contra la depresión y el estancamiento.",
+      "accion": "Hoy, aprende algo nuevo y compártelo con alguien o escríbelo.",
+      "pregunta": "¿Sobre qué tema llevas tiempo queriendo aprender algo pero lo has postergado?"
+    },
+    {
+      "id": 140,
+      "tipo": "microhabito",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "semilla",
+        "posibilidad"
+      ],
+      "texto": "**Micro-hábito: La Semilla de Esperanza**\n\nAntes de dormir, hazte una sola pregunta: ¿Qué posibilidad quiero explorar mañana?\n\nNo importa cuán pequeña sea. Una conversación, una idea, una decisión diferente, un camino no intentado. Dejar esa semilla en la mente antes de dormir invita al pensamiento inconsciente a trabajar en ella mientras descansas.",
+      "accion": "¿Qué semilla de esperanza puedes plantar esta noche para mañana?",
+      "pregunta": "¿Qué posibilidad existe en tu vida que aún no has dado el primer paso para explorar?"
+    },
+    {
+      "id": 141,
+      "tipo": "microhabito",
+      "escuela": "stoicism",
+      "tema": "virtud",
+      "emocion": [
+        "confusión",
+        "culpa"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "revisión",
+        "valores"
+      ],
+      "texto": "**Micro-hábito: La Revisión de Virtud**\n\nAntes de dormir hazte tres preguntas breves:\n- ¿En qué momento de hoy actué desde mis valores más profundos?\n- ¿En qué momento me alejé de ellos?\n- ¿Qué aprendizaje me llevo de eso?\n\nNo para castigarte, sino para orientar el mañana. Esto, practicado consistentemente, construye el carácter lentamente.",
+      "accion": "Practica esta revisión esta noche.",
+      "pregunta": "¿Qué patrón notarías en tus respuestas si hicieras esto cada semana durante un mes?"
+    },
+    {
+      "id": 142,
+      "tipo": "microhabito",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Guerrero Agotado"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "cualquiera",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "pausa",
+        "regulación"
+      ],
+      "texto": "**Micro-hábito: La Pausa de 90 Segundos**\n\nNeurológicamente, una emoción intensa dura aproximadamente 90 segundos. Si te permites sentirla sin alimentarla con pensamientos, comienza a disolverse naturalmente.\n\nCuando sientas una emoción intensa, detente. Ponle nombre. Espera 90 segundos sin actuar. Luego decide conscientemente cómo responder.",
+      "accion": "La próxima vez que sientas una emoción intensa, practica esta pausa de 90 segundos.",
+      "pregunta": "¿Qué decisiones tomarías diferente si esperaras esos 90 segundos antes de responder?"
+    },
+    {
+      "id": 143,
+      "tipo": "microhabito",
+      "escuela": "humanismo",
+      "tema": "autenticidad",
+      "emocion": [
+        "soledad",
+        "vergüenza"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        4
+      ],
+      "tags": [
+        "honestidad",
+        "expresión"
+      ],
+      "texto": "**Micro-hábito: Una Verdad Pequeña al Día**\n\nElige una conversación al día donde digas algo más verdadero de lo que normalmente dirías. No dramáticamente. Solo un poco más honesto, un poco más vulnerable, un poco más tú mismo.\n\nCon el tiempo, este hábito construye la autenticidad de manera gradual y sostenible sin requerir grandes actos de valentía.",
+      "accion": "En la próxima conversación, intenta decir algo un poco más verdadero de lo habitual.",
+      "pregunta": "¿Qué pequeña verdad podrías decir más frecuentemente si no tuvieras tanto miedo al juicio?"
+    },
+    {
+      "id": 144,
+      "tipo": "microhabito",
+      "escuela": "logoterapia",
+      "tema": "propósito",
+      "emocion": [
+        "tristeza",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "contribución",
+        "acción"
+      ],
+      "texto": "**Micro-hábito: El Acto de Contribución Semanal**\n\nUna vez por semana, realiza un acto deliberado de contribución que no sea parte de tus obligaciones habituales. Puede ser pequeño: ayudar a alguien, crear algo, compartir conocimiento, ofrecer presencia.\n\nEste hábito activa el sentido de autotranscendencia que es la raíz del bienestar más profundo.",
+      "accion": "¿Cuál será tu acto de contribución esta semana?",
+      "pregunta": "¿Qué acto de contribución regular podría convertirse en una práctica de sentido para ti?"
+    },
+    {
+      "id": 145,
+      "tipo": "microhabito",
+      "escuela": "positiva",
+      "tema": "bienestar",
+      "emocion": [
+        "estrés",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "leve",
+      "energia": "baja",
+      "momento": "tarde",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "descanso",
+        "micro-pausa"
+      ],
+      "texto": "**Micro-hábito: Las 3 Pausas Sagradas**\n\nPrograma tres alarmas durante tu jornada: mañana, mediodía y tarde. Cuando suenen, detén lo que estás haciendo durante 5 minutos.\n\nEn esas pausas no hagas nada productivo. Solo respira, estírate, mira por la ventana, o simplemente existe sin agenda. El sistema nervioso se recupera mejor con frecuencia que con intensidad.",
+      "accion": "Programa ahora las tres alarmas en tu teléfono.",
+      "pregunta": "¿Cuánto más efectivo serías si dieras descanso a tu mente con esta frecuencia?"
+    },
+    {
+      "id": 146,
+      "tipo": "microhabito",
+      "escuela": "stoicism",
+      "tema": "paciencia",
+      "emocion": [
+        "frustración",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "largo plazo",
+        "perspectiva"
+      ],
+      "texto": "**Micro-hábito: La Perspectiva Semanal**\n\nCada lunes, antes de revisar la agenda, hazte esta pregunta: 'En el contexto de lo que más importa en mi vida, ¿cuánta importancia tiene lo más urgente de esta semana?'\n\nEsta pregunta no anula las urgencias. Pero las pone en perspectiva y libera espacio mental para lo que verdaderamente importa.",
+      "accion": "Prueba esta práctica ahora con lo más urgente de esta semana.",
+      "pregunta": "¿Cuánto de lo urgente de esta semana recordarás dentro de un año?"
+    },
+    {
+      "id": 147,
+      "tipo": "microhabito",
+      "escuela": "tcc",
+      "tema": "pensamientos",
+      "emocion": [
+        "ansiedad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Mente Analítica",
+        "Vigilante"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "cualquiera",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "nombramiento",
+        "regulación"
+      ],
+      "texto": "**Micro-hábito: Nombrar la Emoción**\n\nCuando notes una emoción intensa, practica nombrarla en voz alta o en tu mente con precisión: 'Estoy sintiendo ansiedad' en lugar de 'Me siento mal'.\n\nLa investigación muestra que el simple acto de nombrar una emoción con precisión reduce su intensidad. Es lo que los neurocientíficos llaman 'affect labeling'.",
+      "accion": "La próxima vez que sientas algo intenso, nómbralo con la mayor precisión posible.",
+      "pregunta": "¿Cuánto más específico podrías ser al describir tus estados emocionales?"
+    },
+    {
+      "id": 148,
+      "tipo": "microhabito",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "soledad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "escucha",
+        "presencia"
+      ],
+      "texto": "**Micro-hábito: La Escucha Plena**\n\nEsta semana, en al menos una conversación al día, practica escucha 100% presente: sin teléfono, sin pensar en tu respuesta mientras el otro habla, sin buscar la solución.\n\nSolo escucha. Haz contacto visual. Di 'entiendo' o 'cuéntame más'. Observa cómo cambia la calidad de esa conversación.",
+      "accion": "Practica esto en la próxima conversación que tengas hoy.",
+      "pregunta": "¿Cuánto de lo que dices en una conversación proviene de realmente haber escuchado y cuánto de tu propia agenda?"
+    },
+    {
+      "id": 149,
+      "tipo": "microhabito",
+      "escuela": "logoterapia",
+      "tema": "libertad",
+      "emocion": [
+        "frustración",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "elección",
+        "conciencia"
+      ],
+      "texto": "**Micro-hábito: La Elección Consciente**\n\nUna vez al día, elige hacer algo ordinario de manera completamente consciente: comer sin pantallas, caminar sin auriculares, ducharte sin pensar en el trabajo.\n\nEste hábito entrena la capacidad de presencia y recuerda que incluso en lo cotidiano existe la libertad de elegir cómo estar.",
+      "accion": "¿Qué actividad ordinaria harás hoy de manera completamente consciente?",
+      "pregunta": "¿En cuántas de tus actividades diarias estás realmente presente?"
+    },
+    {
+      "id": 150,
+      "tipo": "microhabito",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "2 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "apreciación",
+        "presente"
+      ],
+      "texto": "**Micro-hábito: El Momento de Apreciación**\n\nUna vez al día, detente durante 60 segundos frente a algo hermoso o significativo: una planta, una fotografía, el cielo, el rostro de alguien que quieres. Solo miralo sin prisa y permítete apreciarlo.\n\nEste hábito activa el sistema de recompensa del cerebro de manera natural y entrena la capacidad de notar lo bueno que ya existe.",
+      "accion": "Practica este momento de apreciación esta noche antes de dormir.",
+      "pregunta": "¿Cuántas cosas hermosas o significativas en tu vida cotidiana pasan desapercibidas?"
+    },
+    {
+      "id": 151,
+      "tipo": "pregunta",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "tristeza",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        5
+      ],
+      "tags": [
+        "reflexión",
+        "propósito"
+      ],
+      "texto": "¿Cuál es el 'por qué' más profundo detrás de lo que haces cada día? No la razón funcional, sino la razón que te haría levantarte incluso cuando todo lo demás fallara.",
+      "accion": "Tómate 10 minutos para escribir una respuesta honesta, sin filtro.",
+      "pregunta": "¿Qué estarías haciendo diferente si vivieras desde ese 'por qué' con más consciencia?"
+    },
+    {
+      "id": 152,
+      "tipo": "pregunta",
+      "escuela": "stoicism",
+      "tema": "aceptación",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "control",
+        "claridad"
+      ],
+      "texto": "¿Qué situación mejoraría significativamente si dejaras de luchar contra ella y comenzaras a comprenderla?",
+      "accion": "Escribe una respuesta específica sobre una situación actual.",
+      "pregunta": "¿Qué energía liberarías si aceptaras lo que no puedes cambiar?"
+    },
+    {
+      "id": 153,
+      "tipo": "pregunta",
+      "escuela": "humanismo",
+      "tema": "autenticidad",
+      "emocion": [
+        "soledad",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "identidad",
+        "verdadero yo"
+      ],
+      "texto": "¿Qué harías con tu tiempo si no existiera ninguna expectativa que cumplir y nadie a quien demostrarle nada?",
+      "accion": "Escribe la respuesta sin editar, dejando que emerja lo primero que venga.",
+      "pregunta": "¿Qué parte de esa respuesta podría integrarse a tu vida actual?"
+    },
+    {
+      "id": 154,
+      "tipo": "pregunta",
+      "escuela": "tcc",
+      "tema": "pensamientos",
+      "emocion": [
+        "ansiedad",
+        "miedo"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "evidencia",
+        "perspectiva"
+      ],
+      "texto": "¿Cuántas de las situaciones que más te preocupaban hace un año terminaron siendo tan graves como imaginabas?",
+      "accion": "Reflexiona y escribe 3 ejemplos concretos.",
+      "pregunta": "¿Qué te dice eso sobre la fiabilidad de tus predicciones ansiosas?"
+    },
+    {
+      "id": 155,
+      "tipo": "pregunta",
+      "escuela": "positiva",
+      "tema": "fortalezas",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "recursos",
+        "potencial"
+      ],
+      "texto": "¿Qué cualidades tuyas admiras secretamente pero rara vez te das el crédito de reconocer?",
+      "accion": "Escribe al menos tres. Si no puedes, pregúntale a alguien de confianza qué ve en ti.",
+      "pregunta": "¿Por qué te cuesta más reconocer tus fortalezas que tus debilidades?"
+    },
+    {
+      "id": 156,
+      "tipo": "pregunta",
+      "escuela": "stoicism",
+      "tema": "virtud",
+      "emocion": [
+        "culpa",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "valores",
+        "decisiones"
+      ],
+      "texto": "¿En qué decisiones recientes actuaste desde el miedo y en cuáles desde tus valores? ¿Qué diferencia hay en cómo te sientes sobre cada una?",
+      "accion": "Reflexiona sobre dos decisiones recientes con esta lente.",
+      "pregunta": "¿Qué patrón observas?"
+    },
+    {
+      "id": 157,
+      "tipo": "pregunta",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "esperanza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "posibilidad",
+        "siguiente paso"
+      ],
+      "texto": "Si esta dificultad que estás viviendo fuera el capítulo oscuro necesario antes del giro más importante de tu historia, ¿qué papel estarías jugando en ella?",
+      "accion": "Escribe durante 5 minutos sin interrupciones.",
+      "pregunta": "¿Qué haría diferente el protagonista de esa historia a partir de hoy?"
+    },
+    {
+      "id": 158,
+      "tipo": "pregunta",
+      "escuela": "logoterapia",
+      "tema": "libertad",
+      "emocion": [
+        "frustración",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "cualquiera",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "elección",
+        "responsabilidad"
+      ],
+      "texto": "¿Qué elegirías si supieras que ninguna opción es completamente segura y que esperar a la opción perfecta es también una elección?",
+      "accion": "Aplica esta pregunta a una decisión pendiente en tu vida.",
+      "pregunta": "¿Qué estás esperando que nunca llegará para poder avanzar?"
+    },
+    {
+      "id": 159,
+      "tipo": "pregunta",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "recursos",
+        "estrategia"
+      ],
+      "texto": "¿Qué funciona para ti cuando el estrés es alto, que no siempre usas porque no parece 'suficientemente serio'?",
+      "accion": "Identifica ese recurso y comprométete a usarlo la próxima vez.",
+      "pregunta": "¿Por qué a veces desestimamos las herramientas que realmente funcionan?"
+    },
+    {
+      "id": 160,
+      "tipo": "pregunta",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "esperanza",
+        "posibilidad"
+      ],
+      "texto": "¿Qué pequeña señal de progreso has notado esta semana que quizás no hayas valorado suficientemente?",
+      "accion": "Escribe al menos una señal de progreso, por pequeña que sea.",
+      "pregunta": "¿Por qué tendemos a ver los retrocesos con más claridad que los avances?"
+    },
+    {
+      "id": 161,
+      "tipo": "pregunta",
+      "escuela": "stoicism",
+      "tema": "paciencia",
+      "emocion": [
+        "frustración",
+        "enojo"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Guerrero Agotado"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "3 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "proceso",
+        "aprendizaje"
+      ],
+      "texto": "¿Qué cosa que valoras mucho en tu vida hoy requirió más tiempo y paciencia del que esperabas para desarrollarse?",
+      "accion": "Reflexiona sobre esa respuesta y su relación con lo que actualmente estás esperando.",
+      "pregunta": "¿Qué te dice eso sobre el proceso que estás viviendo ahora?"
+    },
+    {
+      "id": 162,
+      "tipo": "pregunta",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "enojo",
+        "frustración"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "alta",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "relaciones",
+        "comprensión"
+      ],
+      "texto": "¿Hay alguien en tu vida a quien has juzgado duramente que, si conocieras su historia completa, verías con otros ojos?",
+      "accion": "Imagina esa historia durante 5 minutos sin justificar ni condenar.",
+      "pregunta": "¿Qué cambia en tu relación con esa persona cuando amplías tu perspectiva?"
+    },
+    {
+      "id": 163,
+      "tipo": "pregunta",
+      "escuela": "logoterapia",
+      "tema": "propósito",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "10 minutos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "vocación",
+        "contribución"
+      ],
+      "texto": "¿Por qué problema del mundo te sentirías dispuesto a sacrificar tiempo, comodidad y recursos sin resentimiento?",
+      "accion": "Escribe al menos tres problemas que te duelen personalmente y reflexiona sobre qué habilidades tuyas podrían contribuir.",
+      "pregunta": "¿Cuál es la intersección entre lo que te duele del mundo y lo que eres capaz de ofrecer?"
+    },
+    {
+      "id": 164,
+      "tipo": "pregunta",
+      "escuela": "tcc",
+      "tema": "distorsiones",
+      "emocion": [
+        "culpa",
+        "vergüenza"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "autoestima",
+        "perspectiva"
+      ],
+      "texto": "¿Cómo le describirías a un ser querido que te pide consejo la misma situación que ahora te genera tanta culpa o vergüenza? ¿Qué le dirías?",
+      "accion": "Escribe esa respuesta y luego léela como si fuera para ti.",
+      "pregunta": "¿Por qué mereces menos compasión de la que le darías a un ser querido en tu situación?"
+    },
+    {
+      "id": 165,
+      "tipo": "pregunta",
+      "escuela": "positiva",
+      "tema": "bienestar",
+      "emocion": [
+        "estrés",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "nutrición",
+        "cuidado"
+      ],
+      "texto": "¿Qué elemento de tu bienestar (sueño, movimiento, conexión, nutrición, silencio) has descuidado más en el último mes y qué impacto ha tenido?",
+      "accion": "Haz un diagnóstico honesto y elige una acción concreta para restaurar ese elemento esta semana.",
+      "pregunta": "¿Cuál sería el efecto dominó positivo si restauraras ese elemento?"
+    },
+    {
+      "id": 166,
+      "tipo": "pregunta",
+      "escuela": "stoicism",
+      "tema": "fortaleza",
+      "emocion": [
+        "miedo",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Guerrero Agotado"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        1,
+        4
+      ],
+      "tags": [
+        "resiliencia",
+        "evidencia"
+      ],
+      "texto": "¿Cuál es la dificultad más grande que has superado hasta ahora en tu vida y qué te dice eso sobre tu capacidad actual?",
+      "accion": "Escribe esa historia brevemente enfocándote en los recursos que usaste.",
+      "pregunta": "¿Dónde están ahora esos recursos?"
+    },
+    {
+      "id": 167,
+      "tipo": "pregunta",
+      "escuela": "humanismo",
+      "tema": "autenticidad",
+      "emocion": [
+        "soledad",
+        "vergüenza"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        4
+      ],
+      "tags": [
+        "vulnerabilidad",
+        "conexión"
+      ],
+      "texto": "¿Qué parte de ti sería liberadora mostrar si supieras que sería recibida con aceptación en lugar de juicio?",
+      "accion": "Escribe sobre esa parte con tanta honestidad como puedas.",
+      "pregunta": "¿Existe alguien en tu vida con quien podrías mostrar esa parte de manera segura?"
+    },
+    {
+      "id": 168,
+      "tipo": "pregunta",
+      "escuela": "logoterapia",
+      "tema": "resiliencia",
+      "emocion": [
+        "tristeza",
+        "desesperanza"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Buscador de Sentido"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "razón de seguir",
+        "anclaje"
+      ],
+      "texto": "¿Qué es lo que, aunque todo fuera mal en tu vida, seguiría siendo un motivo para estar aquí?",
+      "accion": "Escribe el nombre, imagen o frase que representa ese motivo.",
+      "pregunta": "¿Cómo podrías conectar más conscientemente con ese motivo en tu vida diaria?"
+    },
+    {
+      "id": 169,
+      "tipo": "pregunta",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "soledad"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "noche",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "amor",
+        "memorias"
+      ],
+      "texto": "¿Cuál es el recuerdo de tu vida que, cuando lo visitas, todavía te llena el corazón?",
+      "accion": "Visita ese recuerdo durante 5 minutos con todos los detalles que puedas recordar.",
+      "pregunta": "¿Qué te dice ese recuerdo sobre lo que más valoras?"
+    },
+    {
+      "id": 170,
+      "tipo": "pregunta",
+      "escuela": "tcc",
+      "tema": "hábitos",
+      "emocion": [
+        "frustración",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Mente Analítica"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "tarde",
+      "duracion": "5 minutos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "cambio",
+        "proceso"
+      ],
+      "texto": "¿Qué hábito, si lo mantuvieras durante 6 meses, transformaría más significativamente tu calidad de vida?",
+      "accion": "Identifica ese hábito y diseña el primer paso más pequeño posible para comenzar esta semana.",
+      "pregunta": "¿Qué ha impedido hasta ahora que lo hayas sostenido?"
+    },
+    {
+      "id": 171,
+      "tipo": "motivacional",
+      "escuela": "stoicism",
+      "tema": "fortaleza",
+      "emocion": [
+        "miedo",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "valor",
+        "inicio"
+      ],
+      "texto": "Hoy no necesitas tener todo resuelto. Solo necesitas dar el siguiente paso. Un paso. Eso es suficiente.",
+      "accion": "¿Cuál es el siguiente paso?",
+      "pregunta": null
+    },
+    {
+      "id": 172,
+      "tipo": "motivacional",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "posibilidad",
+        "inicio"
+      ],
+      "texto": "Este día todavía no ha ocurrido. Está completamente en blanco. Puedes escribir algo diferente en él.",
+      "accion": "¿Qué escribirás diferente hoy?",
+      "pregunta": null
+    },
+    {
+      "id": 173,
+      "tipo": "motivacional",
+      "escuela": "logoterapia",
+      "tema": "resiliencia",
+      "emocion": [
+        "tristeza",
+        "desesperanza"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "fuerza",
+        "perseverancia"
+      ],
+      "texto": "La persona que eres ahora no es la persona que serás cuando hayas atravesado esto. Esa versión futura tuya existe. Sigue caminando hacia ella.",
+      "accion": "Da un paso hacia esa versión hoy.",
+      "pregunta": null
+    },
+    {
+      "id": 174,
+      "tipo": "motivacional",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "confusión",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "potencial",
+        "siguiente nivel"
+      ],
+      "texto": "No sabes todavía de lo que eres capaz. Pero puedes empezar a descubrirlo hoy, en algo pequeño, en este momento.",
+      "accion": "¿De qué capacidad tuya podrías sorprenderte hoy?",
+      "pregunta": null
+    },
+    {
+      "id": 175,
+      "tipo": "motivacional",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "acción",
+        "herramientas"
+      ],
+      "texto": "Tienes más herramientas de las que crees para navegar lo que está frente a ti. Confía en lo que ya sabes hacer y empieza por ahí.",
+      "accion": "¿Cuál de tus recursos conocidos puedes activar hoy?",
+      "pregunta": null
+    },
+    {
+      "id": 176,
+      "tipo": "motivacional",
+      "escuela": "stoicism",
+      "tema": "serenidad",
+      "emocion": [
+        "estrés",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "descanso",
+        "paz"
+      ],
+      "texto": "Has hecho suficiente hoy. El descanso que tomas ahora no es una rendición. Es la preparación para seguir mañana.",
+      "accion": "Permítete descansar sin culpa esta noche.",
+      "pregunta": null
+    },
+    {
+      "id": 177,
+      "tipo": "motivacional",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "soledad"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "amor",
+        "conexión"
+      ],
+      "texto": "Hay personas que piensan en ti ahora mismo, aunque no lo sepas. No estás tan solo como el dolor te dice.",
+      "accion": "Piensa en una persona que podría pensar en ti con cariño.",
+      "pregunta": null
+    },
+    {
+      "id": 178,
+      "tipo": "motivacional",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "confusión",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        5
+      ],
+      "tags": [
+        "propósito",
+        "dirección"
+      ],
+      "texto": "No necesitas saber el destino completo. Solo necesitas saber el próximo paso en la dirección que vale la pena.",
+      "accion": "¿Cuál es ese próximo paso?",
+      "pregunta": null
+    },
+    {
+      "id": 179,
+      "tipo": "motivacional",
+      "escuela": "humanismo",
+      "tema": "autenticidad",
+      "emocion": [
+        "vergüenza",
+        "miedo"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        4
+      ],
+      "tags": [
+        "valor",
+        "autenticidad"
+      ],
+      "texto": "El mundo no necesita una versión más perfecta de ti. Necesita la versión más genuina.",
+      "accion": "¿Qué parte genuina tuya puedes mostrar hoy?",
+      "pregunta": null
+    },
+    {
+      "id": 180,
+      "tipo": "motivacional",
+      "escuela": "tcc",
+      "tema": "hábitos",
+      "emocion": [
+        "frustración",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Vigilante"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "consistencia",
+        "pequeños pasos"
+      ],
+      "texto": "No necesitas hacerlo perfecto. Necesitas hacerlo. Hecho imperfectamente vale más que imaginado perfectamente.",
+      "accion": "¿Qué cosa imperfecta pero valiosa harás hoy?",
+      "pregunta": null
+    },
+    {
+      "id": 181,
+      "tipo": "motivacional",
+      "escuela": "stoicism",
+      "tema": "control",
+      "emocion": [
+        "ansiedad",
+        "estrés"
+      ],
+      "perfil": [
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "claridad",
+        "enfoque"
+      ],
+      "texto": "Cada preocupación que sale de tu mente y queda en papel pierde la mitad de su poder sobre ti.",
+      "accion": "Escribe tus tres preocupaciones más presentes ahora.",
+      "pregunta": null
+    },
+    {
+      "id": 182,
+      "tipo": "motivacional",
+      "escuela": "positiva",
+      "tema": "fortalezas",
+      "emocion": [
+        "tristeza",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Corazón Abierto"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "talentos",
+        "propósito"
+      ],
+      "texto": "Las habilidades que tienes no son accidentes. Son pistas de lo que el mundo necesita de ti específicamente.",
+      "accion": "Hoy usa al menos una de tus habilidades para ayudar a alguien.",
+      "pregunta": null
+    },
+    {
+      "id": 183,
+      "tipo": "motivacional",
+      "escuela": "logoterapia",
+      "tema": "libertad",
+      "emocion": [
+        "frustración",
+        "culpa"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "elección",
+        "poder"
+      ],
+      "texto": "Entre lo que te ocurre y tu respuesta siempre existe un espacio. En ese espacio vive tu poder.",
+      "accion": "La próxima vez que algo difícil ocurra, busca ese espacio antes de responder.",
+      "pregunta": null
+    },
+    {
+      "id": 184,
+      "tipo": "motivacional",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "soledad",
+        "tristeza"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "conexión",
+        "amor"
+      ],
+      "texto": "Una conversación honesta puede cambiar un día. A veces un día puede cambiar todo. No subestimes el poder de una conexión real.",
+      "accion": "¿Con quién podrías tener una conversación honesta hoy?",
+      "pregunta": null
+    },
+    {
+      "id": 185,
+      "tipo": "motivacional",
+      "escuela": "tcc",
+      "tema": "reestructuración",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Corazón Abierto"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "perspectiva",
+        "cambio"
+      ],
+      "texto": "El mismo evento puede ser el final de una historia o el comienzo de otra. La diferencia la hace el lugar desde donde decides leerlo.",
+      "accion": "¿Desde qué lugar puedes leer lo que te está pasando para que tenga sentido avanzar?",
+      "pregunta": null
+    },
+    {
+      "id": 186,
+      "tipo": "motivacional",
+      "escuela": "stoicism",
+      "tema": "virtud",
+      "emocion": [
+        "esperanza",
+        "gratitud"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "alta",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "integridad",
+        "carácter"
+      ],
+      "texto": "Hoy tienes la oportunidad de ser exactamente la persona que quieres haber sido al final del día. Esa decisión es enteramente tuya.",
+      "accion": "¿Quién quieres haber sido al terminar hoy?",
+      "pregunta": null
+    },
+    {
+      "id": 187,
+      "tipo": "motivacional",
+      "escuela": "positiva",
+      "tema": "optimismo",
+      "emocion": [
+        "miedo",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        3,
+        4
+      ],
+      "tags": [
+        "posibilidad",
+        "confianza"
+      ],
+      "texto": "El miedo es una señal de que algo te importa. Lo que te importa lo suficiente como para asustarte también vale la pena intentarlo.",
+      "accion": "¿Qué cosa que te asusta podría merecer tu intento?",
+      "pregunta": null
+    },
+    {
+      "id": 188,
+      "tipo": "motivacional",
+      "escuela": "humanismo",
+      "tema": "crecimiento",
+      "emocion": [
+        "frustración",
+        "confusión"
+      ],
+      "perfil": [
+        "Buscador de Sentido",
+        "Mente Analítica"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        5,
+        6
+      ],
+      "tags": [
+        "aprendizaje",
+        "proceso"
+      ],
+      "texto": "La confusión que sientes puede ser la señal de que estás creciendo hacia algo que todavía no cabe en tu comprensión actual.",
+      "accion": "¿Qué podrías estar en proceso de comprender que todavía no es claro?",
+      "pregunta": null
+    },
+    {
+      "id": 189,
+      "tipo": "motivacional",
+      "escuela": "logoterapia",
+      "tema": "propósito",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Buscador de Sentido"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        1,
+        5
+      ],
+      "tags": [
+        "razón de seguir",
+        "mañana"
+      ],
+      "texto": "Mañana puede ser diferente. No perfectamente diferente. Solo un grado diferente. A veces un grado es todo lo que necesitas para cambiar la dirección.",
+      "accion": "¿Qué un grado diferente podrías hacer mañana?",
+      "pregunta": null
+    },
+    {
+      "id": 190,
+      "tipo": "motivacional",
+      "escuela": "tcc",
+      "tema": "pensamientos",
+      "emocion": [
+        "ansiedad",
+        "culpa"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Vigilante"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "observación",
+        "distancia"
+      ],
+      "texto": "Un pensamiento que no cuestionas se convierte en una convicción. Un pensamiento que examinas se convierte en información.",
+      "accion": "¿Qué pensamiento merece ser examinado hoy en lugar de creído?",
+      "pregunta": null
+    },
+    {
+      "id": 191,
+      "tipo": "motivacional",
+      "escuela": "positiva",
+      "tema": "bienestar",
+      "emocion": [
+        "agotamiento",
+        "estrés"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "tarde",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "descanso",
+        "recuperación"
+      ],
+      "texto": "Cuidarte hoy no es debilidad. Es la inversión más inteligente que puedes hacer para mañana.",
+      "accion": "¿Cuál es el acto de cuidado más pequeño que puedes darte ahora mismo?",
+      "pregunta": null
+    },
+    {
+      "id": 192,
+      "tipo": "motivacional",
+      "escuela": "stoicism",
+      "tema": "aceptación",
+      "emocion": [
+        "tristeza",
+        "frustración"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "cualquiera",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "impermanencia",
+        "adaptación"
+      ],
+      "texto": "No todo tiene que ser de la manera que imaginaste para ser bueno. Algunas de las mejores cosas de tu vida llegaron de formas que nunca planeaste.",
+      "accion": "¿Puedes nombrar una cosa valiosa en tu vida que llegó de manera inesperada?",
+      "pregunta": null
+    },
+    {
+      "id": 193,
+      "tipo": "motivacional",
+      "escuela": "humanismo",
+      "tema": "aceptación",
+      "emocion": [
+        "culpa",
+        "vergüenza"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        1
+      ],
+      "tags": [
+        "autocompasión",
+        "suficiencia"
+      ],
+      "texto": "Eres suficiente tal como eres hoy, con tus errores incluidos. Eso no significa que no puedas crecer. Significa que el crecimiento parte desde un lugar de suficiencia, no de déficit.",
+      "accion": "Di en voz alta o internamente: 'Soy suficiente hoy.'",
+      "pregunta": null
+    },
+    {
+      "id": 194,
+      "tipo": "motivacional",
+      "escuela": "logoterapia",
+      "tema": "sentido",
+      "emocion": [
+        "confusión",
+        "tristeza"
+      ],
+      "perfil": [
+        "Buscador de Sentido"
+      ],
+      "nivel": "moderado",
+      "energia": "media",
+      "momento": "tarde",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        5
+      ],
+      "tags": [
+        "propósito",
+        "contribución"
+      ],
+      "texto": "El sentido no siempre espera en grandes revelaciones. A veces está en una conversación, en una tarea hecha con cuidado, en un momento de atención plena a quien está frente a ti.",
+      "accion": "¿Dónde existe ya sentido en tu vida ordinaria que no has reconocido?",
+      "pregunta": null
+    },
+    {
+      "id": 195,
+      "tipo": "motivacional",
+      "escuela": "tcc",
+      "tema": "afrontamiento",
+      "emocion": [
+        "ansiedad",
+        "miedo"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Mente Analítica"
+      ],
+      "nivel": "severo",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        1,
+        2
+      ],
+      "tags": [
+        "supervivencia",
+        "herramientas"
+      ],
+      "texto": "Has sobrevivido el 100% de tus días más difíciles hasta ahora. Esa es tu tasa de éxito. No te olvides de eso.",
+      "accion": "Recuerda tres días difíciles que ya pasaron.",
+      "pregunta": null
+    },
+    {
+      "id": 196,
+      "tipo": "motivacional",
+      "escuela": "positiva",
+      "tema": "gratitud",
+      "emocion": [
+        "tristeza",
+        "confusión"
+      ],
+      "perfil": [
+        "Corazón Abierto",
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        4
+      ],
+      "tags": [
+        "recursos",
+        "abundancia"
+      ],
+      "texto": "Hoy tienes algo que mucha gente quisiera tener: la oportunidad de intentarlo una vez más. Eso es suficiente para comenzar.",
+      "accion": "¿Qué intentarás una vez más hoy?",
+      "pregunta": null
+    },
+    {
+      "id": 197,
+      "tipo": "motivacional",
+      "escuela": "stoicism",
+      "tema": "paciencia",
+      "emocion": [
+        "frustración",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        3
+      ],
+      "tags": [
+        "proceso",
+        "confianza"
+      ],
+      "texto": "Lo que construyes lentamente es lo que dura. La tortuga no llega más tarde que la liebre. Llega al lugar correcto.",
+      "accion": "¿Qué proceso lento está ocurriendo en tu vida que merece tu confianza?",
+      "pregunta": null
+    },
+    {
+      "id": 198,
+      "tipo": "motivacional",
+      "escuela": "humanismo",
+      "tema": "empatía",
+      "emocion": [
+        "soledad",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "noche",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        2,
+        3
+      ],
+      "tags": [
+        "conexión",
+        "humanidad"
+      ],
+      "texto": "Ahora mismo, en algún lugar del mundo, alguien está atravesando algo parecido a lo que tú vives. No estás solo en esto. La humanidad siempre ha aprendido a atravesar lo difícil.",
+      "accion": "Recuerda que tu lucha también es humana, no solo tuya.",
+      "pregunta": null
+    },
+    {
+      "id": 199,
+      "tipo": "motivacional",
+      "escuela": "logoterapia",
+      "tema": "libertad",
+      "emocion": [
+        "frustración",
+        "ansiedad"
+      ],
+      "perfil": [
+        "Vigilante",
+        "Buscador de Sentido"
+      ],
+      "nivel": "leve",
+      "energia": "media",
+      "momento": "mañana",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        4,
+        5
+      ],
+      "tags": [
+        "elección",
+        "poder"
+      ],
+      "texto": "La libertad más importante no está en lo que te ocurre sino en cómo eliges responderle. Esa libertad nadie puede quitártela.",
+      "accion": "¿Cómo eliges responder hoy a lo que te está ocurriendo?",
+      "pregunta": null
+    },
+    {
+      "id": 200,
+      "tipo": "motivacional",
+      "escuela": "tcc",
+      "tema": "pensamientos",
+      "emocion": [
+        "tristeza",
+        "agotamiento"
+      ],
+      "perfil": [
+        "Guerrero Agotado",
+        "Corazón Abierto"
+      ],
+      "nivel": "moderado",
+      "energia": "baja",
+      "momento": "cualquiera",
+      "duracion": "30 segundos",
+      "semana_terapeutica": [
+        2
+      ],
+      "tags": [
+        "perspectiva",
+        "apertura"
+      ],
+      "texto": "Un pensamiento diferente produce un sentimiento diferente. Un sentimiento diferente abre posibilidades diferentes. Todo puede cambiar cuando cambia el primer pensamiento.",
+      "accion": "¿Cuál es el primer pensamiento que quieres cambiar hoy?",
+      "pregunta": null
+    }
+  ]
+}

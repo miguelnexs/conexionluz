@@ -271,7 +271,7 @@ export const DICCIONARIO_PERFILES: Record<string, ArbolPerfilDefinition> = {
         titulo: 'Mi Progreso',
         descripcion: 'Tablero compasivo de seguimiento de bienestar libre de metas rígidas.',
         icono: '📊',
-        ruta: '/actividades/progreso',
+        ruta: '/mi-progreso',
         badge: 'Equilibrio Saludable',
       },
     ],
@@ -483,7 +483,7 @@ export const DICCIONARIO_PERFILES: Record<string, ArbolPerfilDefinition> = {
         titulo: 'Mi Progreso',
         descripcion: 'Tablero de seguimiento de avance sostenido para mantener la constancia.',
         icono: '📊',
-        ruta: '/actividades/progreso',
+        ruta: '/mi-progreso',
         badge: 'Foco y Persistencia',
       },
       {

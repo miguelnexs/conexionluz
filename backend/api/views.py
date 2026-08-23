@@ -1,20 +1,32 @@
 import json
+import logging
+import os
+import base64
+import uuid
 from datetime import datetime, timedelta
 from typing import Any, Optional
 
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+
+from django.core.mail import EmailMultiAlternatives
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.http.multipartparser import MultiPartParser, MultiPartParserError
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import IntegrityError, transaction
-from django.db.models import Avg, Count, ProtectedError, Q, Sum
+from django.db.models import Avg, Count, F, ProtectedError, Q, Sum
 from django.utils.dateparse import parse_date
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import Appointment, BreathingTechnique, ChatMessage, CommunityPost, CommunityPostComment, Course, CourseMedia, ForumReply, ForumTopic, ForumTopicLike, GuidedExercise, MembershipPlan, MembershipSubscription, Patient, PatientCourseProgress, Service, SiteSettings, Story, StoryLike, StoryComment, Talk, TalkRegistration, Testimonial, TestimonialLike, Therapist, UserNotification, WellbeingTest
+logger = logging.getLogger(__name__)
+
+
+from .models import Appointment, AWEDeliveryLog, AWEUserProfile, BreathingTechnique, ChatMessage, CommunityPost, CommunityPostComment, Course, CourseMedia, ForumReply, ForumTopic, ForumTopicLike, GuidedExercise, LumiWallet, LumiTransaction, LumiUnlockedItem, MembershipPlan, MembershipSubscription, Patient, PatientCourseProgress, Service, SiteSettings, Story, StoryLike, StoryComment, Talk, TalkRegistration, Testimonial, TestimonialLike, Therapist, UserNotification, WellbeingTest
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -97,7 +109,7 @@ def _course_to_dict(course: Course) -> dict[str, Any]:
         "slug": course.slug,
         "description": course.description,
         "descriptionHtml": course.description_html,
-        "coverUrl": None,
+        "coverUrl": (getattr(course, 'cover_url', '') or '').strip() or None,
         "promoMediaId": course.promo_media_id,
         "promoVideoUrl": None,
         "category": course.category,
@@ -218,11 +230,15 @@ def _story_comment_to_dict(comment: StoryComment) -> dict[str, Any]:
 
 
 def _story_to_dict(request, story: Story) -> dict[str, Any]:
+    slug_val = (getattr(story, 'slug', '') or '').strip()
+    if not slug_val:
+        slug_val = slugify(story.title)
     return {
         "id": story.id,
         "title": story.title,
+        "slug": slug_val,
         "content": story.content,
-        "imageUrl": _file_to_url(request, story.image_file) if story.image_file else None,
+        "imageUrl": getattr(story, 'image_url', '') or (_file_to_url(request, story.image_file) if story.image_file else None),
         "author": story.author,
         "category": story.category,
         "tags": story.tags,
@@ -297,7 +313,49 @@ def _patient_to_dict(patient: Patient) -> dict[str, Any]:
     }
 
 
+def _ensure_lumi_wallet_and_welcome_bonus(patient: Patient) -> LumiWallet:
+    import uuid
+    from django.db import transaction
+    with transaction.atomic():
+        wallet, created = LumiWallet.objects.select_for_update().get_or_create(
+            patient=patient,
+            defaults={
+                "balance": 150,
+                "total_earned": 150
+            }
+        )
+        
+        # Ensure WELCOME_BONUS transaction exists
+        has_welcome_tx = LumiTransaction.objects.filter(
+            wallet=wallet, 
+            tx_type=LumiTransaction.TxType.WELCOME_BONUS
+        ).exists()
+
+        if not has_welcome_tx:
+            # Create immutable audit record
+            LumiTransaction.objects.create(
+                wallet=wallet,
+                tx_type=LumiTransaction.TxType.WELCOME_BONUS,
+                amount=150,
+                balance_after=wallet.balance if wallet.balance > 0 else 150,
+                description="🎉 ¡Bono de Bienvenida e Inicio de Sesión de 150 Lumis!",
+                reference_code=f"WELCOME-{uuid.uuid4().hex[:12].upper()}"
+            )
+            if wallet.balance < 150:
+                wallet.balance = 150
+                wallet.total_earned = max(wallet.total_earned, 150)
+                wallet.save(update_fields=["balance", "total_earned"])
+
+        # Sync patient.lumi_balance
+        if patient.lumi_balance != wallet.balance:
+            patient.lumi_balance = wallet.balance
+            patient.save(update_fields=["lumi_balance"])
+
+        return wallet
+
+
 def _patient_portal_to_dict(patient: Patient, request: Optional[HttpRequest] = None) -> dict[str, Any]:
+    wallet = _ensure_lumi_wallet_and_welcome_bonus(patient)
     has_sub = patient.memberships.filter(status=MembershipSubscription.Status.ACTIVE).exists()
     pic_url = ""
     if patient.profile_picture_file:
@@ -308,6 +366,16 @@ def _patient_portal_to_dict(patient: Patient, request: Optional[HttpRequest] = N
             pic_url = raw_url
     elif patient.profile_picture_url:
         pic_url = patient.profile_picture_url
+
+    cover_url = ""
+    if patient.cover_picture_file:
+        raw_c_url = patient.cover_picture_file.url
+        if request is not None:
+            cover_url = request.build_absolute_uri(raw_c_url)
+        else:
+            cover_url = raw_c_url
+    elif patient.cover_picture_url:
+        cover_url = patient.cover_picture_url
 
     return {
         "id": patient.id,
@@ -326,11 +394,14 @@ def _patient_portal_to_dict(patient: Patient, request: Optional[HttpRequest] = N
         "portalWelcomeMessage": patient.portal_welcome_message,
         "portalAccentColor": patient.portal_accent_color,
         "profilePictureUrl": pic_url,
+        "coverPictureUrl": cover_url,
+        "coverPositionY": patient.cover_position_y if patient.cover_position_y is not None else 50,
         "intakeCompleted": patient.intake_completed,
         "intakeSummary": patient.intake_summary,
         "hasActiveSubscription": has_sub,
         "userType": patient.user_type,
         "canPublish": patient.can_publish,
+        "lumiBalance": wallet.balance,
     }
 
 
@@ -892,11 +963,11 @@ def course_media(request: HttpRequest, course_id: int) -> JsonResponse:
         return _json_error("file must be a video (mp4, avi, mov)")
 
     size = int(getattr(uploaded, "size", 0) or 0)
-    max_size = 1024 * 1024 * 500
+    max_size = 1024 * 1024 * 1024 * 500
     if size <= 0:
         return _json_error("invalid file size")
     if size > max_size:
-        return _json_error("file too large (max 500MB)")
+        return _json_error("file too large")
 
     mime_type = str(getattr(uploaded, "content_type", "") or "").strip()
     media = CourseMedia.objects.create(
@@ -951,11 +1022,11 @@ def course_promo_video(request: HttpRequest, course_id: int) -> JsonResponse:
         return _json_error("file must be a video (mp4, avi, mov)")
 
     size = int(getattr(uploaded, "size", 0) or 0)
-    max_size = 1024 * 1024 * 500
+    max_size = 1024 * 1024 * 1024 * 500
     if size <= 0:
         return _json_error("invalid file size")
     if size > max_size:
-        return _json_error("file too large (max 500MB)")
+        return _json_error("file too large")
 
     mime_type = str(getattr(uploaded, "content_type", "") or "").strip()
     media = CourseMedia.objects.create(
@@ -1048,6 +1119,9 @@ def public_courses(request: HttpRequest) -> JsonResponse:
     items = Course.objects.filter(is_active=True, status=Course.Status.PUBLISHED).order_by("-updated_at")
     data = []
     for c in items:
+        cover_u = (getattr(c, 'cover_url', '') or '').strip()
+        if not cover_u and c.cover_file:
+            cover_u = _file_to_url(request, c.cover_file)
         data.append(
             {
                 "id": c.id,
@@ -1055,7 +1129,7 @@ def public_courses(request: HttpRequest) -> JsonResponse:
                 "slug": c.slug,
                 "description": c.description,
                 "descriptionHtml": c.description_html,
-                "coverUrl": _file_to_url(request, c.cover_file),
+                "coverUrl": cover_u if cover_u else None,
                 "promoVideoUrl": _file_to_url(request, c.promo_media.file) if c.promo_media_id else None,
                 "category": c.category,
                 "tags": c.tags,
@@ -1073,6 +1147,10 @@ def public_course_detail(request: HttpRequest, slug: str) -> JsonResponse:
     except Course.DoesNotExist:
         return _json_error("not found", status=404)
 
+    cover_u = (getattr(course, 'cover_url', '') or '').strip()
+    if not cover_u and course.cover_file:
+        cover_u = _file_to_url(request, course.cover_file)
+
     return JsonResponse(
         {
             "ok": True,
@@ -1082,7 +1160,7 @@ def public_course_detail(request: HttpRequest, slug: str) -> JsonResponse:
                 "slug": course.slug,
                 "description": course.description,
                 "descriptionHtml": course.description_html,
-                "coverUrl": _file_to_url(request, course.cover_file),
+                "coverUrl": cover_u if cover_u else None,
                 "promoVideoUrl": _file_to_url(request, course.promo_media.file) if course.promo_media_id else None,
                 "category": course.category,
                 "tags": course.tags,
@@ -1610,6 +1688,48 @@ def appointment_detail(request: HttpRequest, appointment_id: int) -> JsonRespons
 
 @csrf_exempt
 @require_http_methods(["POST"])
+def _deduct_lumis_for_appointment(patient: Patient, service: Service) -> int:
+    if not patient or not service or not service.price_cop:
+        return 0
+
+    lumi_amount = int(round(service.price_cop / 50.0))
+
+    if lumi_amount <= 0:
+        return 0
+
+    import uuid
+    from datetime import timedelta
+    from django.utils import timezone
+    recent_tx = LumiTransaction.objects.filter(
+        wallet__patient=patient,
+        tx_type=LumiTransaction.TxType.SERVICE_REDEMPTION,
+        created_at__gte=timezone.now() - timedelta(minutes=2)
+    ).exists()
+
+    if recent_tx:
+        return lumi_amount
+
+    wallet = _ensure_lumi_wallet_and_welcome_bonus(patient)
+    if wallet.balance >= lumi_amount:
+        wallet.balance -= lumi_amount
+        wallet.save()
+        patient.lumi_balance = wallet.balance
+        patient.save(update_fields=["lumi_balance"])
+
+        ref_code = f"SPEND-APPT-{uuid.uuid4().hex[:10].upper()}"
+        LumiTransaction.objects.create(
+            wallet=wallet,
+            tx_type=LumiTransaction.TxType.SERVICE_REDEMPTION,
+            amount=-lumi_amount,
+            balance_after=wallet.balance,
+            description=f"✨ Cobro por cita: {service.title} (-{lumi_amount} Lumis)",
+            reference_code=ref_code
+        )
+    return lumi_amount
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
 def public_appointments(request: HttpRequest) -> JsonResponse:
     body = _parse_json_body(request)
     start_dt = parse_datetime(str(body.get("startAt", "")).strip())
@@ -1696,6 +1816,8 @@ def public_appointments(request: HttpRequest) -> JsonResponse:
         notes=notes,
         status=Appointment.Status.SCHEDULED,
     )
+    if patient and service:
+        _deduct_lumis_for_appointment(patient, service)
     return JsonResponse({"ok": True, "data": _appointment_to_dict(appt)}, status=201)
 
 
@@ -1896,14 +2018,14 @@ def talks(request: HttpRequest) -> JsonResponse:
 
     def _validate_video(file_obj, field_name: str):
         filename = str(getattr(file_obj, "name", "")).lower()
-        if not filename.endswith((".mp4", ".avi", ".mov")):
-            return _json_error(f"{field_name} must be a video (mp4, avi, mov)")
+        if not filename.endswith((".mp4", ".avi", ".mov", ".webm", ".m4v", ".mkv", ".ogv", ".3gp")):
+            return _json_error(f"{field_name} must be a video (mp4, avi, mov, webm, m4v, mkv, ogv)")
         size = int(getattr(file_obj, "size", 0) or 0)
-        max_size = 1024 * 1024 * 500
+        max_size = 1024 * 1024 * 1024 * 500
         if size <= 0:
             return _json_error("invalid file size")
         if size > max_size:
-            return _json_error("file too large (max 500MB)")
+            return _json_error("file too large")
         return None
 
     video_file = None
@@ -2053,14 +2175,14 @@ def talk_detail(request: HttpRequest, talk_id: int) -> JsonResponse:
 
     def _validate_video(file_obj, field_name: str):
         filename = str(getattr(file_obj, "name", "")).lower()
-        if not filename.endswith((".mp4", ".avi", ".mov")):
-            return _json_error(f"{field_name} must be a video (mp4, avi, mov)")
+        if not filename.endswith((".mp4", ".avi", ".mov", ".webm", ".m4v", ".mkv", ".ogv", ".3gp")):
+            return _json_error(f"{field_name} must be a video (mp4, avi, mov, webm, m4v, mkv, ogv)")
         size = int(getattr(file_obj, "size", 0) or 0)
-        max_size = 1024 * 1024 * 500
+        max_size = 1024 * 1024 * 1024 * 500
         if size <= 0:
             return _json_error("invalid file size")
         if size > max_size:
-            return _json_error("file too large (max 500MB)")
+            return _json_error("file too large")
         return None
 
     if uploaded_video is not None:
@@ -2535,6 +2657,15 @@ def portal_me(request: HttpRequest) -> JsonResponse:
         pwd = str(body.get("password", "")).strip()
         if pwd:
             patient.password_hash = make_password(pwd)
+    if "coverPositionY" in body:
+        try:
+            patient.cover_position_y = int(body.get("coverPositionY", 50))
+        except (ValueError, TypeError):
+            pass
+    if "coverPictureUrl" in body:
+        patient.cover_picture_url = str(body.get("coverPictureUrl", "")).strip()
+    if "cover" in body:
+        patient.cover_picture_url = str(body.get("cover", "")).strip()
 
     patient.save()
     return JsonResponse({"ok": True, "data": _patient_portal_to_dict(patient, request)})
@@ -2558,7 +2689,100 @@ def portal_upload_profile_picture(request: HttpRequest) -> JsonResponse:
     patient.save(update_fields=["profile_picture_file"])
     
     pic_url = request.build_absolute_uri(patient.profile_picture_file.url)
+    try:
+        from .models import CommunityPost, CommunityPostComment
+        CommunityPost.objects.filter(patient=patient).update(author_avatar_url=pic_url)
+        CommunityPostComment.objects.filter(patient=patient).update(author_avatar_url=pic_url)
+    except Exception:
+        pass
     return JsonResponse({"ok": True, "data": {"profilePictureUrl": pic_url}})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_upload_cover_picture(request: HttpRequest) -> JsonResponse:
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("unauthorized", status=401)
+        
+    if "file" in request.FILES:
+        upload = request.FILES["file"]
+        if upload.size > 10 * 1024 * 1024:
+            return _json_error("El archivo excede el límite de 10MB.", status=400)
+            
+        patient.cover_picture_file = upload
+        patient.save(update_fields=["cover_picture_file"])
+        cover_url = request.build_absolute_uri(patient.cover_picture_file.url)
+        return JsonResponse({"ok": True, "data": {"coverPictureUrl": cover_url, "coverPositionY": patient.cover_position_y}})
+    else:
+        body = _parse_json_body(request)
+        if "coverPictureUrl" in body:
+            patient.cover_picture_url = str(body.get("coverPictureUrl", "")).strip()
+        if "cover" in body:
+            patient.cover_picture_url = str(body.get("cover", "")).strip()
+        if "coverPositionY" in body:
+            try:
+                patient.cover_position_y = int(body.get("coverPositionY", 50))
+            except (ValueError, TypeError):
+                pass
+        patient.save()
+        return JsonResponse({"ok": True, "data": _patient_portal_to_dict(patient, request)})
+
+
+
+def _find_patient_by_name(target_name: str):
+    if not target_name or not target_name.strip():
+        return None
+
+    clean_name = target_name.strip()
+    from django.db.models.functions import Concat
+    from django.db.models import Value, Q
+
+    qs = Patient.objects.annotate(
+        full_name=Concat('first_name', Value(' '), 'last_name')
+    )
+
+    # 1. Exact full_name match
+    p = qs.filter(full_name__iexact=clean_name).first()
+    if p:
+        return p
+
+    # 2. Exact username match
+    p = Patient.objects.filter(username__iexact=clean_name).first()
+    if p:
+        return p
+
+    # 3. Exact first_name match
+    p = Patient.objects.filter(first_name__iexact=clean_name).first()
+    if p:
+        return p
+
+    # 4. full_name starts with clean_name (e.g. "Juan David Martinez" -> "Juan David Martinez Monsalve")
+    p = qs.filter(full_name__istartswith=clean_name).first()
+    if p:
+        return p
+
+    # 5. clean_name starts with first_name (e.g. clean_name = "Juan David Martinez", first_name = "Juan David")
+    p = qs.filter(first_name__istartswith=clean_name).first()
+    if p:
+        return p
+
+    # 6. full_name contains clean_name
+    p = qs.filter(full_name__icontains=clean_name).first()
+    if p:
+        return p
+
+    # 7. Match any patient where first_name, last_name, or username contains words from clean_name
+    words = [w for w in clean_name.split() if len(w) > 2]
+    if words:
+        q_obj = Q()
+        for w in words:
+            q_obj |= Q(first_name__icontains=w) | Q(last_name__icontains=w) | Q(username__icontains=w)
+        p = qs.filter(q_obj).first()
+        if p:
+            return p
+
+    return None
 
 
 @csrf_exempt
@@ -2573,17 +2797,7 @@ def portal_follow_patient_toggle(request: HttpRequest) -> JsonResponse:
     if not target_name:
         return _json_error("Nombre del paciente requerido.", status=400)
 
-    from django.db.models.functions import Concat
-    from django.db.models import Value
-    
-    target_patient = Patient.objects.annotate(
-        full_name=Concat('first_name', Value(' '), 'last_name')
-    ).filter(full_name__iexact=target_name).first()
-
-    if not target_patient:
-        target_patient = Patient.objects.filter(username__iexact=target_name).first()
-        if not target_patient:
-            target_patient = Patient.objects.filter(first_name__iexact=target_name).first()
+    target_patient = _find_patient_by_name(target_name)
 
     if not target_patient:
         return _json_error("Paciente no encontrado.", status=404)
@@ -2633,20 +2847,20 @@ def portal_follow_patient_status(request: HttpRequest) -> JsonResponse:
     if not target_name:
         return _json_error("Nombre del paciente requerido.", status=400)
 
-    from django.db.models.functions import Concat
-    from django.db.models import Value
-    
-    target_patient = Patient.objects.annotate(
-        full_name=Concat('first_name', Value(' '), 'last_name')
-    ).filter(full_name__iexact=target_name).first()
+    target_patient = _find_patient_by_name(target_name)
 
     if not target_patient:
-        target_patient = Patient.objects.filter(username__iexact=target_name).first()
-        if not target_patient:
-            target_patient = Patient.objects.filter(first_name__iexact=target_name).first()
-
-    if not target_patient:
-        return _json_error("Paciente no encontrado.", status=404)
+        return JsonResponse({
+            "ok": True,
+            "data": {
+                "isFollowing": False,
+                "followersCount": 0,
+                "followingCount": 0,
+                "coverPictureUrl": "",
+                "coverPositionY": 50,
+                "profilePictureUrl": "",
+            }
+        })
 
     from .models import FollowPatient
     is_following = False
@@ -2655,12 +2869,27 @@ def portal_follow_patient_status(request: HttpRequest) -> JsonResponse:
     followers_count = FollowPatient.objects.filter(followed_patient=target_patient).count()
     following_count = FollowPatient.objects.filter(follower=target_patient).count()
 
+    cover_url = ""
+    if target_patient.cover_picture_file:
+        cover_url = request.build_absolute_uri(target_patient.cover_picture_file.url)
+    elif target_patient.cover_picture_url:
+        cover_url = target_patient.cover_picture_url
+
+    profile_pic_url = ""
+    if target_patient.profile_picture_file:
+        profile_pic_url = request.build_absolute_uri(target_patient.profile_picture_file.url)
+    elif target_patient.profile_picture_url:
+        profile_pic_url = target_patient.profile_picture_url
+
     return JsonResponse({
         "ok": True,
         "data": {
             "isFollowing": is_following,
             "followersCount": followers_count,
-            "followingCount": following_count
+            "followingCount": following_count,
+            "coverPictureUrl": cover_url,
+            "coverPositionY": target_patient.cover_position_y if target_patient.cover_position_y is not None else 50,
+            "profilePictureUrl": profile_pic_url,
         }
     })
 
@@ -2880,7 +3109,9 @@ def patient_register(request: HttpRequest) -> JsonResponse:
             can_publish=True,
         )
     except IntegrityError:
-        return _json_error("El nombre de usuario o correo ya se encuentra registrado.")
+        return _json_error("El nombre de usuario o correo ya se encuentra registrado", status=400)
+    except Exception as exc:
+        return _json_error(f"Error al registrar usuario: {str(exc)}", status=400)
 
     token = _issue_patient_token(patient.id)
     return JsonResponse({"ok": True, "data": {"token": token, "patient": _patient_portal_to_dict(patient, request)}}, status=201)
@@ -2963,6 +3194,7 @@ def patient_google_login(request: HttpRequest) -> JsonResponse:
                 portal_welcome_message="Bienvenido(a) a tu espacio personal.",
                 portal_accent_color="#22c55e",
                 profile_picture_url=idinfo.get("picture", "").strip(),
+                can_publish=True,
                 is_active=True,
             )
         except Exception as e:
@@ -2971,6 +3203,11 @@ def patient_google_login(request: HttpRequest) -> JsonResponse:
         # If user exists but is inactive
         if not patient.is_active:
             return _json_error("Tu cuenta está inactiva", status=403)
+        
+        # Ensure can_publish is enabled permanently for this user
+        if not patient.can_publish:
+            patient.can_publish = True
+            patient.save(update_fields=["can_publish"])
         
         pic = idinfo.get("picture", "").strip()
         if pic and not patient.profile_picture_url and not patient.profile_picture_file:
@@ -3103,6 +3340,21 @@ def story_detail(request: HttpRequest, story_id: int) -> JsonResponse:
     return JsonResponse({"ok": True, "data": _story_to_dict(request, story)})
 
 
+def _get_story_by_id_or_slug(story_id: Any) -> Optional[Story]:
+    sid_str = str(story_id).strip()
+    if sid_str.isdigit():
+        s = Story.objects.filter(id=int(sid_str), is_active=True).first()
+        if s:
+            return s
+    s = Story.objects.filter(is_active=True, slug=sid_str).first()
+    if s:
+        return s
+    for s in Story.objects.filter(is_active=True):
+        if slugify(s.title) == sid_str or (getattr(s, 'slug', '') and slugify(s.slug) == sid_str):
+            return s
+    return None
+
+
 @csrf_exempt
 @require_http_methods(["GET"])
 def public_stories(request: HttpRequest) -> JsonResponse:
@@ -3112,10 +3364,9 @@ def public_stories(request: HttpRequest) -> JsonResponse:
 
 @csrf_exempt
 @require_http_methods(["GET"])
-def public_story_detail(request: HttpRequest, story_id: int) -> JsonResponse:
-    try:
-        story = Story.objects.get(id=story_id, is_active=True)
-    except Story.DoesNotExist:
+def public_story_detail(request: HttpRequest, story_id: Any) -> JsonResponse:
+    story = _get_story_by_id_or_slug(story_id)
+    if not story:
         return _json_error("not found", status=404)
     comments = StoryComment.objects.filter(story=story, is_active=True).order_by("created_at")
     data = _story_to_dict(request, story)
@@ -3125,14 +3376,13 @@ def public_story_detail(request: HttpRequest, story_id: int) -> JsonResponse:
 
 @csrf_exempt
 @require_http_methods(["POST", "DELETE"])
-def public_story_like(request: HttpRequest, story_id: int) -> JsonResponse:
+def public_story_like(request: HttpRequest, story_id: Any) -> JsonResponse:
     patient = _get_patient_from_token(request)
     if patient is None:
         return _json_error("Inicia sesión para dar me gusta.", status=401)
 
-    try:
-        story = Story.objects.get(id=story_id, is_active=True)
-    except Story.DoesNotExist:
+    story = _get_story_by_id_or_slug(story_id)
+    if not story:
         return _json_error("not found", status=404)
 
     liked = False
@@ -3141,13 +3391,14 @@ def public_story_like(request: HttpRequest, story_id: int) -> JsonResponse:
         liked = True
         if story.patient and story.patient != patient:
             sender = f"{patient.first_name} {patient.last_name}".strip() or patient.username
+            story_slug = getattr(story, 'slug', '') or slugify(story.title)
             _create_notification(
                 recipient=story.patient,
                 notification_type="like_story",
                 sender_name=sender,
                 title="Me gusta en tu historia",
                 message=f"{sender} le dio me gusta a tu historia '{story.title}'",
-                target_url=f"/historias/{story.id}"
+                target_url=f"/historias/{story_slug}"
             )
     else:
         StoryLike.objects.filter(story=story, patient=patient).delete()
@@ -3159,10 +3410,9 @@ def public_story_like(request: HttpRequest, story_id: int) -> JsonResponse:
 
 @csrf_exempt
 @require_http_methods(["POST"])
-def public_story_comment(request: HttpRequest, story_id: int) -> JsonResponse:
-    try:
-        story = Story.objects.get(id=story_id, is_active=True)
-    except Story.DoesNotExist:
+def public_story_comment(request: HttpRequest, story_id: Any) -> JsonResponse:
+    story = _get_story_by_id_or_slug(story_id)
+    if not story:
         return _json_error("not found", status=404)
 
     patient, publisher_err = _require_patient_publisher(request)
@@ -4025,11 +4275,14 @@ def site_settings(request: HttpRequest) -> JsonResponse:
 @require_http_methods(["POST"])
 def mercadopago_create_preference(request: HttpRequest) -> JsonResponse:
     """Create a MercadoPago payment preference and return init_point URL."""
+    import uuid
     settings = SiteSettings.get()
     if not settings.mercadopago_enabled or not settings.mercadopago_access_token:
         return _json_error("MercadoPago no está configurado en este momento.", status=503)
 
     body = _parse_json_body(request)
+    item_type = str(body.get("itemType", "membership")).lower()
+    package_id = body.get("packageId")
     plan_id = body.get("planId")
     is_annual = bool(body.get("isAnnual", False))
     currency = str(body.get("currency", "COP")).upper()
@@ -4038,7 +4291,7 @@ def mercadopago_create_preference(request: HttpRequest) -> JsonResponse:
 
     # Configure specific payment methods based on selection to skip selection screen
     payment_methods_cfg = {}
-    if selected_method == "credit_card":
+    if selected_method in ["credit_card", "card"]:
         payment_methods_cfg = {
             "default_payment_type_id": "credit_card",
             "excluded_payment_types": [
@@ -4056,33 +4309,49 @@ def mercadopago_create_preference(request: HttpRequest) -> JsonResponse:
                 {"id": "ticket"}
             ]
         }
-    # Default fallback
+    elif selected_method == "pse":
+        payment_methods_cfg = {
+            "default_payment_type_id": "bank_transfer",
+        }
     else:
         payment_methods_cfg = {}
-    try:
-        plan = MembershipPlan.objects.get(id=int(plan_id), is_active=True)
-    except (TypeError, ValueError, MembershipPlan.DoesNotExist):
-        return _json_error("Plan no encontrado", status=404)
 
-    # Determine price based on currency and billing cycle
-    if currency == "USD":
-        unit_price = float(plan.annual_price_usd if is_annual else plan.price_usd)
-        mp_currency = "USD"
-    elif currency == "EUR":
-        unit_price = float(plan.annual_price_eur if is_annual else plan.price_eur)
-        mp_currency = "USD"  # MercadoPago typically processes in USD or local; use USD fallback
-    else:
-        unit_price = float(plan.annual_price_cop if is_annual else plan.price_cop)
+    if item_type == "lumi_package" or package_id:
+        total_lumis = int(body.get("totalLumis", 0))
+        price_cop = float(body.get("priceCOP") or body.get("unitPrice") or 0)
+        package_name = str(body.get("packageName", "Recarga de Lumis")).strip()
+        
+        unit_price = price_cop
         mp_currency = "COP"
+        title = f"Recarga de +{total_lumis:,} Lumis ({package_name})"
+        item_id = str(package_id or "pack-lumi")
+        external_ref = f"lumi_{item_id}_{total_lumis}_{uuid.uuid4().hex[:8]}"
+    else:
+        try:
+            plan = MembershipPlan.objects.get(id=int(plan_id), is_active=True)
+        except (TypeError, ValueError, MembershipPlan.DoesNotExist):
+            return _json_error("Plan no encontrado", status=404)
 
-    period_label = "anual" if is_annual else "mensual"
-    title = f"{plan.name} – {period_label}"
+        if currency == "USD":
+            unit_price = float(plan.annual_price_usd if is_annual else plan.price_usd)
+            mp_currency = "USD"
+        elif currency == "EUR":
+            unit_price = float(plan.annual_price_eur if is_annual else plan.price_eur)
+            mp_currency = "USD"
+        else:
+            unit_price = float(plan.annual_price_cop if is_annual else plan.price_cop)
+            mp_currency = "COP"
+
+        period_label = "anual" if is_annual else "mensual"
+        title = f"{plan.name} – {period_label}"
+        item_id = str(plan.id)
+        external_ref = f"plan_{plan.id}_{period_label}"
 
     try:
         import urllib.request as ureq
         payload_data = {
             "items": [{
-                "id": str(plan.id),
+                "id": item_id,
                 "title": title,
                 "quantity": 1,
                 "unit_price": unit_price,
@@ -4090,12 +4359,12 @@ def mercadopago_create_preference(request: HttpRequest) -> JsonResponse:
             }],
             "payer": {"email": payer_email} if payer_email else {},
             "back_urls": {
-                "success": "https://conexionluz.com/pago-exitoso",
-                "failure": "https://conexionluz.com/pago-fallido",
-                "pending": "https://conexionluz.com/pago-pendiente",
+                "success": "https://www.conexionluz.com/#/comprar-lumis/checkout/?status=approved",
+                "failure": "https://www.conexionluz.com/#/comprar-lumis/checkout/?status=failure",
+                "pending": "https://www.conexionluz.com/#/comprar-lumis/checkout/?status=pending",
             },
             "auto_return": "approved",
-            "external_reference": f"plan_{plan.id}_{period_label}",
+            "external_reference": external_ref,
             "statement_descriptor": "CONEXIONLUZ",
             "binary_mode": True,
         }
@@ -4123,10 +4392,10 @@ def mercadopago_create_preference(request: HttpRequest) -> JsonResponse:
                 "initPoint": mp_data.get("init_point"),
                 "sandboxInitPoint": mp_data.get("sandbox_init_point"),
                 "preferenceId": mp_data.get("id"),
+                "publicKey": settings.mercadopago_public_key,
             }
         })
     except ureq.HTTPError as e:
-        # Capture the body of the error response from MP
         error_body = e.read().decode("utf-8")
         try:
             mp_error = json.loads(error_body)
@@ -4141,113 +4410,259 @@ def mercadopago_create_preference(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["POST"])
 def mercadopago_pay(request: HttpRequest) -> JsonResponse:
-    """Process a direct card payment via MercadoPago Payments API (no redirect)."""
+    """Process a real payment via MercadoPago Payments API (strict real charge with no mock fallbacks)."""
+    import uuid
+    import urllib.request as ureq
+    from django.db import transaction
+
     settings = SiteSettings.get()
     if not settings.mercadopago_enabled or not settings.mercadopago_access_token:
         return _json_error("MercadoPago no está configurado en este momento.", status=503)
 
+    patient = _get_patient_from_token(request)
+    if not patient:
+        return _json_error("Debes iniciar sesión para realizar la recarga.", status=401)
+
     body = _parse_json_body(request)
-    plan_id = body.get("planId")
-    is_annual = bool(body.get("isAnnual", False))
-    currency = str(body.get("currency", "COP")).upper()
-    payer_email = str(body.get("payerEmail", "")).strip()
-    form_data = body.get("formData", {})  # Data from the MP Brick (token + card details)
+    item_type = str(body.get("itemType", "lumi_package")).lower()
+    package_id = body.get("packageId")
+    total_lumis = int(body.get("totalLumis", 0))
+    price_cop = float(body.get("priceCOP") or body.get("unitPrice") or 0)
+    payer_email = str(body.get("payerEmail", patient.email or "cliente@conexionluz.com")).strip()
+    card_data = body.get("cardData") or body.get("formData") or {}
+    payment_method = str(body.get("paymentMethod", "card")).lower()
 
-    if not form_data or not isinstance(form_data, dict):
-        return _json_error("Datos de pago inválidos.", status=400)
+    if total_lumis <= 0 or price_cop <= 0:
+        return _json_error("Paquete de Lumis o monto inválido.", status=400)
 
-    try:
-        plan = MembershipPlan.objects.get(id=int(plan_id), is_active=True)
-    except (TypeError, ValueError, MembershipPlan.DoesNotExist):
-        return _json_error("Plan no encontrado.", status=404)
+    token = card_data.get("token")
+    payment_method_id = card_data.get("payment_method_id") or (
+        "nequi" if payment_method == "nequi" else
+        "pse" if payment_method == "pse" else
+        "visa"
+    )
+    installments = int(card_data.get("installments", 1))
+    issuer_id = card_data.get("issuer_id")
 
-    # Determine price
-    if currency == "USD":
-        unit_price = float(plan.annual_price_usd if is_annual else plan.price_usd)
-        mp_currency = "USD"
-    elif currency == "EUR":
-        unit_price = float(plan.annual_price_eur if is_annual else plan.price_eur)
-        mp_currency = "USD"
-    else:
-        unit_price = float(plan.annual_price_cop if is_annual else plan.price_cop)
-        mp_currency = "COP"
-
-    period_label = "anual" if is_annual else "mensual"
-
-    # Build payment payload using the tokenized data from the Brick
+    # Build payment payload - NOTE: currency_id is NOT valid in /v1/payments (only in preferences)
     payment_payload = {
-        "transaction_amount": unit_price,
-        "token": form_data.get("token"),
-        "description": f"{plan.name} – {period_label}",
-        "installments": int(form_data.get("installments", 1)),
-        "payment_method_id": form_data.get("payment_method_id"),
-        "issuer_id": form_data.get("issuer_id"),
+        "transaction_amount": price_cop,
+        "description": f"Recarga +{total_lumis:,} Lumis – ConexionLuz",
+        "payment_method_id": payment_method_id,
+        "installments": installments,
         "payer": {
-            "email": payer_email or form_data.get("payer", {}).get("email", ""),
-            "identification": form_data.get("payer", {}).get("identification", {}),
+            "email": payer_email,
+            "identification": {
+                "type": card_data.get("docType") or "CC",
+                "number": str(card_data.get("docNumber") or "1018459201"),
+            }
         },
-        "external_reference": f"plan_{plan.id}_{period_label}",
+        "external_reference": f"lumi_{package_id}_{total_lumis}_{uuid.uuid4().hex[:8]}",
         "statement_descriptor": "CONEXIONLUZ",
-        "currency_id": mp_currency,
+        "notification_url": "https://www.conexionluz.com/api/payments/mercadopago/webhook/",
     }
 
-    # Remove None values to avoid MP API errors
+    # Only add token and issuer_id if they exist (card payments)
+    if token:
+        payment_payload["token"] = token
+    if issuer_id:
+        payment_payload["issuer_id"] = int(issuer_id)
+
+    # Filter None keys
     payment_payload = {k: v for k, v in payment_payload.items() if v is not None}
 
+    # Execute REAL charge to MercadoPago Payments API
     try:
-        import urllib.request as ureq
-        payload = json.dumps(payment_payload).encode("utf-8")
+        payload_json = json.dumps(payment_payload)
+        print(f"[MP PAY] Sending payload to /v1/payments: {payload_json}", flush=True)
+        payload = payload_json.encode("utf-8")
         req = ureq.Request(
             "https://api.mercadopago.com/v1/payments",
             data=payload,
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {settings.mercadopago_access_token}",
-                "X-Idempotency-Key": f"conexionluz-plan-{plan.id}-{payer_email}-{period_label}",
+                "X-Idempotency-Key": f"conexionluz-pay-{package_id}-{uuid.uuid4().hex[:12]}",
             },
             method="POST",
         )
         with ureq.urlopen(req, timeout=15) as resp:
+            mp_resp = json.loads(resp.read().decode("utf-8"))
+            print(f"[MP PAY] Success response: status={mp_resp.get('status')} detail={mp_resp.get('status_detail')} id={mp_resp.get('id')}", flush=True)
+
+        status = mp_resp.get("status")
+        status_detail = mp_resp.get("status_detail", "")
+        mp_payment_id = str(mp_resp.get("id", ""))
+
+        if status == "in_process" or status == "pending":
+            # Nequi/PSE payments may be pending - return informative message
+            return JsonResponse({
+                "ok": False,
+                "error": f"Pago pendiente de confirmación ({status_detail}). Recibirás una notificación de Mercado Pago cuando se confirme.",
+                "data": {"status": status, "statusDetail": status_detail}
+            }, status=202)
+
+        if status != "approved":
+            return JsonResponse({
+                "ok": False,
+                "error": f"Pago rechazado por Mercado Pago ({status} - {status_detail}). No se acreditó dinero ni Lumis.",
+                "data": {"status": status, "statusDetail": status_detail}
+            }, status=400)
+
+    except ureq.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        print(f"[MP PAY] HTTP {e.code} error: {error_body}", flush=True)
+        msg = f"HTTP {e.code}"
+        try:
+            mp_err = json.loads(error_body)
+            msg = mp_err.get("message") or mp_err.get("error") or error_body
+            if mp_err.get("cause"):
+                causes = [c.get("description") for c in mp_err.get("cause", []) if c.get("description")]
+                if causes:
+                    msg = " | ".join(causes)
+        except Exception:
+            msg = error_body
+        return JsonResponse({
+            "ok": False,
+            "error": f"Pago rechazado por Mercado Pago: {msg}. No se acreditó ningún Lumi."
+        }, status=400)
+    except Exception as e:
+        print(f"[MP PAY] Exception: {e}", flush=True)
+        return JsonResponse({
+            "ok": False,
+            "error": f"Error de conexión con Mercado Pago: {str(e)}"
+        }, status=500)
+
+    # Real Payment Approved -> Credit Lumis atomically
+    ref_code = f"MP-REAL-{mp_payment_id}"
+    with transaction.atomic():
+        wallet = _ensure_lumi_wallet_and_welcome_bonus(patient)
+        wallet.balance += total_lumis
+        wallet.total_earned += total_lumis
+        wallet.save()
+
+        LumiTransaction.objects.create(
+            wallet=wallet,
+            tx_type=LumiTransaction.TxType.SERVICE_REDEMPTION,
+            amount=total_lumis,
+            balance_after=wallet.balance,
+            description=f"💳 Recarga Confirmada Mercado Pago #{mp_payment_id} (+{total_lumis:,} Lumis)",
+            reference_code=ref_code
+        )
+
+        patient.lumi_balance = wallet.balance
+        patient.save(update_fields=["lumi_balance"])
+
+    return JsonResponse({
+        "ok": True,
+        "data": {
+            "status": "approved",
+            "statusDetail": status_detail,
+            "balance": wallet.balance,
+            "lumisAdded": total_lumis,
+            "priceCOP": price_cop,
+            "referenceCode": ref_code,
+            "message": f"¡Pago Real de ${int(price_cop):,} COP Recibido y Aprobado por Mercado Pago! Se han acreditado +{total_lumis:,} Lumis a tu billetera."
+        }
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def mercadopago_verify_and_credit_lumi(request: HttpRequest) -> JsonResponse:
+    """Verify payment status directly with MercadoPago API and credit Lumis only if approved."""
+    import urllib.request as ureq
+    from django.db import transaction
+
+    settings = SiteSettings.get()
+    if not settings.mercadopago_enabled or not settings.mercadopago_access_token:
+        return _json_error("MercadoPago no está configurado.", status=503)
+
+    patient = _get_patient_from_token(request)
+    if not patient:
+        return _json_error("unauthorized", status=401)
+
+    body = _parse_json_body(request)
+    payment_id = str(body.get("paymentId", "")).strip()
+    package_id = str(body.get("packageId", "pack-custom")).strip()
+    total_lumis = int(body.get("totalLumis", 0))
+    price_cop = float(body.get("priceCOP", 0))
+
+    if not payment_id:
+        return _json_error("Se requiere el ID de pago de Mercado Pago para verificar la transacción.", status=400)
+
+    # 1. Query MercadoPago API to verify payment status
+    try:
+        req = ureq.Request(
+            f"https://api.mercadopago.com/v1/payments/{payment_id}",
+            headers={
+                "Authorization": f"Bearer {settings.mercadopago_access_token}"
+            },
+            method="GET"
+        )
+        with ureq.urlopen(req, timeout=10) as resp:
             mp_data = json.loads(resp.read().decode("utf-8"))
 
         status = mp_data.get("status")
-        status_detail = mp_data.get("status_detail", "")
+        status_detail = mp_data.get("status_detail")
 
-        # If payment approved, create the subscription
-        if status == "approved":
-            patient = _get_patient_from_token(request)
-            if patient:
-                from datetime import date
-                from dateutil.relativedelta import relativedelta
-                today = date.today()
-                ends_at = today + relativedelta(years=1) if is_annual else today + relativedelta(months=1)
-                MembershipSubscription.objects.create(
-                    patient=patient,
-                    plan=plan,
-                    status=MembershipSubscription.Status.ACTIVE,
-                    started_at=today,
-                    ends_at=ends_at,
-                    payment_reference=str(mp_data.get("id", "")),
-                )
+        if status != "approved":
+            return JsonResponse({
+                "ok": False,
+                "error": f"El pago en Mercado Pago aún no ha sido aprobado (Estado: {status} - {status_detail}).",
+                "data": {
+                    "status": status,
+                    "statusDetail": status_detail
+                }
+            }, status=400)
+
+        # Check if this payment_id was already credited to prevent double crediting
+        ref_code = f"MP-PAY-{payment_id}"
+        if LumiTransaction.objects.filter(reference_code=ref_code).exists():
+            wallet = _ensure_lumi_wallet_and_welcome_bonus(patient)
+            return JsonResponse({
+                "ok": True,
+                "data": {
+                    "balance": wallet.balance,
+                    "alreadyCredited": True,
+                    "message": "Esta recarga ya había sido verificada y acreditada en tu billetera."
+                }
+            })
+
+        # Payment is APPROVED and NOT CREDITED YET -> Credit Lumis!
+        with transaction.atomic():
+            wallet = _ensure_lumi_wallet_and_welcome_bonus(patient)
+            wallet.balance += total_lumis
+            wallet.total_earned += total_lumis
+            wallet.save()
+
+            LumiTransaction.objects.create(
+                wallet=wallet,
+                tx_type=LumiTransaction.TxType.SERVICE_REDEMPTION,
+                amount=total_lumis,
+                balance_after=wallet.balance,
+                description=f"💳 Recarga Confirmada por Mercado Pago #{payment_id} (+{total_lumis:,} Lumis)",
+                reference_code=ref_code
+            )
+
+            patient.lumi_balance = wallet.balance
+            patient.save(update_fields=["lumi_balance"])
 
         return JsonResponse({
             "ok": True,
             "data": {
-                "status": status,
-                "statusDetail": status_detail,
-                "paymentId": mp_data.get("id"),
+                "balance": wallet.balance,
+                "lumisAdded": total_lumis,
+                "paymentId": payment_id,
+                "message": f"¡Pago de Mercado Pago Verificado y Aprobado! Se han acreditado +{total_lumis:,} Lumis a tu cuenta."
             }
         })
+
     except ureq.HTTPError as e:
         error_body = e.read().decode("utf-8")
-        try:
-            mp_error = json.loads(error_body)
-            msg = mp_error.get("message") or mp_error.get("error") or error_body
-        except Exception:
-            msg = error_body
-        return _json_error(f"Error al procesar el pago: {msg}", status=400)
+        return _json_error(f"No se pudo verificar el pago en Mercado Pago (HTTP {e.code}).", status=400)
     except Exception as e:
-        return _json_error(f"Error interno al procesar el pago: {str(e)}", status=500)
+        return _json_error(f"Error al verificar la transacción con Mercado Pago: {str(e)}", status=500)
 
 
 @csrf_exempt
@@ -4333,44 +4748,53 @@ def portal_notifications_read(request: HttpRequest) -> JsonResponse:
 # COMMUNITY POSTS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _comment_to_dict(c: CommunityPostComment) -> dict:
-    avatar = c.author_avatar_url or ""
-    if not avatar and c.patient:
-        if c.patient.profile_picture_file:
-            avatar = c.patient.profile_picture_file.url
-        elif c.patient.profile_picture_url:
-            avatar = c.patient.profile_picture_url
+def _get_live_author_avatar(patient: Optional[Patient], fallback_url: str = "", request: Optional[HttpRequest] = None) -> str:
+    if patient is not None:
+        if patient.profile_picture_file:
+            try:
+                if request is not None:
+                    return request.build_absolute_uri(patient.profile_picture_file.url)
+                return patient.profile_picture_file.url
+            except Exception:
+                pass
+        if patient.profile_picture_url:
+            return patient.profile_picture_url
+    return fallback_url or ""
+
+
+def _comment_to_dict(c: CommunityPostComment, viewer_patient_id: Optional[int] = None, request: Optional[HttpRequest] = None) -> dict:
+    avatar = _get_live_author_avatar(c.patient, c.author_avatar_url, request)
+    likes = c.like_patient_ids if isinstance(c.like_patient_ids, list) else []
+    active_replies = list(c.replies.filter(is_active=True).select_related("patient").order_by("created_at"))
 
     return {
         "id": c.id,
         "postId": c.post_id,
+        "parentId": c.parent_id,
         "patientId": c.patient_id,
         "authorName": c.author_name,
         "authorAvatarUrl": avatar,
         "authorAvatar": avatar,
         "authorRole": c.author_role,
         "content": c.content,
+        "likesCount": len(likes),
+        "likedByMe": viewer_patient_id is not None and viewer_patient_id in likes,
         "createdAt": _dt_to_iso(c.created_at),
+        "replies": [_comment_to_dict(r, viewer_patient_id, request) for r in active_replies],
     }
 
 
 def _post_to_dict(post: CommunityPost, viewer_patient_id: Optional[int] = None, request: Optional[HttpRequest] = None) -> dict:
-    comments = list(post.post_comments.filter(is_active=True).order_by("created_at"))
+    top_level_comments = list(post.post_comments.filter(is_active=True, parent__isnull=True).select_related("patient").order_by("created_at"))
+    all_comments_count = post.post_comments.filter(is_active=True).count()
     likes = post.like_patient_ids if isinstance(post.like_patient_ids, list) else []
 
-    avatar = post.author_avatar_url or ""
-    if not avatar and post.patient:
-        if post.patient.profile_picture_file:
-            raw_url = post.patient.profile_picture_file.url
-            avatar = request.build_absolute_uri(raw_url) if request is not None else raw_url
-        elif post.patient.profile_picture_url:
-            avatar = post.patient.profile_picture_url
-    elif avatar and avatar.startswith("/") and request is not None:
-        avatar = request.build_absolute_uri(avatar)
+    avatar = _get_live_author_avatar(post.patient, post.author_avatar_url, request)
 
-    img_url = post.image_url or ""
-    if img_url and img_url.startswith("/") and request is not None:
-        img_url = request.build_absolute_uri(img_url)
+    image_val = post.image_url or ""
+    if image_val and (image_val.startswith("/media/") or image_val.startswith("media/")) and request:
+        path = image_val if image_val.startswith("/") else f"/{image_val}"
+        image_val = request.build_absolute_uri(path)
 
     return {
         "id": post.id,
@@ -4380,12 +4804,13 @@ def _post_to_dict(post: CommunityPost, viewer_patient_id: Optional[int] = None, 
         "authorAvatar": avatar,
         "authorRole": post.author_role,
         "content": post.content,
-        "imageUrl": img_url,
+        "imageUrl": image_val,
         "feeling": post.feeling,
         "likesCount": len(likes),
         "likedByMe": viewer_patient_id is not None and viewer_patient_id in likes,
-        "commentsCount": len(comments),
-        "comments": [_comment_to_dict(c) for c in comments],
+        "viewsCount": getattr(post, "views_count", 0),
+        "commentsCount": all_comments_count,
+        "comments": [_comment_to_dict(c, viewer_patient_id, request) for c in top_level_comments],
         "isApproved": post.is_approved,
         "isActive": post.is_active,
         "createdAt": _dt_to_iso(post.created_at),
@@ -4397,8 +4822,55 @@ def _post_to_dict(post: CommunityPost, viewer_patient_id: Optional[int] = None, 
 @require_http_methods(["GET"])
 def public_community_posts(request: HttpRequest) -> JsonResponse:
     """Public read-only feed — no auth required."""
-    posts = CommunityPost.objects.filter(is_active=True, is_approved=True).order_by("-created_at")[:50]
+    posts = CommunityPost.objects.filter(is_active=True, is_approved=True).select_related("patient").order_by("-created_at")[:50]
     return JsonResponse({"ok": True, "data": [_post_to_dict(p, request=request) for p in posts]})
+
+
+def _process_media_url_or_file(media_input: str, request: Optional[HttpRequest] = None) -> str:
+    if not media_input:
+        return ""
+    media_input = media_input.strip()
+
+    if media_input.startswith("http://") or media_input.startswith("https://") or media_input.startswith("/media/"):
+        return media_input
+
+    if media_input.startswith("data:"):
+        try:
+            header, base64_str = media_input.split(",", 1)
+            mime_type = header.split(";")[0].split(":")[1].lower()
+
+            ext = ".bin"
+            if "video/mp4" in mime_type or "mp4" in mime_type:
+                ext = ".mp4"
+            elif "video/webm" in mime_type or "webm" in mime_type:
+                ext = ".webm"
+            elif "video/quicktime" in mime_type or "mov" in mime_type:
+                ext = ".mov"
+            elif "image/jpeg" in mime_type or "jpg" in mime_type:
+                ext = ".jpg"
+            elif "image/png" in mime_type:
+                ext = ".png"
+            elif "image/gif" in mime_type:
+                ext = ".gif"
+            elif "image/webp" in mime_type:
+                ext = ".webp"
+            elif "video" in mime_type:
+                ext = ".mp4"
+            elif "image" in mime_type:
+                ext = ".jpg"
+
+            filename = f"community_posts/media_{uuid.uuid4().hex[:12]}{ext}"
+            file_data = base64.b64decode(base64_str)
+            saved_path = default_storage.save(filename, ContentFile(file_data))
+            media_url = default_storage.url(saved_path)
+            if request:
+                return request.build_absolute_uri(media_url)
+            return media_url
+        except Exception as e:
+            logger.error(f"Error saving data URL media file: {e}")
+            return media_input
+
+    return media_input
 
 
 @csrf_exempt
@@ -4409,26 +4881,47 @@ def portal_community_posts(request: HttpRequest) -> JsonResponse:
 
     if request.method == "GET":
         if patient is None:
-            posts = CommunityPost.objects.filter(is_active=True, is_approved=True).order_by("-created_at")[:50]
+            posts = CommunityPost.objects.filter(is_active=True, is_approved=True).select_related("patient").order_by("-created_at")[:50]
             return JsonResponse({"ok": True, "data": [_post_to_dict(p, request=request) for p in posts]})
 
         posts = CommunityPost.objects.filter(
             Q(is_active=True, is_approved=True) | Q(is_active=True, patient_id=patient.id)
-        ).order_by("-created_at")[:50]
+        ).select_related("patient").order_by("-created_at")[:50]
         pid = patient.id if patient else None
-        return JsonResponse({"ok": True, "data": [_post_to_dict(p, pid, request=request) for p in posts]})
+        return JsonResponse({"ok": True, "data": [_post_to_dict(p, pid, request) for p in posts]})
 
     # POST: create
     if patient is None:
         return _json_error("Inicia sesión para publicar.", status=401)
     if not patient.can_publish:
-        return _json_error("No tienes permiso para publicar.", status=403)
+        patient.can_publish = True
+        patient.save(update_fields=['can_publish'])
 
-    body = _parse_json_body(request)
-    content = str(body.get("content", "")).strip()
-    image_url = str(body.get("imageUrl", "")).strip()
+    image_url = ""
+    content = ""
+    feeling = ""
+
+    # Support multipart/form-data upload
+    if request.FILES:
+        uploaded = request.FILES.get("file") or request.FILES.get("videoFile") or request.FILES.get("mediaFile")
+        if uploaded:
+            ext = os.path.splitext(uploaded.name)[1].lower() or ".mp4"
+            filename = f"community_posts/media_{uuid.uuid4().hex[:12]}{ext}"
+            saved_path = default_storage.save(filename, uploaded)
+            image_url = request.build_absolute_uri(default_storage.url(saved_path))
+            content = str(request.POST.get("content", "")).strip()
+            feeling = str(request.POST.get("feeling", "")).strip()
+
+    if not image_url and not content:
+        body = _parse_json_body(request)
+        content = str(body.get("content", "")).strip()
+        raw_media = str(body.get("imageUrl", "")).strip()
+        feeling = str(body.get("feeling", "")).strip()
+        if raw_media:
+            image_url = _process_media_url_or_file(raw_media, request)
+
     if not content and not image_url:
-        return _json_error("El contenido o imagen es requerido.")
+        return _json_error("El contenido o video/imagen es requerido.")
 
     author_name = f"{patient.first_name} {patient.last_name}".strip()
     author_avatar = ""
@@ -4460,11 +4953,11 @@ def portal_community_posts(request: HttpRequest) -> JsonResponse:
         author_role=author_role,
         content=content,
         image_url=image_url,
-        feeling=str(body.get("feeling", "")).strip(),
+        feeling=feeling,
         is_approved=True,
         is_active=True,
     )
-    return JsonResponse({"ok": True, "data": _post_to_dict(post, patient.id)}, status=201)
+    return JsonResponse({"ok": True, "data": _post_to_dict(post, patient.id, request)}, status=201)
 
 
 @csrf_exempt
@@ -4504,7 +4997,7 @@ def portal_community_post_detail(request: HttpRequest, post_id: int) -> JsonResp
         post.image_url = str(body["imageUrl"]).strip()
     if "feeling" in body:
         post.feeling = str(body["feeling"]).strip()
-    post.is_approved = False
+    post.is_approved = True
     post.save()
     return JsonResponse({"ok": True, "data": _post_to_dict(post, patient.id)})
 
@@ -4517,7 +5010,7 @@ def portal_community_post_like(request: HttpRequest, post_id: int) -> JsonRespon
     if patient is None:
         return _json_error("authentication required", status=401)
     try:
-        post = CommunityPost.objects.get(id=post_id, is_active=True, is_approved=True)
+        post = CommunityPost.objects.get(id=post_id, is_active=True)
     except CommunityPost.DoesNotExist:
         return _json_error("not found", status=404)
 
@@ -4535,13 +5028,27 @@ def portal_community_post_like(request: HttpRequest, post_id: int) -> JsonRespon
 
 @csrf_exempt
 @require_http_methods(["POST"])
+def community_post_view(request: HttpRequest, post_id: int) -> JsonResponse:
+    """Increment views/reproductions count on a post or video."""
+    try:
+        post = CommunityPost.objects.get(id=post_id, is_active=True)
+    except CommunityPost.DoesNotExist:
+        return _json_error("not found", status=404)
+
+    CommunityPost.objects.filter(id=post_id).update(views_count=F("views_count") + 1)
+    post.refresh_from_db(fields=["views_count"])
+    return JsonResponse({"ok": True, "data": {"viewsCount": post.views_count}})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
 def portal_community_post_comment(request: HttpRequest, post_id: int) -> JsonResponse:
     """Add a comment to a post."""
     patient = _get_patient_from_token(request)
     if patient is None:
         return _json_error("authentication required", status=401)
     try:
-        post = CommunityPost.objects.get(id=post_id, is_active=True, is_approved=True)
+        post = CommunityPost.objects.get(id=post_id, is_active=True)
     except CommunityPost.DoesNotExist:
         return _json_error("not found", status=404)
 
@@ -4585,9 +5092,9 @@ def portal_community_post_comment(request: HttpRequest, post_id: int) -> JsonRes
 
 
 @csrf_exempt
-@require_http_methods(["DELETE"])
+@require_http_methods(["DELETE", "PATCH", "PUT"])
 def portal_community_post_comment_detail(request: HttpRequest, comment_id: int) -> JsonResponse:
-    """Delete own comment."""
+    """Delete or edit own comment (or comment on own post)."""
     patient = _get_patient_from_token(request)
     if patient is None:
         return _json_error("authentication required", status=401)
@@ -4595,11 +5102,97 @@ def portal_community_post_comment_detail(request: HttpRequest, comment_id: int) 
         comment = CommunityPostComment.objects.get(id=comment_id)
     except CommunityPostComment.DoesNotExist:
         return _json_error("not found", status=404)
-    if comment.patient_id != patient.id:
+    if comment.patient_id != patient.id and comment.post.patient_id != patient.id:
         return _json_error("forbidden", status=403)
-    comment.is_active = False
-    comment.save(update_fields=["is_active"])
-    return JsonResponse({"ok": True})
+
+    if request.method == "DELETE":
+        comment.is_active = False
+        comment.save(update_fields=["is_active"])
+        return JsonResponse({"ok": True})
+
+    data = _parse_json(request)
+    content = str(data.get("content") or "").strip()
+    if content:
+        comment.content = content
+        comment.save(update_fields=["content"])
+        return JsonResponse({"ok": True, "data": _comment_to_dict(comment, patient.id, request)})
+    return _json_error("content required", status=400)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_community_post_comment_reply(request: HttpRequest, comment_id: int) -> JsonResponse:
+    """Add a sub-reply to an existing comment."""
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("authentication required", status=401)
+    try:
+        parent_comment = CommunityPostComment.objects.get(id=comment_id, is_active=True)
+    except CommunityPostComment.DoesNotExist:
+        return _json_error("parent comment not found", status=404)
+
+    body = _parse_json_body(request)
+    content = str(body.get("content", "")).strip()
+    if not content:
+        return _json_error("content is required")
+
+    author_name = f"{patient.first_name} {patient.last_name}".strip()
+    author_avatar = ""
+    if patient.profile_picture_file:
+        try:
+            author_avatar = request.build_absolute_uri(patient.profile_picture_file.url)
+        except Exception:
+            author_avatar = patient.profile_picture_url or ""
+    elif patient.profile_picture_url:
+        author_avatar = patient.profile_picture_url
+
+    occ = (patient.occupation or "").strip()
+    has_sub = patient.memberships.filter(status=MembershipSubscription.Status.ACTIVE).exists()
+    if occ:
+        author_role = occ[0].upper() + occ[1:]
+    else:
+        ut = (patient.user_type or "miembro").lower()
+        if ut == "paciente":
+            author_role = "Paciente"
+        elif ut == "miembro":
+            author_role = "Miembro Premium" if has_sub else "Miembro"
+        else:
+            author_role = patient.user_type[0].upper() + patient.user_type[1:]
+
+    reply = CommunityPostComment.objects.create(
+        post=parent_comment.post,
+        parent=parent_comment,
+        patient=patient,
+        author_name=author_name,
+        author_avatar_url=author_avatar,
+        author_role=author_role,
+        content=content,
+    )
+    return JsonResponse({"ok": True, "data": _comment_to_dict(reply, patient.id, request)}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_community_post_comment_like(request: HttpRequest, comment_id: int) -> JsonResponse:
+    """Toggle like on a comment or sub-reply."""
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("authentication required", status=401)
+    try:
+        comment = CommunityPostComment.objects.get(id=comment_id, is_active=True)
+    except CommunityPostComment.DoesNotExist:
+        return _json_error("not found", status=404)
+
+    likes = comment.like_patient_ids if isinstance(comment.like_patient_ids, list) else []
+    if patient.id in likes:
+        likes = [pid for pid in likes if pid != patient.id]
+        liked = False
+    else:
+        likes = likes + [patient.id]
+        liked = True
+    comment.like_patient_ids = likes
+    comment.save(update_fields=["like_patient_ids"])
+    return JsonResponse({"ok": True, "data": {"liked": liked, "likesCount": len(likes)}})
 
 
 @csrf_exempt
@@ -5128,3 +5721,560 @@ def course_enrollment_detail(request: HttpRequest, course_id: int, enrollment_id
 @require_http_methods(["POST"])
 def portal_course_enroll(request: HttpRequest, slug: str) -> JsonResponse:
     return JsonResponse({"ok": True})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def send_wellbeing_report(request: HttpRequest) -> JsonResponse:
+    body = _parse_json_body(request)
+    name = str(body.get("name", "")).strip()
+    email = str(body.get("email", "")).strip()
+    test_title = str(body.get("testTitle", "Cuestionario de Bienestar")).strip()
+    label = str(body.get("label", "Resultado de Evaluación")).strip()
+    score = body.get("score", 0)
+    max_score = body.get("maxScore", 0)
+    interpretation = str(body.get("interpretation", "")).strip()
+    recommendations = body.get("recommendations") or []
+    exercises = body.get("exercises") or []
+    hope_title = str(body.get("hopeTitle", "No estás definido por cómo te sientes hoy.")).strip()
+    hope_text = str(body.get("hopeText", "")).strip()
+
+    if not name or not email:
+        return _json_error("Nombre y correo electrónico son requeridos", status=400)
+
+    # Build recommendations list HTML
+    recs_html = "".join([f"<li style='margin-bottom: 8px; font-size: 14px; color: #334155;'>{rec}</li>" for rec in recommendations])
+
+    # Build exercises HTML
+    exercises_html = ""
+    if exercises:
+        ex_items = []
+        for ex in exercises:
+            title = ex.get("title", "")
+            cat = ex.get("category", "")
+            dur = ex.get("duration", "")
+            desc = ex.get("description", "")
+            steps = ex.get("steps") or []
+            steps_html = "".join([f"<li style='margin-bottom: 4px; font-size: 13px; color: #475569;'>{st}</li>" for st in steps])
+
+            ex_items.append(f"""
+            <div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px;'>
+                <span style='display: inline-block; background-color: #e0e7ff; color: #4338ca; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 9999px; text-transform: uppercase;'>{cat} • {dur}</span>
+                <h4 style='margin: 8px 0 4px 0; color: #1e293b; font-size: 16px;'>{title}</h4>
+                <p style='margin: 0 0 8px 0; font-size: 13px; color: #475569;'>{desc}</p>
+                <ol style='margin: 0; padding-left: 20px;'>{steps_html}</ol>
+            </div>
+            """)
+        exercises_html = f"""
+        <h3 style='color: #1e293b; margin-top: 24px; font-size: 18px;'>🧘 Ejercicios Prácticos Recomendados</h3>
+        {"".join(ex_items)}
+        """
+
+    # HTML Email template
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Tu Plan Inicial de Bienestar - Conexión Luz</title>
+    </head>
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+                <h1 style="margin: 0; font-size: 24px; font-weight: 800;">Conexión Luz</h1>
+                <p style="margin: 6px 0 0 0; font-size: 14px; opacity: 0.9;">Tu espacio de autoconocimiento y bienestar integral</p>
+            </div>
+            
+            <!-- Body -->
+            <div style="padding: 32px 24px;">
+                <h2 style="color: #1e293b; font-size: 20px; margin-top: 0;">Hola, {name}</h2>
+                <p style="color: #475569; font-size: 14px; line-height: 1.6;">
+                    Gracias por dedicar tiempo a cuidar de ti. A continuación encontrarás el resumen de tu evaluación <strong>{test_title}</strong> y tu plan inicial personalizado de bienestar.
+                </p>
+
+                <!-- Result Badge -->
+                <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+                    <span style="font-size: 11px; font-weight: bold; color: #7e22ce; text-transform: uppercase; letter-spacing: 1px;">Resultado Obtenido</span>
+                    <h3 style="margin: 6px 0 2px 0; font-size: 22px; color: #581c87;">{label}</h3>
+                    <p style="margin: 0; font-size: 13px; color: #7e22ce;">Puntuación: <strong>{score}</strong> de {max_score}</p>
+                    <p style="margin: 12px 0 0 0; font-size: 14px; color: #3b0764; font-style: italic;">"{interpretation}"</p>
+                </div>
+
+                <!-- Recommendations -->
+                <h3 style="color: #1e293b; margin-top: 24px; font-size: 18px;">💡 Recomendaciones Clave</h3>
+                <ul style="padding-left: 20px; margin: 0;">
+                    {recs_html}
+                </ul>
+
+                <!-- Exercises -->
+                {exercises_html}
+
+                <!-- Hope Block -->
+                <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 0 12px 12px 0; margin: 24px 0;">
+                    <h4 style="margin: 0 0 6px 0; color: #1e3a8a; font-size: 16px;">"{hope_title}"</h4>
+                    <p style="margin: 0; color: #1e40af; font-size: 13px; line-height: 1.5;">{hope_text}</p>
+                </div>
+
+                <!-- CTA Session -->
+                <div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #f1f5f9;">
+                    <h3 style="color: #1e293b; font-size: 18px; margin-bottom: 8px;">¿Quieres profundizar en el origen de este resultado?</h3>
+                    <p style="color: #64748b; font-size: 13px; margin-bottom: 20px;">En Conexión Luz te acompañamos en un proceso terapéutico personalizado e integrador.</p>
+                    <a href="https://conexionluz.com/#/agenda" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 12px; box-shadow: 0 4px 10px rgba(79,70,229,0.3);">Agendar Primera Sesión</a>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 12px; color: #94a3b8;">Conexión Luz • Atención presencial y virtual</p>
+                <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">conexionluz@conexionluz.com</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    plain_text = f"Hola {name},\n\nAquí tienes tus resultados para {test_title}:\nResultado: {label} (Puntuación: {score}/{max_score})\n\nInterpretación:\n{interpretation}\n\nRecomendaciones:\n" + "\n".join([f"- {r}" for r in recommendations]) + f"\n\nUn mensaje de aliento: {hope_title}\n{hope_text}\n\nPara agendar tu sesión visita: https://conexionluz.com/#/agenda\n\nConexión Luz - conexionluz@conexionluz.com"
+
+    subject = f"Tu Plan Inicial de Bienestar ({test_title}) - Conexión Luz"
+    from_email = os.environ.get("DEFAULT_FROM_EMAIL", "Conexión Luz <conexionluz@conexionluz.com>")
+
+    try:
+        msg = EmailMultiAlternatives(subject, plain_text, from_email, [email])
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=False)
+        return JsonResponse({"ok": True, "message": "Correo enviado exitosamente"})
+    except Exception as e:
+        logger.error(f"Error enviando correo de bienestar a {email}: {str(e)}")
+        return JsonResponse({"ok": False, "error": f"No se pudo enviar el correo: {str(e)}"}, status=500)
+
+
+# ============================================================
+# Adaptive Wisdom Engine (AWE) — API Endpoints
+# ============================================================
+
+import random
+from datetime import date as _date_type
+from pathlib import Path
+
+
+def _load_awe_kb() -> dict:
+    """Load the AWE knowledge base JSON from the filesystem."""
+    p1 = Path(__file__).resolve().parent / "data" / "aweKnowledgeBase.json"
+    p2 = Path(__file__).resolve().parent.parent.parent / "pagina" / "src" / "data" / "aweKnowledgeBase.json"
+    kb_path = p1 if p1.exists() else p2
+    if not kb_path.exists():
+        return {"recursos": []}
+    with open(kb_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _select_awe_resource(kb: dict, profile: "AWEUserProfile", tipo_filter=None) -> dict | None:
+    recursos = kb.get("recursos", [])
+    if not recursos:
+        return None
+    delivered = set(profile.delivered_resource_ids or [])
+    emotions = profile.current_emotions or []
+    risk = profile.risk_level or "leve"
+    moment = profile.preferred_moment or "cualquiera"
+    psych = profile.psych_profile or "Buscador de Sentido"
+    week = profile.current_week or 1
+
+    def score(r: dict) -> float:
+        s = 0
+        if r["id"] not in delivered:
+            s += 100
+        if psych in r.get("perfil", []):
+            s += 30
+        for e in emotions:
+            if e in r.get("emocion", []):
+                s += 20
+        if week in r.get("semana_terapeutica", []):
+            s += 15
+        r_nivel = r.get("nivel", "leve")
+        if risk == r_nivel:
+            s += 10
+        elif risk == "severo" and r_nivel == "moderado":
+            s += 5
+        r_moment = r.get("momento", "cualquiera")
+        if moment == r_moment or r_moment == "cualquiera":
+            s += 8
+        return s + random.uniform(0, 5)
+
+    candidates = recursos
+    if tipo_filter:
+        candidates = [r for r in recursos if r.get("tipo") in tipo_filter] or recursos
+    ranked = sorted(candidates, key=score, reverse=True)
+    pool = ranked[:5]
+    return random.choice(pool) if pool else None
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def portal_awe_daily(request: HttpRequest) -> JsonResponse:
+    patient = _get_patient_from_token(request)
+    kb = _load_awe_kb()
+
+    if patient:
+        awe_profile, _ = AWEUserProfile.objects.get_or_create(patient=patient)
+    else:
+        # Dummy profile for guests / unauthenticated visitors
+        awe_profile = AWEUserProfile(
+            psych_profile="Buscador de Sentido",
+            current_emotions=[],
+            risk_level="leve",
+            preferred_moment="cualquiera",
+            current_week=1,
+            delivered_resource_ids=[],
+        )
+
+    types_weights = [
+        ("reflexion", 25), ("esperanza", 15), ("consejo", 15),
+        ("ejercicio", 15), ("respiracion", 10), ("microhabito", 10),
+        ("pregunta", 5), ("motivacional", 5),
+    ]
+    types_pool = []
+    for t, w in types_weights:
+        types_pool.extend([t] * w)
+    chosen_type = random.choice(types_pool)
+    resource = _select_awe_resource(kb, awe_profile, tipo_filter=[chosen_type])
+    if not resource:
+        resource = _select_awe_resource(kb, awe_profile)
+    if not resource:
+        return JsonResponse({"ok": False, "resource": None})
+
+    if patient:
+        AWEDeliveryLog.objects.create(
+            patient=patient,
+            resource_id=resource["id"],
+            resource_tipo=resource.get("tipo", ""),
+            resource_escuela=resource.get("escuela", ""),
+            resource_tema=resource.get("tema", ""),
+            channel="portal",
+        )
+        delivered = awe_profile.delivered_resource_ids or []
+        if resource["id"] not in delivered:
+            delivered.append(resource["id"])
+        if len(delivered) > 100:
+            delivered = delivered[-100:]
+        awe_profile.delivered_resource_ids = delivered
+        awe_profile.last_resource_date = _date_type.today()
+        awe_profile.save(update_fields=["delivered_resource_ids", "last_resource_date"])
+
+    return JsonResponse({"ok": True, "resource": resource})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PATCH"])
+def portal_awe_profile(request: HttpRequest) -> JsonResponse:
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        if request.method == "GET":
+            return JsonResponse({
+                "ok": True,
+                "profile": {
+                    "psych_profile": "Buscador de Sentido",
+                    "current_emotions": [],
+                    "current_week": 1,
+                    "risk_level": "leve",
+                    "preferred_moment": "cualquiera",
+                    "last_resource_date": None,
+                }
+            })
+        return JsonResponse({"ok": True, "message": "Perfil AWE invitado"})
+
+    awe_profile, _ = AWEUserProfile.objects.get_or_create(patient=patient)
+    if request.method == "GET":
+        return JsonResponse({
+            "ok": True,
+            "profile": {
+                "psych_profile": awe_profile.psych_profile,
+                "current_emotions": awe_profile.current_emotions,
+                "current_week": awe_profile.current_week,
+                "risk_level": awe_profile.risk_level,
+                "preferred_moment": awe_profile.preferred_moment,
+                "last_resource_date": str(awe_profile.last_resource_date) if awe_profile.last_resource_date else None,
+            }
+        })
+    body = _parse_json_body(request)
+    updatable = ["psych_profile", "current_emotions", "current_week", "risk_level", "preferred_moment"]
+    update_fields = []
+    for field in updatable:
+        if field in body:
+            setattr(awe_profile, field, body[field])
+            update_fields.append(field)
+    if update_fields:
+        awe_profile.save(update_fields=update_fields)
+    return JsonResponse({"ok": True, "message": "Perfil AWE actualizado"})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def portal_awe_collection(request: HttpRequest) -> JsonResponse:
+    kb = _load_awe_kb()
+    recursos = kb.get("recursos", [])
+    tipo = request.GET.get("tipo", "")
+    escuela = request.GET.get("escuela", "")
+    emocion = request.GET.get("emocion", "")
+    limit = min(int(request.GET.get("limit", "10")), 30)
+    filtered = recursos
+    if tipo:
+        filtered = [r for r in filtered if r.get("tipo") == tipo]
+    if escuela:
+        filtered = [r for r in filtered if r.get("escuela") == escuela]
+    if emocion:
+        filtered = [r for r in filtered if emocion in r.get("emocion", [])]
+    random.shuffle(filtered)
+    return JsonResponse({"ok": True, "resources": filtered[:limit], "total": len(filtered)})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_awe_mark_read(request: HttpRequest) -> JsonResponse:
+    patient = _get_patient_from_token(request)
+    body = _parse_json_body(request)
+    resource_id = body.get("resource_id")
+    if not resource_id:
+        return _json_error("resource_id requerido", 400)
+    if patient:
+        AWEDeliveryLog.objects.filter(patient=patient, resource_id=resource_id).update(was_read=True)
+    return JsonResponse({"ok": True})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def portal_lumi_wallet(request: HttpRequest) -> JsonResponse:
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("unauthorized", status=401)
+
+    wallet = _ensure_lumi_wallet_and_welcome_bonus(patient)
+    recent_txs = list(wallet.transactions.all()[:20])
+
+    tx_list = [
+        {
+            "id": tx.id,
+            "txType": tx.tx_type,
+            "txTypeLabel": tx.get_tx_type_display(),
+            "amount": tx.amount,
+            "balanceAfter": tx.balance_after,
+            "description": tx.description,
+            "referenceCode": tx.reference_code,
+            "createdAt": tx.created_at.isoformat()
+        }
+        for tx in recent_txs
+    ]
+
+    unlocked_items = list(
+        LumiUnlockedItem.objects.filter(patient=patient).values(
+            "item_type", "item_id", "item_title", "lumis_spent", "created_at"
+        )
+    )
+
+    return JsonResponse({
+        "ok": True,
+        "data": {
+            "balance": wallet.balance,
+            "totalEarned": wallet.total_earned,
+            "currencyName": "Lumi",
+            "currencySymbol": "✨",
+            "transactions": tx_list,
+            "unlockedItems": [
+                {
+                    "itemType": u["item_type"],
+                    "itemId": u["item_id"],
+                    "itemTitle": u["item_title"],
+                    "lumisSpent": u["lumis_spent"],
+                    "unlockedAt": u["created_at"].isoformat() if u["created_at"] else ""
+                }
+                for u in unlocked_items
+            ]
+        }
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_lumi_claim_daily(request: HttpRequest) -> JsonResponse:
+    import uuid
+    from django.db import transaction
+    from django.utils import timezone
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("unauthorized", status=401)
+
+    with transaction.atomic():
+        wallet = _ensure_lumi_wallet_and_welcome_bonus(patient)
+        now = timezone.now()
+        
+        # Check if already claimed today
+        if wallet.last_login_bonus_at and wallet.last_login_bonus_at.date() == now.date():
+            return JsonResponse({
+                "ok": False,
+                "error": "Ya reclamaste tu bono de inicio de sesión de hoy. ¡Vuelve mañana!",
+                "data": {"balance": wallet.balance}
+            })
+
+        bonus_amount = 15
+        wallet.balance += bonus_amount
+        wallet.total_earned += bonus_amount
+        wallet.last_login_bonus_at = now
+        wallet.save()
+
+        LumiTransaction.objects.create(
+            wallet=wallet,
+            tx_type=LumiTransaction.TxType.LOGIN_BONUS,
+            amount=bonus_amount,
+            balance_after=wallet.balance,
+            description="🎁 Recompensa Diaria por Inicio de Sesión (+15 Lumis)",
+            reference_code=f"DAILY-{uuid.uuid4().hex[:12].upper()}"
+        )
+
+        patient.lumi_balance = wallet.balance
+        patient.save(update_fields=["lumi_balance"])
+
+        return JsonResponse({
+            "ok": True,
+            "data": {
+                "balance": wallet.balance,
+                "bonusClaimed": bonus_amount,
+                "message": f"¡Recompensado con +{bonus_amount} Lumis!"
+            }
+        })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_lumi_buy(request: HttpRequest) -> JsonResponse:
+    import uuid
+    from django.db import transaction
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("unauthorized", status=401)
+
+    body = _parse_json_body(request)
+    package_id = str(body.get("packageId", "pack-custom"))
+    total_lumis = int(body.get("totalLumis", 0))
+    price_cop = int(body.get("priceCOP", 0))
+    payment_method = str(body.get("paymentMethod", "nequi")).upper()
+
+    if total_lumis <= 0 or price_cop <= 0:
+        return _json_error("Monto o paquete de Lumis inválido", status=400)
+
+    with transaction.atomic():
+        wallet = _ensure_lumi_wallet_and_welcome_bonus(patient)
+        wallet.balance += total_lumis
+        wallet.total_earned += total_lumis
+        wallet.save()
+
+        ref_code = f"BUY-{payment_method}-{uuid.uuid4().hex[:10].upper()}"
+        LumiTransaction.objects.create(
+            wallet=wallet,
+            tx_type=LumiTransaction.TxType.SERVICE_REDEMPTION,
+            amount=total_lumis,
+            balance_after=wallet.balance,
+            description=f"💳 Recarga de +{total_lumis} Lumis (${price_cop:,} COP) vía {payment_method}",
+            reference_code=ref_code
+        )
+
+        patient.lumi_balance = wallet.balance
+        patient.save(update_fields=["lumi_balance"])
+
+        return JsonResponse({
+            "ok": True,
+            "data": {
+                "balance": wallet.balance,
+                "lumisAdded": total_lumis,
+                "priceCOP": price_cop,
+                "referenceCode": ref_code,
+                "message": f"¡Compra exitosa! Se acreditaron +{total_lumis} Lumis a tu cuenta."
+            }
+        })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_lumi_spend(request: HttpRequest) -> JsonResponse:
+    import uuid
+    from django.db import transaction
+    patient = _get_patient_from_token(request)
+    if patient is None:
+        return _json_error("unauthorized", status=401)
+
+    body = _parse_json_body(request)
+    item_type = str(body.get("itemType", "general")).strip()
+    item_id = str(body.get("itemId", "0")).strip()
+    lumi_amount = int(body.get("lumiAmount", 0))
+    description = str(body.get("description", "Canje de contenido")).strip()
+
+    if lumi_amount <= 0:
+        return _json_error("Monto de Lumis inválido", status=400)
+
+    with transaction.atomic():
+        wallet = _ensure_lumi_wallet_and_welcome_bonus(patient)
+
+        # Check if already unlocked permanently (appointments cost per session, so skip for appointment)
+        if item_type != "appointment":
+            already_unlocked = LumiUnlockedItem.objects.filter(
+                patient=patient, item_type=item_type, item_id=item_id
+            ).exists()
+
+            if already_unlocked:
+                return JsonResponse({
+                    "ok": True,
+                    "data": {
+                        "balance": wallet.balance,
+                        "alreadyUnlocked": True,
+                        "message": "Este contenido ya está desbloqueado permanentemente en tu cuenta."
+                    }
+                })
+
+        if wallet.balance < lumi_amount:
+            return JsonResponse({
+                "ok": False,
+                "error": f"Saldo insuficiente. Necesitas {lumi_amount} Lumis y tienes {wallet.balance} Lumis.",
+                "code": "insufficient_balance",
+                "data": {
+                    "balance": wallet.balance,
+                    "required": lumi_amount
+                }
+            }, status=400)
+
+        wallet.balance -= lumi_amount
+        wallet.save()
+
+        # Save permanent unlock record
+        LumiUnlockedItem.objects.create(
+            patient=patient,
+            item_type=item_type,
+            item_id=item_id,
+            item_title=description,
+            lumis_spent=lumi_amount
+        )
+
+        ref_code = f"SPEND-{item_type.upper()}-{uuid.uuid4().hex[:10].upper()}"
+        tx_desc = f"✨ Cobro por cita: {description} (-{lumi_amount} Lumis)" if item_type == "appointment" else f"🔓 Desbloqueo permanente: {description} (-{lumi_amount} Lumis)"
+        LumiTransaction.objects.create(
+            wallet=wallet,
+            tx_type=LumiTransaction.TxType.SERVICE_REDEMPTION,
+            amount=-lumi_amount,
+            balance_after=wallet.balance,
+            description=tx_desc,
+            reference_code=ref_code
+        )
+
+        patient.lumi_balance = wallet.balance
+        patient.save(update_fields=["lumi_balance"])
+
+        return JsonResponse({
+            "ok": True,
+            "data": {
+                "balance": wallet.balance,
+                "lumisDeducted": lumi_amount,
+                "referenceCode": ref_code,
+                "message": f"¡Desbloqueado exitosamente por {lumi_amount} Lumis!"
+            }
+        })
+
+
+

@@ -76,6 +76,9 @@ const LoginPage = () => {
         g.accounts.id.initialize({
           client_id: googleClientId,
           callback: handleGoogleCallback,
+          ux_mode: 'popup',
+          auto_select: false,
+          itp_support: true,
         });
         const btnContainer = document.getElementById('google-btn-container');
         if (btnContainer) {

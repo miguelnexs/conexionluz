@@ -9,8 +9,6 @@ export const therapists = [
     years_experience: 5,
     description: 'Soy Juan David Martínez, Máster en Hipnosis Clínica y terapeuta en hipnoanálisis, dedicado a acompañar procesos de transformación emocional y mental mediante herramientas terapéuticas que trabajan directamente con el inconsciente.',
     certifications: ['Máster en Hipnosis Clínica', 'Hipnoanálisis'],
-    price_from: 120000,
-    session_duration: 60,
     cv_url: '/curriculo/juan/HOJA DE PRESENTACION JUAN 1.pdf'
   },
   {
@@ -22,8 +20,6 @@ export const therapists = [
     years_experience: 5,
     description: 'Soy Luz Amparo Valencia, terapeuta especializada en hipnosis clínica y terapia cognitivo-conductual, dedicada a acompañar procesos de bienestar emocional, transformación personal y desarrollo de la conciencia.',
     certifications: ['Hipnosis Clínica', 'Terapia Cognitivo-Conductual'],
-    price_from: 120000,
-    session_duration: 60,
     cv_url: '/curriculo/amparo/HOJA DE VIDA LUZ 1.pdf'
   }
 ];

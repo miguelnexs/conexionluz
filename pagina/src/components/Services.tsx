@@ -4,6 +4,7 @@ import { Brain, Heart, Users, Shield, Zap, Smile, Sparkles, Sun } from 'lucide-r
 import { Link, useNavigate } from 'react-router-dom';
 import { useServices } from '../hooks/useServices';
 import type { Service } from '@/types/models';
+import { getLumiPriceForService } from '@/utils/lumiPricing';
 
 const Services = () => {
   const navigate = useNavigate();
@@ -66,12 +67,22 @@ const Services = () => {
                 className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-105 p-8 border border-gray-100"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                {/* Icon */}
-                <div className="relative mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <IconComponent className="h-8 w-8 text-primary group-hover:text-accent transition-colors duration-300" />
+                {/* Icon & Price */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="relative">
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <IconComponent className="h-8 w-8 text-primary group-hover:text-accent transition-colors duration-300" />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-black uppercase text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 inline-flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-600" /> Moneda Lumi
+                    </span>
+                    <div className="text-lg font-black text-slate-900 mt-1">
+                      ✨ {getLumiPriceForService(service.priceCOP).toLocaleString('es-CO')} Lumis
+                    </div>
+                  </div>
                 </div>
 
                 {/* Content */}

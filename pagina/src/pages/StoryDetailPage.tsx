@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import PublicLayout from '../components/PublicLayout';
-import { ArrowLeft, BookOpen, Calendar, Clock, ImageIcon, Tag, User, Heart, MessageCircle } from 'lucide-react';
+import { ExpandableText } from '@/components/ui/ExpandableText';
+import { ArrowLeft, BookOpen, Calendar, Clock, ImageIcon, Tag, User, Heart, MessageCircle, Sparkles } from 'lucide-react';
 import { api } from '../api/client';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { notifyLumiBalanceUpdated } from '@/utils/lumiPricing';
 
 type StoryComment = {
   id: number;
@@ -39,9 +42,122 @@ type Story = {
 const StoryDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [story, setStory] = useState<Story | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const storyIdNum = story ? story.id : Number(id);
+
+  const priceInfo = useMemo(() => {
+    if (story) {
+      const isFreeTag = story.tags?.some((t) => t.toLowerCase() === 'gratis');
+      if (isFreeTag) return { isFree: true, lumis: 0, cop: 0 };
+      const lumiTag = story.tags?.find((t) => t.startsWith('Lumis:'));
+      if (lumiTag) {
+        const val = parseInt(lumiTag.replace('Lumis:', '').trim(), 10);
+        if (!isNaN(val) && val > 0) return { isFree: false, lumis: val, cop: val * 50 };
+      }
+    }
+    const freeIds = [1, 3, 6];
+    if (freeIds.includes(storyIdNum)) return { isFree: true, lumis: 0, cop: 0 };
+    const priceMap: Record<number, number> = {
+      2: 10,
+      4: 20,
+      5: 30,
+      7: 45,
+      8: 60,
+      9: 80,
+      10: 100,
+    };
+    const lumis = priceMap[storyIdNum] || 15;
+    return { isFree: false, lumis, cop: lumis * 50 };
+  }, [story, storyIdNum]);
+
+  const isFreeStory = priceInfo.isFree;
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+    if (isFreeStory) return true;
+    if (typeof window === 'undefined') return false;
+    return (
+      localStorage.getItem(`conexionluz:unlocked_story:${storyIdNum}`) === '1' ||
+      (id && localStorage.getItem(`conexionluz:unlocked_story:${id}`) === '1')
+    );
+  });
+
+  useEffect(() => {
+    if (isFreeStory) {
+      setIsUnlocked(true);
+    } else if (typeof window !== 'undefined' && story) {
+      const unlocked =
+        localStorage.getItem(`conexionluz:unlocked_story:${story.id}`) === '1' ||
+        (id && localStorage.getItem(`conexionluz:unlocked_story:${id}`) === '1') ||
+        (story.slug && localStorage.getItem(`conexionluz:unlocked_story:${story.slug}`) === '1');
+      setIsUnlocked(Boolean(unlocked));
+    }
+  }, [isFreeStory, story, id]);
+
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const STORY_LUMI_PRICE = priceInfo.lumis;
+
+  const handleUnlockStory = async () => {
+    if (!isAuthed) {
+      navigate('/login', { state: { from: `/historias/${id || storyIdNum}` } });
+      return;
+    }
+
+    setIsUnlocking(true);
+    try {
+      const balRes = await api.get<{ balance: number }>('/api/portal/lumi/wallet/');
+      const currentBal = balRes.ok && balRes.data && typeof balRes.data.balance === 'number' ? balRes.data.balance : 0;
+
+      if (currentBal < STORY_LUMI_PRICE) {
+        toast({
+          title: "Saldo Insuficiente de Lumis",
+          description: `Requieres ✨ ${STORY_LUMI_PRICE} Lumis ($${priceInfo.cop.toLocaleString('es-CO')} COP) para desbloquear esta historia. Tu saldo actual es ✨ ${currentBal} Lumis.`,
+          variant: "destructive"
+        });
+        setIsUnlocking(false);
+        return;
+      }
+
+      const spendRes = await api.post<{ balance?: number }>('/api/portal/lumi/spend/', {
+        itemType: 'story',
+        itemId: `story-${story?.id || storyIdNum}`,
+        lumiAmount: STORY_LUMI_PRICE,
+        description: `Desbloqueo de historia: ${story?.title || 'Experiencia'}`
+      });
+
+      if (!spendRes.ok) {
+        toast({
+          title: "Error al procesar",
+          description: (spendRes as any).error || "No se pudo realizar el descuento de Lumis.",
+          variant: "destructive"
+        });
+        setIsUnlocking(false);
+        return;
+      }
+
+      if (spendRes.data?.balance !== undefined) {
+        notifyLumiBalanceUpdated(spendRes.data.balance);
+      }
+
+      if (story) localStorage.setItem(`conexionluz:unlocked_story:${story.id}`, '1');
+      if (id) localStorage.setItem(`conexionluz:unlocked_story:${id}`, '1');
+      setIsUnlocked(true);
+      toast({
+        title: "✨ Historia Desbloqueada",
+        description: "¡Has desbloqueado este relato de sanación con éxito!",
+      });
+    } catch (err) {
+      toast({
+        title: "Error de red",
+        description: "Intenta de nuevo en un momento.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -389,7 +505,11 @@ const StoryDetailPage = () => {
             </div>
           ) : (
             <>
-              <p className="text-gray-700 text-sm leading-relaxed break-words">{comment.content}</p>
+              <ExpandableText
+                text={comment.content}
+                maxLength={220}
+                className="text-gray-700 text-sm leading-relaxed break-words"
+              />
               
               <div className="flex flex-col gap-2 pt-2 border-t border-gray-50 mt-2">
                 <div className="flex items-center gap-4 text-xs font-semibold text-gray-500">
@@ -522,7 +642,7 @@ const StoryDetailPage = () => {
   if (loading) {
     return (
       <PublicLayout contentClassName="p-0">
-        <div className="max-w-4xl mx-auto px-4 py-12 space-y-6">
+        <div className="max-w-6xl xl:max-w-7xl mx-auto px-4 md:px-8 py-12 space-y-6">
           <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
           <div className="h-72 rounded-2xl bg-gray-200 animate-pulse" />
           <div className="h-10 w-3/4 bg-gray-200 rounded-xl animate-pulse" />
@@ -541,7 +661,7 @@ const StoryDetailPage = () => {
   if (error || !story) {
     return (
       <PublicLayout contentClassName="p-0">
-        <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="max-w-6xl xl:max-w-7xl mx-auto px-4 md:px-8 py-12">
           <button
             onClick={() => navigate('/historias')}
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-10"
@@ -574,7 +694,7 @@ const StoryDetailPage = () => {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10">
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-6xl xl:max-w-7xl mx-auto">
                 {story.category && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-sm px-4 py-1.5 text-xs font-semibold text-gray-700 shadow-sm mb-4">
                     <Tag className="h-3 w-3" />
@@ -591,7 +711,7 @@ const StoryDetailPage = () => {
           <div className="relative w-full h-48 md:h-64 bg-gradient-to-br from-primary/10 via-white to-accent/10 flex items-center justify-center">
             <ImageIcon className="h-20 w-20 text-gray-200" />
             <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10">
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-6xl xl:max-w-7xl mx-auto">
                 {story.category && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur-sm px-4 py-1.5 text-xs font-semibold text-gray-700 shadow-sm mb-4">
                     <Tag className="h-3 w-3" />
@@ -609,7 +729,7 @@ const StoryDetailPage = () => {
 
       {/* Content area */}
       <section className="py-10 md:py-14 bg-white">
-        <div className="max-w-4xl mx-auto px-0 sm:px-4 space-y-8">
+        <div className="max-w-6xl xl:max-w-7xl mx-auto px-4 md:px-8 space-y-8">
           {/* Back link */}
           <div className="px-4 sm:px-0">
             <button
@@ -669,12 +789,59 @@ const StoryDetailPage = () => {
           )}
 
           {/* Story content */}
-          <div className="rounded-none sm:rounded-3xl border-0 sm:border border-gray-100 bg-transparent sm:bg-gray-50 p-0 sm:p-6 md:p-10">
-            <div
-              className="prose prose-base md:prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-xl prose-p:text-gray-700 prose-p:leading-relaxed w-full max-w-full break-words [word-break:break-word]"
-              dangerouslySetInnerHTML={{ __html: story.content }}
-            />
-          </div>
+          {isUnlocked ? (
+            <div className="rounded-none sm:rounded-3xl border-0 sm:border border-gray-100 bg-transparent sm:bg-gray-50 p-0 sm:p-6 md:p-10">
+              <div
+                className="prose prose-base md:prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-xl prose-p:text-gray-700 prose-p:leading-relaxed w-full max-w-full break-words [word-break:break-word]"
+                dangerouslySetInnerHTML={{ __html: story.content }}
+              />
+            </div>
+          ) : (
+            <div className="relative rounded-3xl border border-emerald-100 bg-gradient-to-b from-emerald-50/40 via-white to-slate-50 p-6 md:p-10 space-y-6 overflow-hidden">
+              {/* Preview snippet */}
+              <div className="relative max-h-44 overflow-hidden select-none">
+                <div
+                  className="prose prose-base md:prose-lg max-w-none text-gray-500 blur-[2.5px]"
+                  dangerouslySetInnerHTML={{ __html: story.content.slice(0, 350) + '...' }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent" />
+              </div>
+
+              {/* Unlock Callout Box */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-200 shadow-xl text-center space-y-4 relative z-10 max-w-xl mx-auto">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-3xl flex items-center justify-center mx-auto shadow-inner border border-emerald-200">
+                  <Sparkles className="w-8 h-8 text-emerald-600 animate-pulse" />
+                </div>
+
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                  Historia de Transformación Exclusiva
+                </h3>
+
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Accede al relato completo de sanación por solo <strong>✨ {priceInfo.lumis} Lumis (${priceInfo.cop.toLocaleString('es-CO')} COP)</strong>. Tendrás acceso ilimitado de por vida a esta experiencia y sus reflexiones.
+                </p>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={handleUnlockStory}
+                    disabled={isUnlocking}
+                    className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-sm py-3.5 px-6 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isUnlocking ? 'Procesando canje...' : `🔓 Desbloquear por ✨ ${priceInfo.lumis} Lumis`}
+                  </button>
+
+                  {isAuthed && (
+                    <button
+                      onClick={() => navigate('/comprar-lumis')}
+                      className="w-full sm:w-auto bg-slate-900 hover:bg-black text-white font-bold text-xs py-3.5 px-5 rounded-2xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      🛒 Recargar Lumis
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Comments Section */}
           <div className="px-4 sm:px-0 space-y-6">

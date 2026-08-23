@@ -4,10 +4,14 @@ import { BookOpen, Calendar, Search, Sparkles, Heart, MessageCircle } from 'luci
 import { api } from '../api/client';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { LumiConfirmUnlockModal } from '@/components/LumiConfirmUnlockModal';
+import { useToast } from '@/hooks/use-toast';
+import { notifyLumiBalanceUpdated } from '@/utils/lumiPricing';
 
 type Story = {
   id: number;
   title: string;
+  slug?: string;
   content: string;
   imageUrl: string | null;
   author: string;
@@ -21,13 +25,45 @@ type Story = {
   commentsCount?: number;
 };
 
+const parseStoryPrice = (story: Story) => {
+  const isFreeTag = story.tags?.some((t) => t.toLowerCase() === 'gratis');
+  if (isFreeTag) return { isFree: true, lumis: 0, cop: 0 };
+  const lumiTag = story.tags?.find((t) => t.startsWith('Lumis:'));
+  if (lumiTag) {
+    const val = parseInt(lumiTag.replace('Lumis:', '').trim(), 10);
+    if (!isNaN(val) && val > 0) return { isFree: false, lumis: val, cop: val * 50 };
+  }
+  const freeIds = [1, 3, 6];
+  if (freeIds.includes(story.id)) return { isFree: true, lumis: 0, cop: 0 };
+  const priceMap: Record<number, number> = {
+    2: 10,
+    4: 20,
+    5: 30,
+    7: 45,
+    8: 60,
+    9: 80,
+    10: 100,
+  };
+  const lumis = priceMap[story.id] || 15;
+  return { isFree: false, lumis, cop: lumis * 50 };
+};
+
 const StoriesPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [items, setItems] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Outside Unlock Modal State
+  const [selectedStoryToUnlock, setSelectedStoryToUnlock] = useState<Story | null>(null);
+  const [userLumiBalance, setUserLumiBalance] = useState<number>(150);
+  const [isUnlocking, setIsUnlocking] = useState<boolean>(false);
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('conexionluz:token') : null;
+  const isAuthed = Boolean(token);
 
   const load = async () => {
     setLoading(true);
@@ -40,6 +76,13 @@ const StoriesPage = () => {
     }
     setItems(res.data);
     setLoading(false);
+
+    if (isAuthed) {
+      const walletRes = await api.get<{ balance: number }>('/api/portal/lumi/wallet/');
+      if (walletRes.ok && walletRes.data && typeof walletRes.data.balance === 'number') {
+        setUserLumiBalance(walletRes.data.balance);
+      }
+    }
   };
 
   useEffect(() => {
@@ -79,6 +122,89 @@ const StoriesPage = () => {
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const getStorySlug = (story: Story) => {
+    if (story.slug) return story.slug;
+    return story.title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9 -]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  };
+
+  const handleStoryCardClick = (story: Story) => {
+    const priceInfo = parseStoryPrice(story);
+    const isFree = priceInfo.isFree;
+    const storySlug = getStorySlug(story);
+    const isUnlocked = isFree || (typeof window !== 'undefined' && (localStorage.getItem(`conexionluz:unlocked_story:${story.id}`) === '1' || localStorage.getItem(`conexionluz:unlocked_story:${storySlug}`) === '1'));
+
+    if (isUnlocked) {
+      navigate(`/historias/${storySlug}`);
+      return;
+    }
+
+    if (!isAuthed) {
+      navigate('/login', { state: { from: `/historias/${storySlug}` } });
+      return;
+    }
+
+    // Open unlock confirmation modal outside
+    setSelectedStoryToUnlock(story);
+  };
+
+  const handleConfirmUnlockFromModal = async () => {
+    if (!selectedStoryToUnlock) return;
+    const story = selectedStoryToUnlock;
+    const priceInfo = parseStoryPrice(story);
+    const storySlug = getStorySlug(story);
+
+    setIsUnlocking(true);
+    try {
+      const spendRes = await api.post<{ balance?: number }>('/api/portal/lumi/spend/', {
+        itemType: 'story',
+        itemId: `story-${story.id}`,
+        lumiAmount: priceInfo.lumis,
+        description: `Desbloqueo de historia: ${story.title}`
+      });
+
+      if (!spendRes.ok) {
+        toast({
+          title: "Error al realizar el canje",
+          description: (spendRes as any).error || "Saldo insuficiente o error de red.",
+          variant: "destructive"
+        });
+        setIsUnlocking(false);
+        return;
+      }
+
+      if (spendRes.data?.balance !== undefined) {
+        setUserLumiBalance(spendRes.data.balance);
+        notifyLumiBalanceUpdated(spendRes.data.balance);
+      }
+
+      localStorage.setItem(`conexionluz:unlocked_story:${story.id}`, '1');
+      localStorage.setItem(`conexionluz:unlocked_story:${storySlug}`, '1');
+
+      toast({
+        title: "✨ ¡Historia Desbloqueada con Éxito!",
+        description: `Has utilizado ✨ ${priceInfo.lumis} Lumis para desbloquear '${story.title}'. Accediendo...`,
+      });
+
+      setSelectedStoryToUnlock(null);
+      navigate(`/historias/${storySlug}`);
+    } catch (err) {
+      toast({
+        title: "Error de conexión",
+        description: "Inténtalo de nuevo en un momento.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
 
   return (
     <PublicLayout contentClassName="p-0">
@@ -229,55 +355,101 @@ const StoriesPage = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 stagger-animation">
-                {filtered.map((story, index) => (
-                  <div
-                    key={story.id}
-                    onClick={() => navigate(`/historias/${story.id}`)}
-                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] animate-fade-in group cursor-pointer"
-                    style={{ animationDelay: `${index * 0.06}s` }}
-                  >
-                    {/* Image */}
-                    {story.imageUrl && (
-                      <div className="relative h-52 overflow-hidden">
-                        <img
-                          src={story.imageUrl}
-                          alt={story.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                      </div>
-                    )}
+                {filtered.map((story, index) => {
+                  const priceInfo = parseStoryPrice(story);
+                  const isFree = priceInfo.isFree;
+                  const isUnlocked = isFree || (typeof window !== 'undefined' && localStorage.getItem(`conexionluz:unlocked_story:${story.id}`) === '1');
 
-                    {/* Title & Stats */}
-                    <div className="p-5 flex flex-col flex-1">
-                      <h3 className="text-lg font-bold text-gray-800 group-hover:text-primary transition-colors line-clamp-2 flex-1 mb-4">
-                        {story.title}
-                      </h3>
-                      
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-50 text-xs font-bold text-gray-400">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-full group-hover:bg-rose-50 group-hover:text-rose-500 transition-colors">
-                            <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500" />
-                            {story.likesCount || 0}
-                          </span>
-                          <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-full group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                            <MessageCircle className="h-3.5 w-3.5 text-primary" />
-                            {story.commentsCount || 0}
+                  return (
+                    <div
+                      key={story.id}
+                      onClick={() => handleStoryCardClick(story)}
+                      className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] animate-fade-in group cursor-pointer"
+                      style={{ animationDelay: `${index * 0.06}s` }}
+                    >
+                      {/* Image */}
+                      {story.imageUrl ? (
+                        <div className="relative h-52 overflow-hidden">
+                          <img
+                            src={story.imageUrl}
+                            alt={story.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).onerror = null;
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                          <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-black text-emerald-800 border border-emerald-100 shadow-sm flex items-center gap-1">
+                            {isUnlocked ? (
+                              <span className="text-emerald-700">🔓 Desbloqueada</span>
+                            ) : (
+                              <>
+                                <Sparkles className="h-3 w-3 text-emerald-600" /> ✨ {priceInfo.lumis} Lumis
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative h-36 bg-gradient-to-br from-primary/10 via-emerald-50/30 to-teal-50 flex items-center justify-center p-4">
+                          <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-black text-emerald-800 border border-emerald-100 shadow-sm flex items-center gap-1">
+                            {isUnlocked ? (
+                              <span className="text-emerald-700">🔓 Desbloqueada</span>
+                            ) : (
+                              <>
+                                <Sparkles className="h-3 w-3 text-emerald-600" /> ✨ {priceInfo.lumis} Lumis
+                              </>
+                            )}
+                          </div>
+                          <BookOpen className="h-10 w-10 text-primary/30" />
+                        </div>
+                      )}
+
+                      {/* Title & Stats */}
+                      <div className="p-5 flex flex-col flex-1">
+                        <h3 className="text-lg font-bold text-gray-800 group-hover:text-primary transition-colors line-clamp-2 flex-1 mb-4">
+                          {story.title}
+                        </h3>
+                        
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-50 text-xs font-bold text-gray-400">
+                          <div className="flex items-center gap-3">
+                            <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-full group-hover:bg-rose-50 group-hover:text-rose-500 transition-colors">
+                              <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500" />
+                              {story.likesCount || 0}
+                            </span>
+                            <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-full group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                              <MessageCircle className="h-3.5 w-3.5 text-primary" />
+                              {story.commentsCount || 0}
+                            </span>
+                          </div>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {formatDate(story.createdAt)}
                           </span>
                         </div>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3.5 w-3.5" />
-                          {formatDate(story.createdAt)}
-                        </span>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
       </section>
+
+      {/* Confirmation Modal Outside */}
+      {selectedStoryToUnlock && (
+        <LumiConfirmUnlockModal
+          isOpen={Boolean(selectedStoryToUnlock)}
+          onClose={() => setSelectedStoryToUnlock(null)}
+          onConfirm={handleConfirmUnlockFromModal}
+          itemTitle={selectedStoryToUnlock.title}
+          itemCategory={selectedStoryToUnlock.category || 'Historia'}
+          lumiPrice={parseStoryPrice(selectedStoryToUnlock).lumis}
+          userBalance={userLumiBalance}
+          loading={isUnlocking}
+        />
+      )}
     </PublicLayout>
   );
 };

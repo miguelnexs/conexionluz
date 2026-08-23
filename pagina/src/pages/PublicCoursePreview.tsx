@@ -24,7 +24,11 @@ function safeHtml(value: string): string {
   return noJsUrls;
 }
 
+import AutohipnosisLanding from '../components/autohipnosis/AutohipnosisLanding';
+import { useNavigate } from 'react-router-dom';
+
 export default function PublicCoursePreview({ slug }: { slug: string }) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [course, setCourse] = useState<PublicCourse | null>(null);
@@ -51,6 +55,18 @@ export default function PublicCoursePreview({ slug }: { slug: string }) {
   }, [slug]);
 
   const tags = useMemo(() => course?.tags || [], [course?.tags]);
+
+  if (slug === 'autohipnosis') {
+    return (
+      <PublicLayout contentClassName="p-0">
+        <AutohipnosisLanding
+          onEnroll={() => navigate('/login')}
+          isUnlocked={false}
+          priceLabel="✨ 500 Lumis / Gratis"
+        />
+      </PublicLayout>
+    );
+  }
 
   if (loading) {
     return <div className="min-h-screen bg-white" />;
@@ -114,13 +130,19 @@ export default function PublicCoursePreview({ slug }: { slug: string }) {
                 </div>
               </div>
 
-              {course.coverUrl ? (
-                <img
-                  src={course.coverUrl}
-                  alt={course.title}
-                  className="w-full lg:w-[360px] h-[240px] lg:h-[280px] rounded-3xl object-cover border border-gray-200 shadow-sm"
-                />
-              ) : null}
+              <img
+                src={course.coverUrl || (
+                  course.slug === 'autohipnosis' ? '/cursos/autohipnosis_cover.png' :
+                  course.slug === 'hipnosis-clinica-transpersonal' ? '/cursos/hipnosis_cover.png' :
+                  course.slug === 'terapia-cognitivo-conductual' ? '/cursos/tcc_cover.png' :
+                  course.slug === 'desarrollo-personal' ? '/cursos/desarrollo_personal_cover.png' :
+                  course.slug === 'inteligencia-emocional' ? '/cursos/inteligencia_emocional_cover.png' :
+                  course.slug === 'autoconocimiento' ? '/cursos/autoconocimiento_cover.png' :
+                  'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=1200&q=80'
+                )}
+                alt={course.title}
+                className="w-full lg:w-[360px] h-[240px] lg:h-[280px] rounded-3xl object-cover border border-slate-200/80 shadow-md"
+              />
             </div>
           </div>
         </div>

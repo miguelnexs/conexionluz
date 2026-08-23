@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import PublicLayout from '../components/PublicLayout';
+import { ExpandableText } from '@/components/ui/ExpandableText';
 import { ArrowLeft, MessageSquareText, Calendar, Clock, Pin, Lock, MessageCircle, Send, User, LogIn, ImageIcon, Heart } from 'lucide-react';
 import { api } from '../api/client';
 import { Button } from '@/components/ui/button';
@@ -372,7 +373,11 @@ const ForumDetailPage = () => {
                 dangerouslySetInnerHTML={{ __html: reply.contentHtml }}
               />
             ) : (
-              <p className="text-gray-700 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">{reply.content}</p>
+              <ExpandableText
+                text={reply.content}
+                maxLength={280}
+                className="text-gray-700 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words"
+              />
             )}
 
             <div className="flex flex-col gap-2 pt-2 border-t border-gray-50 mt-4">

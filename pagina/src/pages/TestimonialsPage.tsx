@@ -6,6 +6,7 @@ import { api } from '../api/client';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { ExpandableText } from '@/components/ui/ExpandableText';
 
 type Testimonial = {
   id: number;
@@ -361,7 +362,11 @@ const TestimonialsPage = () => {
                         ))}
                       </div>
 
-                      <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap line-clamp-[8]">{testimonial.quote}</p>
+                      <ExpandableText
+                        text={testimonial.quote}
+                        maxLength={220}
+                        className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap"
+                      />
 
                       <div className="mt-5 flex items-center justify-between gap-3">
                         <div className="text-xs text-gray-500">{testimonial.updatedAt ? 'Actualizado' : ''}</div>

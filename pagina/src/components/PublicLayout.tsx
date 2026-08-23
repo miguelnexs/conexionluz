@@ -5,7 +5,7 @@ import {
   UserRound, MessageCircle, LogIn, LogOut, Menu, BookOpen, MessageSquareText,
   Bell, Heart, CalendarPlus, ChevronRight, ChevronLeft, X, Info,
   ClipboardList, Dumbbell, NotebookPen, Wind, BarChart2, Activity,
-  HelpCircle, FileText, Shield, Newspaper, Building2, Send, UserPlus
+  HelpCircle, FileText, Shield, Newspaper, Building2, Send, UserPlus, Coins
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '../api/client';
@@ -31,6 +31,7 @@ type PortalMe = {
   firstName: string;
   lastName: string;
   profilePictureUrl?: string;
+  lumiBalance?: number;
 };
 
 const SIDEBAR_W = 248;
@@ -57,7 +58,9 @@ const navSections = [
     requiresAuth: true,
     items: [
       { name: 'Mi perfil', href: '/mi-perfil', icon: UserRound, desc: 'Tu espacio personal' },
+      { name: 'Comprar Lumis', href: '/comprar-lumis', icon: Coins, desc: 'Billetera y Recargas COP' },
       { name: 'Mi calendario', href: '/mi-calendario', icon: Calendar, desc: 'Tus sesiones y eventos' },
+      { name: 'Mi Progreso', href: '/mi-progreso', icon: BarChart2, desc: 'Sigue tu evolución personal' },
     ],
   },
   {
@@ -70,7 +73,6 @@ const navSections = [
       { name: 'Ejercicios Guiados', href: '/actividades/ejercicios', icon: Dumbbell, desc: 'Práctica paso a paso' },
       { name: 'Diario Emocional', href: '/actividades/diario', icon: NotebookPen, desc: 'Registra tu sentir diario' },
       { name: 'Relajación & Mindfulness', href: '/actividades/relajacion', icon: Wind, desc: 'Técnicas para calmar la mente' },
-      { name: 'Mi Progreso', href: '/actividades/progreso', icon: BarChart2, desc: 'Sigue tu evolución personal' },
     ],
   },
   {
@@ -100,6 +102,7 @@ const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [flyoutTop, setFlyoutTop] = useState(80);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileBottomSection, setMobileBottomSection] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showSidebarNotif, setShowSidebarNotif] = useState(false);
@@ -231,12 +234,46 @@ const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
   };
 
   useEffect(() => {
+    const handleLumiEvent = (e: Event) => {
+      const customEv = e as CustomEvent;
+      if (typeof customEv.detail === 'number') {
+        setMe(prev => prev ? { ...prev, lumiBalance: customEv.detail } : null);
+        localStorage.setItem('conexionluz:lumi_wallet_balance', String(customEv.detail));
+      }
+      if (isAuthed) void fetchMe();
+    };
+
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key === 'conexionluz:lumi_wallet_balance' && e.newValue) {
+        const val = Number(e.newValue);
+        if (!isNaN(val)) {
+          setMe(prev => prev ? { ...prev, lumiBalance: val } : null);
+        }
+      }
+    };
+
+    window.addEventListener('lumi-balance-updated', handleLumiEvent);
+    window.addEventListener('storage', handleStorageEvent);
+
     if (isAuthed) {
       void fetchMe();
       void fetchNotifications();
-      const iv = setInterval(() => void fetchNotifications(), 20000);
-      return () => clearInterval(iv);
+      
+      const ivNotif = setInterval(() => void fetchNotifications(), 60000);
+      const ivMe = setInterval(() => void fetchMe(), 30000);
+
+      return () => {
+        clearInterval(ivNotif);
+        clearInterval(ivMe);
+        window.removeEventListener('lumi-balance-updated', handleLumiEvent);
+        window.removeEventListener('storage', handleStorageEvent);
+      };
     }
+
+    return () => {
+      window.removeEventListener('lumi-balance-updated', handleLumiEvent);
+      window.removeEventListener('storage', handleStorageEvent);
+    };
   }, [isAuthed]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -290,12 +327,6 @@ const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
 
   // ── Section click handler ─────────────────────────────────────
   const handleSectionClick = (sectionId: string, e: React.MouseEvent<HTMLButtonElement>) => {
-    if (sectionId === 'explorar') {
-      navigate('/');
-      setActiveSection(null);
-      setMobileOpen(false);
-      return;
-    }
     if (activeSection === sectionId) {
       setActiveSection(null);
       return;
@@ -776,36 +807,176 @@ const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
         <div className="sticky top-0 z-30 border-b border-white/40 bg-white/70 backdrop-blur-md">
           <div className="px-4 py-3 flex items-center justify-between gap-3">
 
-            {/* Left: Hamburger + Brand */}
+            {/* Left: Brand */}
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setMobileOpen(!mobileOpen)}
-                className="lg:hidden inline-flex items-center justify-center rounded-xl border border-gray-200/60 bg-white/80 backdrop-blur-sm px-3 py-2 shadow-sm hover:shadow-md transition-all"
-                aria-label="Abrir menú"
-              >
-                <Menu className="h-5 w-5 text-gray-700" />
-              </button>
-              <div className="flex items-center gap-2">
-                <Sun className="h-5 w-5 text-amber-400 hidden sm:block" />
-                <span className="text-sm font-bold text-gray-700 hidden sm:inline tracking-tight">
-                  Conexión Luz
+              <Link to="/" className="flex items-center gap-2 group">
+                <div className="relative shrink-0">
+                  <Sun className="h-6 w-6 text-amber-400 transition-transform duration-500 group-hover:rotate-180" />
+                  <div className="absolute inset-0 bg-amber-400/20 rounded-full blur-md" />
+                </div>
+                <span className="text-sm font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent tracking-tight">
+                  ConexiónLuz
                 </span>
-              </div>
+              </Link>
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
+              {/* Lumi Currency Wallet Badge */}
+              {isAuthed && (
+                <Link
+                  to="/comprar-lumis"
+                  className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 px-3.5 py-1.5 rounded-full font-black text-xs shadow-sm hover:shadow-md hover:scale-[1.03] transition-all duration-300 group cursor-pointer shrink-0"
+                  title="Tienda de Lumis - Recargar con COP"
+                >
+                  <div className="relative flex items-center justify-center">
+                    <Sparkles className="h-4 w-4 text-emerald-600 group-hover:rotate-12 transition-transform" />
+                    <div className="absolute inset-0 bg-emerald-400/20 rounded-full blur-2xs animate-pulse" />
+                  </div>
+                  <span className="font-black text-slate-900 text-xs">
+                    {typeof me?.lumiBalance === 'number'
+                      ? me.lumiBalance
+                      : (typeof window !== 'undefined' && localStorage.getItem('conexionluz:lumi_wallet_balance')
+                          ? Number(localStorage.getItem('conexionluz:lumi_wallet_balance'))
+                          : 0)}
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
+                    Lumis
+                  </span>
+                </Link>
+              )}
+              {/* Desktop login button */}
               {!isAuthed && (
                 <Link
                   to="/login"
-                  className="bg-white/80 backdrop-blur-sm text-gray-700 px-4 py-2 rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 text-sm inline-flex items-center gap-2 shrink-0"
+                  className="hidden lg:inline-flex bg-white/80 backdrop-blur-sm text-gray-700 px-4 py-2 rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 text-sm items-center gap-2 shrink-0"
                 >
                   <LogIn className="h-4 w-4" />
-                  <span className="hidden xs:inline">Iniciar sesión</span>
+                  <span>Iniciar sesión</span>
                 </Link>
               )}
 
+              {/* Mobile: login icon if not authed */}
+              {!isAuthed && (
+                <Link
+                  to="/login"
+                  className="lg:hidden p-2.5 rounded-full bg-white border border-gray-200/60 text-gray-600 shadow-sm hover:shadow-md transition-all flex items-center justify-center shrink-0"
+                  title="Iniciar sesión"
+                >
+                  <LogIn className="h-4.5 w-4.5" />
+                </Link>
+              )}
+
+              {/* Header Notifications dropdown button */}
+              {isAuthed && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNotifDropdown(!showNotifDropdown);
+                      if (chatOpen) setChatOpen(false);
+                    }}
+                    className={cn(
+                      'p-2.5 rounded-full bg-white border border-gray-200/60 text-gray-600 shadow-sm hover:shadow-md transition-all flex items-center justify-center shrink-0 relative',
+                      showNotifDropdown && 'bg-slate-100 ring-2 ring-primary/20'
+                    )}
+                    title="Notificaciones"
+                  >
+                    <Bell className="h-4.5 w-4.5 text-gray-600" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white ring-1 ring-white animate-pulse">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Header Notifications Dropdown */}
+                  {showNotifDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowNotifDropdown(false)} />
+                      <div className="absolute right-0 mt-2 z-50 w-72 sm:w-80 max-h-80 overflow-y-auto bg-white rounded-2xl p-3 border border-slate-200 shadow-2xl space-y-2 animate-in slide-in-from-top-2 fade-in duration-200">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                            Notificaciones
+                          </span>
+                          {unreadCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => void handleMarkAllRead()}
+                              className="text-[10px] text-primary font-bold hover:underline"
+                            >
+                              Marcar leídas
+                            </button>
+                          )}
+                        </div>
+                        <div className="space-y-1.5">
+                          {notifications.length === 0 ? (
+                            <div className="py-6 text-center text-xs text-slate-400 font-medium">
+                              No hay notificaciones
+                            </div>
+                          ) : (
+                            notifications.map(notif => {
+                              let Icon = MessageCircle;
+                              if (notif.notificationType.includes('like')) Icon = Heart;
+                              if (notif.notificationType === 'new_follower') Icon = UserPlus;
+                              if (notif.notificationType === 'new_talk') Icon = Calendar;
+                              return (
+                                <Link
+                                  key={notif.id}
+                                  to={notif.targetUrl}
+                                  onClick={() => {
+                                    setShowNotifDropdown(false);
+                                    void handleNotificationClick(notif);
+                                  }}
+                                  className={cn(
+                                    'block p-2.5 rounded-xl text-left transition-colors border border-transparent shadow-sm',
+                                    notif.isRead
+                                      ? 'bg-slate-50 hover:bg-slate-100 text-slate-600'
+                                      : 'bg-primary/5 hover:bg-primary/10 border-primary/10 text-slate-800 font-bold'
+                                  )}
+                                >
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                                      {notif.title}
+                                    </span>
+                                    <span className="text-[8px] text-slate-400">
+                                      {formatTimeAgo(notif.createdAt)}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] leading-snug mt-1 break-words">
+                                    {notif.message}
+                                  </p>
+                                </Link>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+
+
+              {/* Mobile: profile icon if authed */}
+              {isAuthed && (
+                <Link
+                  to="/mi-perfil"
+                  className="h-9 w-9 rounded-full overflow-hidden border-2 border-primary/30 shadow-sm hover:shadow-md transition-all flex items-center justify-center shrink-0 bg-slate-100"
+                  title="Mi perfil"
+                >
+                  {me?.profilePictureUrl ? (
+                    <img src={me.profilePictureUrl} alt="Perfil" className="h-full w-full object-cover" />
+                  ) : initials ? (
+                    <span className="text-xs font-black text-slate-600">{initials}</span>
+                  ) : (
+                    <UserRound className="h-4 w-4 text-slate-500" />
+                  )}
+                </Link>
+              )}
+
+              {/* Calendar / Agenda button */}
               <Link
                 to="/agenda"
                 className="p-2.5 rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center shrink-0"
@@ -817,10 +988,153 @@ const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
           </div>
         </div>
 
-        {/* Live Chat Widget */}
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-          {chatOpen && (
-            <div className="mb-4 w-80 sm:w-96 h-[460px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
+        {/* ══════════════════════════════════════════════════════════
+            MOBILE BOTTOM NAVIGATION BAR
+        ══════════════════════════════════════════════════════════ */}
+        {/* Sub-link sheet — slides up when a section is tapped */}
+        {mobileBottomSection && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="lg:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+              onClick={() => setMobileBottomSection(null)}
+            />
+            {/* Sheet panel */}
+            <div className="lg:hidden fixed bottom-16 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl border-t border-slate-200/80 max-h-[60vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300">
+              {(() => {
+                const section = visibleSections.find(s => s.id === mobileBottomSection);
+                if (!section) return null;
+                return (
+                  <div className="p-4">
+                    {/* Sheet handle */}
+                    <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4" />
+                    <div className="flex items-center gap-2 mb-4 px-1">
+                      <div
+                        className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: `${section.color}18` }}
+                      >
+                        <section.icon className="h-4 w-4" style={{ color: section.color }} />
+                      </div>
+                      <span className="font-black text-slate-800 text-sm uppercase tracking-widest">
+                        {section.title}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {section.items.map(item => {
+                        const active = isItemActive(item.href);
+                        return (
+                          <Link
+                            key={item.href}
+                            to={item.href}
+                            onClick={() => setMobileBottomSection(null)}
+                            className={cn(
+                              'flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-150',
+                              active
+                                ? 'bg-slate-100 text-slate-900 font-bold shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-50 font-medium'
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                'h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
+                                active ? 'opacity-100' : 'opacity-60'
+                              )}
+                              style={{ background: `${section.color}15` }}
+                            >
+                              <item.icon className="h-4.5 w-4.5" style={{ color: section.color }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm leading-tight">{item.name}</div>
+                              <div className="text-[11px] text-slate-400 mt-0.5">{item.desc}</div>
+                            </div>
+                            {active && (
+                              <div className="h-2 w-2 rounded-full shrink-0" style={{ background: section.color }} />
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </>
+        )}
+
+        {/* Bottom Nav Bar */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200/80 shadow-lg">
+          <div className="flex items-center justify-around px-2 py-2">
+            {/* Home shortcut */}
+            <Link
+              to="/"
+              onClick={() => setMobileBottomSection(null)}
+              className={cn(
+                'flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all duration-150 min-w-0',
+                isItemActive('/') ? 'text-primary' : 'text-slate-400 hover:text-slate-700'
+              )}
+            >
+              <Home className={cn('h-5 w-5', isItemActive('/') && 'text-primary')} />
+              <span className="text-[9px] font-bold uppercase tracking-wider truncate">Inicio</span>
+            </Link>
+
+            {/* Dynamic section buttons */}
+            {visibleSections.filter(s => s.id !== 'explorar').map(section => {
+              const isActive = mobileBottomSection === section.id;
+              const hasActive = sectionHasActive(section);
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => setMobileBottomSection(isActive ? null : section.id)}
+                  className={cn(
+                    'flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all duration-150 min-w-0 relative',
+                    isActive ? 'text-slate-900' : hasActive ? 'text-slate-700' : 'text-slate-400'
+                  )}
+                >
+                  {/* Active dot */}
+                  {hasActive && !isActive && (
+                    <span
+                      className="absolute top-1.5 right-2.5 h-1.5 w-1.5 rounded-full"
+                      style={{ background: section.color }}
+                    />
+                  )}
+                  <div
+                    className={cn(
+                      'h-8 w-8 rounded-xl flex items-center justify-center transition-all duration-150',
+                      isActive ? 'shadow-sm scale-105' : ''
+                    )}
+                    style={{
+                      background: isActive || hasActive ? `${section.color}18` : 'transparent',
+                    }}
+                  >
+                    <section.icon
+                      className="h-5 w-5 transition-colors"
+                      style={{ color: isActive || hasActive ? section.color : undefined }}
+                    />
+                  </div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider truncate">
+                    {section.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {/* Safe area spacer for iOS */}
+          <div className="h-safe-area-inset-bottom" />
+        </nav>
+
+        <div className={cn('px-4 py-8 pb-24 lg:pb-8', contentClassName)}>
+          {children}
+        </div>
+      </div>
+
+      {/* Floating Chat Support Widget */}
+      <div className="fixed right-4 bottom-20 lg:right-6 lg:bottom-6 z-50 flex flex-col items-end gap-3">
+        {/* Chat Window */}
+        {chatOpen && (
+          <>
+            <div className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px]" onClick={() => setChatOpen(false)} />
+            <div className="relative z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-sm h-[480px] max-h-[85vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
               {/* Header */}
               <div className="bg-gradient-to-r from-primary to-accent px-4 py-3.5 flex items-center justify-between text-white">
                 <div className="flex items-center gap-2">
@@ -894,34 +1208,31 @@ const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
                 </button>
               </form>
             </div>
-          )}
+          </>
+        )}
 
-          {/* Floating Action Button */}
+          {/* Floating Toggle Button */}
           <button
-            onClick={() => setChatOpen(!chatOpen)}
-            className="h-14 w-14 rounded-full bg-gradient-to-r from-primary to-accent text-white flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 relative group"
+            type="button"
+            onClick={() => {
+              setChatOpen(!chatOpen);
+              if (showNotifDropdown) setShowNotifDropdown(false);
+            }}
+            className={cn(
+              'p-3.5 rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center relative',
+              chatOpen && 'ring-4 ring-primary/20'
+            )}
             title="Chat de Soporte"
           >
-            {chatOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <>
-                <MessageSquareText className="h-6 w-6" />
-                {chatMessages.filter(m => m.sender === 'admin' && !m.isRead).length > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-rose-500 rounded-full flex items-center justify-center text-[10px] font-black text-white animate-bounce">
-                    {chatMessages.filter(m => m.sender === 'admin' && !m.isRead).length}
-                  </span>
-                )}
-              </>
+            <MessageSquareText className="h-6 w-6 text-white" />
+            {chatMessages.filter(m => m.sender === 'admin' && !m.isRead).length > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white ring-2 ring-white animate-pulse">
+                {chatMessages.filter(m => m.sender === 'admin' && !m.isRead).length}
+              </span>
             )}
           </button>
         </div>
-
-        <div className={cn('px-4 py-8', contentClassName)}>
-          {children}
-        </div>
       </div>
-    </div>
   );
 };
 

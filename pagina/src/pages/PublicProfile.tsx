@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import PublicLayout from '../components/PublicLayout';
 import { api } from '../api/client';
-import { cn } from '@/lib/utils';
+import { safeSaveFeedPosts } from '../hooks/useCommunityPosts';
+import { cn, formatTimeAgo } from '@/lib/utils';
+import { therapists } from '@/data/mockData';
+import { ExpandableText } from '@/components/ui/ExpandableText';
+import { PostDetailModal, CommentItem } from '@/components/ui/PostDetailModal';
+import { CustomVideoPlayer } from '@/components/ui/CustomVideoPlayer';
+import { ShareMenuModal } from '@/components/ui/ShareMenuModal';
 import {
   Sun,
   Wind,
@@ -31,13 +37,37 @@ import {
   Move,
   GitBranch,
   RotateCcw,
-  Check
+  Check,
+  Sprout,
+  Smile,
+  Video,
+  Maximize2,
+  Share2,
+  X
 } from 'lucide-react';
+
 
 import { calcularDiagnosticoArbol, DiagnosticResultEngine } from '../utils/arbolDiagnosticoMotor';
 
+const isVideoMedia = (url?: string): boolean => {
+  if (!url) return false;
+  const lower = url.toLowerCase().trim();
+  if (lower.startsWith('data:')) {
+    return lower.startsWith('data:video/');
+  }
+  if (lower.startsWith('blob:')) {
+    return true;
+  }
+  if (lower.includes('youtube.com') || lower.includes('youtu.be') || lower.includes('vimeo.com')) {
+    return true;
+  }
+  const videoExtensions = ['.mp4', '.webm', '.mov', '.m4v', '.avi', '.mkv', '.ogv', '.3gp'];
+  return videoExtensions.some((ext) => lower.includes(ext));
+};
+
 interface Comment {
   id: string;
+  patientId?: number | null;
   authorName: string;
   authorAvatar?: string;
   authorRole: string;
@@ -47,6 +77,7 @@ interface Comment {
 
 interface Post {
   id: string;
+  patientId?: number | null;
   authorName: string;
   authorAvatar?: string;
   authorRole: string;
@@ -71,6 +102,10 @@ const getPurchaseKey = (slug: string) => `conexionluz:purchased:${slug}`;
 
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      resolve('');
+      return;
+    }
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
@@ -829,7 +864,7 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-teal-300/8 blur-3xl pointer-events-none" />
 
       {/* ── Header ── */}
-      <div className="relative z-10 flex items-center justify-between gap-4 px-4 sm:px-8 py-4 border-b border-slate-200/70 bg-white/80 backdrop-blur-sm">
+      <div className="relative z-10 shrink-0 flex items-center justify-between gap-4 px-4 sm:px-8 py-4 border-b border-slate-200/70 bg-white/80 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           {onClose && (
             <button
@@ -878,11 +913,11 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
       </div>
 
       {/* ── Body ── */}
-      <div className="relative z-10 flex-1 overflow-hidden flex flex-col">
+      <div className="relative z-10 flex-1 overflow-y-auto lg:overflow-hidden flex flex-col min-h-0">
         {/* ===== VIEW MODE: Saved Record ===== */}
         {mode === 'view' && savedUserRecord ? (
-          <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 fade-up">
+          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="max-w-3xl mx-auto px-4 py-8 pb-24 space-y-6 fade-up">
             <div className="text-center space-y-2">
               <div className="text-5xl mb-3">🌳</div>
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-black uppercase tracking-wider">
@@ -962,11 +997,19 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
           </div>
         ) : (
           /* ===== TEST MODE ===== */
-          <div className="flex-1 flex flex-col lg:flex-row h-full min-h-0">
+          <div className="flex-1 relative lg:flex lg:flex-row h-full min-h-0">
 
-            {/* ── Left Panel: Animated Tree ── LARGER & DOMINANT */}
+            {/* ── Tree Panel: BACKGROUND on mobile, LEFT SIDEBAR on desktop */}
             <div
-              className="lg:w-[480px] xl:w-[540px] shrink-0 flex flex-col items-center justify-between bg-gradient-to-b from-sky-100/70 via-emerald-50/50 to-emerald-100/80 border-r border-slate-200/60 relative overflow-y-auto min-h-0"
+              className="
+                /* Mobile: absolute background, barely visible */
+                absolute inset-0 opacity-[0.12] pointer-events-none
+                /* Desktop: normal sidebar */
+                lg:relative lg:opacity-100 lg:pointer-events-auto
+                lg:w-[480px] xl:w-[540px] shrink-0 flex flex-col items-center justify-between
+                bg-gradient-to-b from-sky-100/70 via-emerald-50/50 to-emerald-100/80
+                lg:border-r border-slate-200/60 overflow-hidden min-h-0
+              "
             >
               {/* Sky clouds */}
               <div className="absolute top-5 left-10 w-28 h-8 bg-white/60 rounded-full blur-md opacity-80" />
@@ -1384,8 +1427,8 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
                 </svg>
               </div>
 
-              {/* Step history chips below tree */}
-              <div className="w-full px-4 pb-5 pt-3 space-y-1.5">
+              {/* Step history chips below tree — hidden on mobile */}
+              <div className="hidden lg:block w-full px-4 pb-5 pt-3 space-y-1.5">
                 {historyPath.map((item, i) => (
                   <button
                     key={i}
@@ -1410,13 +1453,13 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
             </div>
 
 
-            {/* ── Right Panel: Questions / Results ── */}
-            <div className="flex-1 flex flex-col overflow-y-auto min-h-0">
+            {/* ── Right Panel: Questions / Results — full-width on mobile, flex-1 on desktop */}
+            <div className="relative z-10 flex-1 flex flex-col overflow-y-auto min-h-0">
               {!isResults && currentNode && (
                 <div
                   key={panelKey}
                   className={cn(
-                    "max-w-2xl mx-auto w-full px-4 sm:px-8 py-8 flex flex-col gap-5",
+                    "max-w-2xl mx-auto w-full px-4 sm:px-8 py-4 sm:py-8 flex flex-col gap-4 sm:gap-5",
                     panelVisible ? "panel-in" : "panel-out"
                   )}
                 >
@@ -1438,21 +1481,21 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
                   </div>
 
                   {/* Question */}
-                  <div className="space-y-1.5">
-                    <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+                  <div className="space-y-1">
+                    <h2 className="text-base sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
                       {currentNode.title}
                     </h2>
-                    <p className="text-slate-400 text-sm leading-relaxed font-medium">{currentNode.subtitle}</p>
+                    <p className="text-slate-400 text-xs sm:text-sm leading-relaxed font-medium">{currentNode.subtitle}</p>
                   </div>
 
                   {/* Compassion note */}
-                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/60 text-emerald-800 text-xs font-semibold">
-                    <Sparkles className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <span>{currentNode.compassionNote}</span>
+                  <div className="flex items-center gap-2 px-3 py-2 sm:p-3.5 rounded-xl sm:rounded-2xl bg-emerald-50/80 border border-emerald-200/60 text-emerald-800 text-xs font-semibold">
+                    <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500 shrink-0" />
+                    <span className="line-clamp-2 sm:line-clamp-none">{currentNode.compassionNote}</span>
                   </div>
 
                   {/* Options */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-2">
                     {currentNode.options.map((opt, idx) => {
                       const isSelected = selectedOption === opt.id;
                       const isOther = animatingBranch && !isSelected;
@@ -1462,13 +1505,14 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
                           onClick={() => handleSelectOption(opt)}
                           disabled={animatingBranch}
                           className={cn(
-                            "group relative rounded-2xl border p-5 text-left flex flex-col gap-3 cursor-pointer overflow-hidden",
+                            "group relative rounded-xl sm:rounded-2xl border text-left flex items-center gap-3 cursor-pointer overflow-hidden",
+                            "px-3 py-2.5 sm:p-5 sm:flex-col sm:gap-3",
                             "transition-all duration-300 ease-out",
                             isSelected
                               ? "border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-lg shadow-emerald-200/60 scale-[0.98] card-pulse"
                               : isOther
                               ? "border-slate-100 bg-white/60 opacity-40 scale-[0.97] shadow-none"
-                              : "border-slate-200/80 bg-white shadow-sm hover:border-emerald-400 hover:bg-emerald-50/30 hover:-translate-y-1 hover:shadow-lg hover:shadow-emerald-100/60"
+                              : "border-slate-200/80 bg-white/90 shadow-sm hover:border-emerald-400 hover:bg-emerald-50/30 hover:shadow-md hover:shadow-emerald-100/60"
                           )}
                           style={{ animationDelay: `${idx * 0.06}s` }}
                         >
@@ -1477,38 +1521,40 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
 
                           {/* Climbing emoji particle */}
                           {isSelected && (
-                            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
                               <div
-                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-2xl answer-bubble"
+                                className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xl answer-bubble"
                                 style={{ animationDuration: '0.65s' }}
                               >{opt.emoji}</div>
                             </div>
                           )}
 
-                          <div className="flex items-start justify-between gap-2">
-                            <span className={cn(
-                              "transition-all duration-300",
-                              isSelected ? "text-4xl scale-125" : "text-3xl group-hover:scale-110"
-                            )}>{opt.emoji}</span>
-                            <div className={cn(
-                              "w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 shrink-0",
-                              isSelected ? "bg-emerald-600 text-white rotate-90" : "bg-slate-100 text-slate-400 group-hover:bg-emerald-600 group-hover:text-white"
-                            )}>
-                              <ChevronRight className="h-4 w-4" />
-                            </div>
-                          </div>
+                          {/* Emoji */}
+                          <span className={cn(
+                            "shrink-0 transition-all duration-300",
+                            isSelected ? "text-2xl sm:text-4xl" : "text-xl sm:text-3xl group-hover:scale-110"
+                          )}>{opt.emoji}</span>
 
-                          <div>
+                          {/* Text */}
+                          <div className="flex-1 min-w-0">
                             <h3 className={cn(
-                              "text-base font-black leading-snug transition-colors duration-200",
+                              "text-sm sm:text-base font-black leading-snug transition-colors duration-200",
                               isSelected ? "text-emerald-800" : "text-slate-900 group-hover:text-emerald-800"
                             )}>{opt.label}</h3>
-                            <p className="text-xs text-slate-400 leading-relaxed mt-1 font-medium">{opt.description}</p>
+                            <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed font-medium mt-0.5 line-clamp-2 sm:line-clamp-none">{opt.description}</p>
                           </div>
 
-                          {/* Progress bar indicator */}
+                          {/* Arrow */}
+                          <div className={cn(
+                            "w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all duration-300 shrink-0",
+                            isSelected ? "bg-emerald-600 text-white rotate-90" : "bg-slate-100 text-slate-400 group-hover:bg-emerald-600 group-hover:text-white"
+                          )}>
+                            <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </div>
+
+                          {/* Progress bar */}
                           {isSelected && (
-                            <div className="w-full h-1 bg-emerald-100 rounded-full overflow-hidden">
+                            <div className="absolute bottom-0 inset-x-0 h-0.5 bg-emerald-100 rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-emerald-500 rounded-full"
                                 style={{ width:'100%', animation:'branch-grow 0.6s cubic-bezier(0.22,1,0.36,1) forwards', strokeDasharray:'unset' }}
@@ -1530,7 +1576,7 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
                 const informe = diagEngine.informeOficialACM10;
 
                 return (
-                  <div className="max-w-2xl mx-auto w-full px-4 sm:px-8 py-8 space-y-6 fade-up">
+                  <div className="max-w-2xl mx-auto w-full px-4 sm:px-8 py-6 pb-24 space-y-6 fade-up">
                     <div className="text-center space-y-2">
                       <div className="text-5xl mb-2">🌳</div>
                       <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-black uppercase tracking-wider">
@@ -1832,47 +1878,7 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
                       </div>
                     </div>
 
-                    {/* SERVICIOS RECOMENDADOS DE LA PLATAFORMA CONEXIÓN LUZ® */}
-                    {perfil.serviciosRecomendados && perfil.serviciosRecomendados.length > 0 && (
-                      <div className="bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl space-y-4">
-                        <div className="flex items-center justify-between border-b border-emerald-800/80 pb-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">🌟</span>
-                            <h4 className="text-sm font-black uppercase tracking-wider text-emerald-300">Ruta de Servicios Recomendados</h4>
-                          </div>
-                          <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Conexión Luz®</span>
-                        </div>
 
-                        <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                          Con base en tu Perfil <span className="font-bold text-emerald-300">{perfil.nombre}</span>, estas son las herramientas y servicios interactivos diseñados para facilitar tu transformación hacia <span className="font-bold text-amber-300">{perfil.estadoEvolutivo}</span>:
-                        </p>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                          {perfil.serviciosRecomendados.map((serv, i) => (
-                            <div key={i} className="flex flex-col justify-between p-4 rounded-2xl bg-slate-800/90 border border-slate-700/80 space-y-3 hover:border-emerald-500/50 transition-all">
-                              <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-2xl">{serv.icono}</span>
-                                  <span className="px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-300 text-[9px] font-black uppercase tracking-wider">
-                                    {serv.badge}
-                                  </span>
-                                </div>
-                                <h5 className="font-bold text-slate-100 text-sm">{serv.titulo}</h5>
-                                <p className="text-[11px] text-slate-300 leading-relaxed font-medium">{serv.descripcion}</p>
-                              </div>
-
-                              <Link
-                                to={serv.ruta}
-                                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs text-center transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                              >
-                                <span>Explorar Servicio</span>
-                                <ArrowRight className="h-3.5 w-3.5" />
-                              </Link>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                     {/* CONCLUSIÓN OFICIAL (SECCIÓN 15 - ACM-1.0) */}
                     <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-3xl p-6 shadow-md space-y-2">
@@ -1920,11 +1926,7 @@ Te recomendamos priorizar el registro en tu Diario Emocional, prácticas de rela
         )}
       </div>
 
-      {/* Footer */}
-      <div className="relative z-10 px-6 py-3 border-t border-slate-200/70 bg-white/60 backdrop-blur-sm text-center text-[11px] text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-1">
-        <span>🔒 Tus respuestas son privadas y se almacenan con seguridad.</span>
-        <span>ConexiónLuz · Plataforma de Bienestar</span>
-      </div>
+
     </div>
   );
 };
@@ -1960,6 +1962,8 @@ const PublicProfile = () => {
 
   const [editingCoverPosition, setEditingCoverPosition] = useState(false);
   const [editingAvatarPosition, setEditingAvatarPosition] = useState(false);
+  const [savingCover, setSavingCover] = useState(false);
+  const [hasUnsavedCover, setHasUnsavedCover] = useState(false);
 
   const coverY = profileSettings.coverY ?? 50;
   const avatarY = profileSettings.avatarY ?? 50;
@@ -1971,6 +1975,19 @@ const PublicProfile = () => {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+
+  // Profile Post Creator States
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostImage, setNewPostImage] = useState<string | null>(null);
+  const [newPostFile, setNewPostFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadStatusText, setUploadStatusText] = useState<string>('');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [selectedFeeling, setSelectedFeeling] = useState<string | null>(null);
+  const [showFeelingSelector, setShowFeelingSelector] = useState(false);
+  const [creatingPost, setCreatingPost] = useState(false);
+  const uploadAbortRef = useRef<AbortController | null>(null);
+
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'posts' | 'wellbeing' | 'courses' | 'test' | 'settings'>('posts');
@@ -1997,6 +2014,13 @@ const PublicProfile = () => {
       api.get('/api/portal/me/').then(res => {
         if (res.ok) {
           setMe(res.data);
+          if (res.data.coverPictureUrl || res.data.coverPositionY !== undefined) {
+            setProfileSettings(prev => ({
+              ...prev,
+              cover: res.data.coverPictureUrl || prev.cover || '',
+              coverY: res.data.coverPositionY ?? prev.coverY ?? 50
+            }));
+          }
           setProfileForm({
             firstName: res.data.firstName || '',
             lastName: res.data.lastName || '',
@@ -2028,6 +2052,13 @@ const PublicProfile = () => {
           setIsFollowing(res.data.isFollowing);
           setFollowersCount(res.data.followersCount);
           setFollowingCount(res.data.followingCount);
+          if (res.data.coverPictureUrl || res.data.coverPositionY !== undefined) {
+            setProfileSettings(prev => ({
+              ...prev,
+              cover: res.data.coverPictureUrl || prev.cover || '',
+              coverY: res.data.coverPositionY ?? prev.coverY ?? 50
+            }));
+          }
         }
       });
     }
@@ -2050,43 +2081,195 @@ const PublicProfile = () => {
     setLoadingFollow(false);
   };
 
-  // Load posts
-  useEffect(() => {
-    const saved = localStorage.getItem('conexionluz:feed_posts');
-    if (saved) {
-      try {
-        setAllPosts(JSON.parse(saved));
-      } catch (e) {
-        console.error(e);
+  // Load posts helper from backend API with localStorage fallback
+  const loadPosts = async () => {
+    try {
+      const endpoint = isAuthed ? '/api/portal/community-posts/' : '/api/public/community-posts/';
+      const res = await api.get<any[]>(endpoint);
+      let fetchedPosts: Post[] = [];
+
+      if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+        const myName = me ? `${me.firstName || ''} ${me.lastName || ''}`.trim() : '';
+        fetchedPosts = res.data.map(p => {
+          const likesList: string[] = [];
+          if (p.likedByMe && myName) {
+            likesList.push(myName);
+          }
+          const remainingLikes = (p.likesCount || 0) - likesList.length;
+          for (let i = 0; i < remainingLikes; i++) {
+            likesList.push(`Usuario ${i}`);
+          }
+          return {
+            id: String(p.id),
+            patientId: p.patientId || null,
+            authorName: p.authorName || 'Miembro',
+            authorAvatar: p.authorAvatarUrl || p.authorAvatar || undefined,
+            authorRole: p.authorRole || 'Miembro',
+            content: p.content || '',
+            feeling: p.feeling || undefined,
+            image: p.imageUrl || undefined,
+            likes: likesList,
+            comments: p.comments ? p.comments.map((c: any) => ({
+              id: String(c.id),
+              patientId: c.patientId || null,
+              authorName: c.authorName || 'Miembro',
+              authorAvatar: c.authorAvatarUrl || c.authorAvatar || undefined,
+              authorRole: c.authorRole || 'Miembro',
+              content: c.content || '',
+              createdAt: typeof c.createdAt === 'string' ? c.createdAt : 'reciente'
+            })) : [],
+            createdAt: typeof p.createdAt === 'string' ? p.createdAt : 'reciente'
+          };
+        });
+      }
+
+      // Merge with localStorage posts if any
+      const saved = localStorage.getItem('conexionluz:feed_posts');
+      if (saved) {
+        try {
+          const localPosts: Post[] = JSON.parse(saved);
+          const existingIds = new Set(fetchedPosts.map(p => p.id));
+          localPosts.forEach(lp => {
+            if (!existingIds.has(lp.id)) {
+              fetchedPosts.push(lp);
+            }
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      setAllPosts(fetchedPosts);
+    } catch (e) {
+      console.error("Error cargando destellos en perfil:", e);
+      const saved = localStorage.getItem('conexionluz:feed_posts');
+      if (saved) {
+        try {
+          setAllPosts(JSON.parse(saved));
+        } catch (err) {
+          console.error(err);
+        }
       }
     }
-  }, []);
+  };
+
+  useEffect(() => {
+    loadPosts();
+  }, [name, me, isAuthed]);
 
   const savePosts = (updatedPosts: Post[]) => {
     setAllPosts(updatedPosts);
-    localStorage.setItem('conexionluz:feed_posts', JSON.stringify(updatedPosts));
+    safeSaveFeedPosts(updatedPosts);
   };
 
   const saveProfileSettings = (settings: typeof profileSettings) => {
+    setProfileSettings(settings);
+    setHasUnsavedCover(true);
     try {
-      setProfileSettings(settings);
       localStorage.setItem(`conexionluz:profile_settings:${name}`, JSON.stringify(settings));
     } catch (e) {
-      console.error("Error saving profile settings:", e);
-      alert("No se pudo guardar la imagen de portada. Es posible que el archivo sea demasiado grande o que el almacenamiento de tu navegador esté lleno.");
+      console.error("Error saving profile settings locally:", e);
+    }
+  };
+
+  const handleSaveCoverToDB = async () => {
+    setSavingCover(true);
+    try {
+      const res = await api.post<any>('/api/portal/me/cover/', {
+        cover: profileSettings.cover || '',
+        coverPositionY: coverY
+      });
+      if (res.ok) {
+        setHasUnsavedCover(false);
+        setEditingCoverPosition(false);
+        if (res.data && res.data.coverPictureUrl) {
+          setProfileSettings(prev => ({ ...prev, cover: res.data.coverPictureUrl }));
+        }
+        alert('¡Imagen de portada guardada con éxito en la base de datos!');
+      } else {
+        alert(res.error || 'Error al guardar la portada en la base de datos.');
+      }
+    } catch (err) {
+      alert('Error al guardar la portada.');
+    } finally {
+      setSavingCover(false);
     }
   };
 
   // Filter posts for this specific user
-  const userPosts = allPosts.filter(post => post.authorName === name);
+  const decodedName = name ? decodeURIComponent(name).trim() : '';
+  const normalizedTargetName = decodedName.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ');
+  const meFullName = me ? `${me.firstName || ''} ${me.lastName || ''}`.trim() : '';
+  const normalizedMeFullName = meFullName.toLowerCase().replace(/\s+/g, ' ');
 
-  // Find user's avatar from their latest post, or use current user picture if it is them
-  const meFullName = me ? `${me.firstName || ''} ${me.lastName || ''}`.trim().toLowerCase() : '';
-  const urlName = name.trim().toLowerCase();
-  // isMe: exact match OR the URL name is contained in me's full name (handles middle-name differences)
-  const isMe = me != null && (meFullName === urlName || meFullName.includes(urlName) || urlName.includes(meFullName));
+  const isMe = me != null && (
+    name === 'mi-perfil' ||
+    normalizedMeFullName === normalizedTargetName ||
+    (normalizedMeFullName && normalizedTargetName && normalizedMeFullName.includes(normalizedTargetName)) ||
+    (normalizedMeFullName && normalizedTargetName && normalizedTargetName.includes(normalizedMeFullName))
+  );
+
+  const userPosts = allPosts.filter(post => {
+    if (!post) return false;
+
+    // 1. If viewer is viewing own profile (isMe) and post has matching patientId
+    if (isMe && me && post.patientId && String(post.patientId) === String(me.id)) {
+      return true;
+    }
+
+    const postAuthor = (post.authorName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!postAuthor) return false;
+
+    // 2. Exact or space/hyphen normalized match with URL target name
+    if (postAuthor === normalizedTargetName) return true;
+
+    // 3. Substring match
+    if (normalizedTargetName && (postAuthor.includes(normalizedTargetName) || normalizedTargetName.includes(postAuthor))) {
+      return true;
+    }
+
+    // 4. If viewing own profile, match with logged-in user name
+    if (isMe && normalizedMeFullName) {
+      if (postAuthor === normalizedMeFullName || postAuthor.includes(normalizedMeFullName) || normalizedMeFullName.includes(postAuthor)) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  // Lightbox post detail modal reactive state
+  const [selectedLightboxPostId, setSelectedLightboxPostId] = useState<string | null>(null);
+  const [sharePostId, setSharePostId] = useState<string | null>(null);
+  const [sharePostContent, setSharePostContent] = useState<string>('');
+  const videoTimesRef = useRef<Record<string, number>>({});
+  const [modalInitialTime, setModalInitialTime] = useState<number>(0);
+
+  const handleOpenLightbox = (post: any, explicitTime?: number) => {
+    document.querySelectorAll('video').forEach((v) => {
+      try {
+        v.pause();
+      } catch {}
+    });
+    const time = typeof explicitTime === 'number' && explicitTime > 0
+      ? explicitTime
+      : (videoTimesRef.current[post.id] || 0);
+    videoTimesRef.current[post.id] = time;
+    setModalInitialTime(time);
+    setSelectedLightboxPostId(String(post.id));
+  };
+
+  const selectedLightboxPost = React.useMemo(() => {
+    if (!selectedLightboxPostId) return null;
+    return userPosts.find(p => String(p.id) === String(selectedLightboxPostId)) || null;
+  }, [selectedLightboxPostId, userPosts]);
+
+  // Find user's avatar from therapist info, latest post, or user profile picture
+  const therapistMatch = therapists.find(t => t.name.toLowerCase().includes((name || '').toLowerCase()) || (name || '').toLowerCase().includes(t.name.toLowerCase()));
   const latestPostWithAvatar = userPosts.find(post => post.authorAvatar);
-  const userAvatar = isMe ? (me.profilePictureUrl || '') : (latestPostWithAvatar?.authorAvatar || '');
+  const userAvatar = isMe 
+    ? (me.profilePictureUrl || therapistMatch?.image_url || '') 
+    : (latestPostWithAvatar?.authorAvatar || therapistMatch?.image_url || '');
   
   // Determine role: always use live API data for current user; fall back to cached post role for others
   const resolveRole = (userData: any, isPremium: boolean) => {
@@ -2098,7 +2281,6 @@ const PublicProfile = () => {
       const ut = userData.userType.toLowerCase();
       if (ut === 'paciente') return 'Paciente';
       if (ut === 'miembro') return isPremium ? 'Miembro Premium ✨' : 'Miembro';
-      // custom type (e.g. "terapeuta")
       return userData.userType.charAt(0).toUpperCase() + userData.userType.slice(1);
     }
     return isPremium ? 'Miembro Premium ✨' : 'Miembro';
@@ -2107,7 +2289,6 @@ const PublicProfile = () => {
   const userRole = isMe && me
     ? resolveRole(me, Boolean(me.hasActiveSubscription))
     : (userPosts[0]?.authorRole || 'Miembro de la Comunidad');
-
 
   // Stats
   const postsCount = userPosts.length;
@@ -2125,8 +2306,111 @@ const PublicProfile = () => {
     ? `Guía de Luz y profesional especializado(a) en salud mental, comprometido(a) con brindar herramientas terapéuticas, meditación y acompañamiento compasivo para restaurar el bienestar integral.`
     : `Sembrador(a) en la comunidad Conexión Luz, compartiendo reflexiones, aprendizajes y destellos de bienestar para caminar juntos hacia la sanación.`;
 
-  // Like handler
-  const handleLikePost = (postId: string) => {
+  // Create Post handler for Profile page
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPostContent.trim() && !newPostImage && !newPostFile) return;
+
+    // Cancel any previous upload
+    if (uploadAbortRef.current) {
+      uploadAbortRef.current.abort();
+    }
+    const abortController = new AbortController();
+    uploadAbortRef.current = abortController;
+
+    setCreatingPost(true);
+    setUploadProgress(0);
+    setUploadError(null);
+    setUploadStatusText('Preparando publicación...');
+
+    const resetUploadState = (errMsg?: string) => {
+      setUploadProgress(null);
+      setUploadStatusText('');
+      setCreatingPost(false);
+      uploadAbortRef.current = null;
+      if (errMsg) setUploadError(errMsg);
+    };
+
+    if (isAuthed) {
+      let response;
+      if (newPostFile) {
+        const formData = new FormData();
+        formData.append('content', newPostContent.trim());
+        if (selectedFeeling) formData.append('feeling', selectedFeeling);
+        formData.append('file', newPostFile);
+        response = await api.postFormWithProgress<any>(
+          '/api/portal/community-posts/',
+          formData,
+          (percent) => {
+            if (abortController.signal.aborted) return;
+            setUploadProgress(percent);
+            if (percent < 96) {
+              setUploadStatusText(`Subiendo archivo (${percent}%)...`);
+            } else if (percent >= 96 && percent < 100) {
+              setUploadStatusText('¡Procesando en el servidor!');
+            } else {
+              setUploadStatusText('¡Publicado con éxito!');
+            }
+          },
+          abortController.signal
+        );
+      } else {
+        response = await api.post<any>('/api/portal/community-posts/', {
+          content: newPostContent.trim(),
+          imageUrl: newPostImage || undefined,
+          feeling: selectedFeeling || undefined
+        });
+      }
+
+      if (abortController.signal.aborted) return;
+
+      if (response.ok) {
+        setUploadProgress(100);
+        setUploadStatusText('¡Publicado con éxito!');
+        setTimeout(() => {
+          void loadPosts();
+          setNewPostContent('');
+          setNewPostImage(null);
+          setNewPostFile(null);
+          setSelectedFeeling(null);
+          setShowFeelingSelector(false);
+          setUploadError(null);
+          resetUploadState();
+        }, 500);
+        return;
+      } else {
+        resetUploadState(response.error || 'Error al publicar el destello.');
+        return;
+      }
+    } else {
+      const authorName = me ? `${me.firstName} ${me.lastName}` : 'Miembro Invitado';
+      const authorAvatar = me?.profilePictureUrl || '';
+      const newPost: Post = {
+        id: `post-${Date.now()}`,
+        patientId: me?.id || null,
+        authorName,
+        authorAvatar,
+        authorRole: userRole,
+        content: newPostContent.trim(),
+        feeling: selectedFeeling || undefined,
+        image: newPostImage || undefined,
+        likes: [],
+        comments: [],
+        createdAt: 'Hace un momento'
+      };
+      const updated = [newPost, ...allPosts];
+      savePosts(updated);
+      setNewPostContent('');
+      setNewPostImage(null);
+      setNewPostFile(null);
+      setSelectedFeeling(null);
+      setShowFeelingSelector(false);
+      setCreatingPost(false);
+    }
+  };
+
+  // Like handler with API sync
+  const handleLikePost = async (postId: string) => {
     if (!isAuthed) {
       navigate('/login');
       return;
@@ -2143,10 +2427,18 @@ const PublicProfile = () => {
       return post;
     });
     savePosts(updated);
+
+    if (!isNaN(Number(postId))) {
+      try {
+        await api.post(`/api/portal/community-posts/${postId}/like/`, {});
+      } catch (err) {
+        console.error("Error liking post on API:", err);
+      }
+    }
   };
 
-  // Comment handler
-  const handleAddComment = (postId: string, e: React.FormEvent) => {
+  // Comment handler with API sync
+  const handleAddComment = async (postId: string, e: React.FormEvent) => {
     e.preventDefault();
     if (!isAuthed) {
       navigate('/login');
@@ -2161,6 +2453,7 @@ const PublicProfile = () => {
 
     const newComment: Comment = {
       id: `comment-${Date.now()}`,
+      patientId: me?.id || null,
       authorName,
       authorAvatar,
       authorRole,
@@ -2176,10 +2469,21 @@ const PublicProfile = () => {
     });
     savePosts(updated);
     setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+
+    if (!isNaN(Number(postId))) {
+      try {
+        const res = await api.post<any>(`/api/portal/community-posts/${postId}/comment/`, { content: commentText });
+        if (res.ok) {
+          await loadPosts();
+        }
+      } catch (err) {
+        console.error("Error adding comment to backend:", err);
+      }
+    }
   };
 
-  // Edit post handler
-  const handleEditPostSubmit = (postId: string) => {
+  // Edit post handler with API sync
+  const handleEditPostSubmit = async (postId: string) => {
     const post = allPosts.find(p => p.id === postId);
     if (!editingPostContent.trim() && !post?.image) return;
     const updated = allPosts.map(p => {
@@ -2190,23 +2494,49 @@ const PublicProfile = () => {
     });
     savePosts(updated);
     setEditingPostId(null);
+
+    if (!isNaN(Number(postId))) {
+      try {
+        await api.patch(`/api/portal/community-posts/${postId}/`, { content: editingPostContent.trim() });
+      } catch (err) {
+        console.error("Error editing post on backend:", err);
+      }
+    }
     setEditingPostContent('');
   };
 
-  // Delete post handler
-  const handleDeletePostSubmit = (postId: string) => {
+  // Delete post handler with API sync
+  const handleDeletePostSubmit = async (postId: string) => {
     const updated = allPosts.filter(post => post.id !== postId);
     savePosts(updated);
     setDeletingPostId(null);
+
+    if (!isNaN(Number(postId))) {
+      try {
+        await api.del(`/api/portal/community-posts/${postId}/`);
+      } catch (err) {
+        console.error("Error deleting post from backend:", err);
+      }
+    }
   };
 
   // Edit comment handler
-  const handleEditCommentSubmit = (postId: string, commentId: string) => {
+  const handleEditCommentSubmit = async (postId: string, commentId: string) => {
     if (!editingCommentContent.trim()) return;
+    const cleanId = String(commentId).replace('comment-', '');
+    if (!isNaN(Number(cleanId))) {
+      try {
+        await api.patch(`/api/portal/community-posts/comments/${cleanId}/`, {
+          content: editingCommentContent.trim()
+        });
+      } catch (err) {
+        console.error("Error editing comment on backend:", err);
+      }
+    }
     const updated = allPosts.map(post => {
       if (post.id === postId) {
         const updatedComments = post.comments.map(c => {
-          if (c.id === commentId) {
+          if (String(c.id) === String(commentId)) {
             return { ...c, content: editingCommentContent.trim() };
           }
           return c;
@@ -2221,10 +2551,18 @@ const PublicProfile = () => {
   };
 
   // Delete comment handler
-  const handleDeleteCommentSubmit = (postId: string, commentId: string) => {
+  const handleDeleteCommentSubmit = async (postId: string, commentId: string) => {
+    const cleanId = String(commentId).replace('comment-', '');
+    if (!isNaN(Number(cleanId))) {
+      try {
+        await api.delete(`/api/portal/community-posts/comments/${cleanId}/`);
+      } catch (err) {
+        console.error("Error deleting comment from backend:", err);
+      }
+    }
     const updated = allPosts.map(post => {
       if (post.id === postId) {
-        const updatedComments = post.comments.filter(c => c.id !== commentId);
+        const updatedComments = post.comments.filter(c => String(c.id) !== String(commentId));
         return { ...post, comments: updatedComments };
       }
       return post;
@@ -2232,6 +2570,7 @@ const PublicProfile = () => {
     savePosts(updated);
     setDeletingCommentId(null);
   };
+
 
   // Upload Profile Picture handler
   const handleUploadPicture = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2252,7 +2591,25 @@ const PublicProfile = () => {
       });
       const data = await res.json();
       if (data.ok && me) {
-        setMe({ ...me, profilePictureUrl: data.data.profilePictureUrl });
+        const newPic = data.data.profilePictureUrl;
+        setMe({ ...me, profilePictureUrl: newPic });
+        const saved = localStorage.getItem('conexionluz:feed_posts');
+        if (saved) {
+          try {
+            const posts = JSON.parse(saved);
+            const userName = `${me.firstName} ${me.lastName}`.trim();
+            const updated = posts.map((post: any) => {
+              if (post.authorName === userName || post.patientId === me.id) {
+                return { ...post, authorAvatar: newPic, authorAvatarUrl: newPic };
+              }
+              return post;
+            });
+            safeSaveFeedPosts(updated);
+            setAllPosts(updated);
+          } catch (err) {
+            console.error(err);
+          }
+        }
       } else {
         alert(data.error || 'Error uploading picture');
       }
@@ -2289,7 +2646,7 @@ const PublicProfile = () => {
             }
             return post;
           });
-          localStorage.setItem('conexionluz:feed_posts', JSON.stringify(updated));
+          safeSaveFeedPosts(updated);
           setAllPosts(updated); // Sync local state too!
         } catch (e) {
           console.error(e);
@@ -2347,7 +2704,7 @@ const PublicProfile = () => {
             </div>
 
             {isMe && (
-              <div className="absolute bottom-4 right-4 flex gap-2 z-20">
+              <div className="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-20">
                 <input
                   type="file"
                   id="cover-upload-input"
@@ -2356,44 +2713,53 @@ const PublicProfile = () => {
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      console.log("Cover image file selected:", file.name, "size:", file.size);
                       try {
                         const compressed = await compressImage(file);
-                        console.log("Cover image compressed successfully. Base64 length:", compressed.length);
                         saveProfileSettings({ ...profileSettings, cover: compressed });
                       } catch (err) {
-                        console.error("Error setting cover image:", err);
                         alert("Error al procesar la imagen de portada: " + (err instanceof Error ? err.message : String(err)));
                       }
                     }
                     e.target.value = '';
                   }}
                 />
-                
+
+                <label
+                  htmlFor="cover-upload-input"
+                  className="bg-white/90 hover:bg-white text-slate-800 font-bold text-xs py-2 px-3.5 rounded-xl shadow-md backdrop-blur-sm transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <Camera className="h-3.5 w-3.5 text-slate-600" />
+                  <span>Subir Portada</span>
+                </label>
+
                 {profileSettings.cover && (
                   <button
                     type="button"
                     onClick={() => setEditingCoverPosition(!editingCoverPosition)}
-                    className="bg-white/80 hover:bg-white text-slate-700 font-bold text-xs py-1.5 px-3 rounded-xl shadow-md backdrop-blur-sm transition-all flex items-center gap-1.5"
+                    className="bg-white/90 hover:bg-white text-slate-800 font-bold text-xs py-2 px-3.5 rounded-xl shadow-md backdrop-blur-sm transition-all flex items-center gap-1.5 shrink-0"
                   >
-                    <Move className="h-3.5 w-3.5" />
+                    <Move className="h-3.5 w-3.5 text-slate-600" />
                     <span>Ajustar Posición</span>
                   </button>
                 )}
 
-                <label
-                  htmlFor="cover-upload-input"
-                  className="bg-white/80 hover:bg-white text-slate-700 font-bold text-xs py-1.5 px-3 rounded-xl shadow-md backdrop-blur-sm transition-all flex items-center gap-1.5 cursor-pointer animate-in fade-in duration-300"
-                >
-                  <Camera className="h-3.5 w-3.5" />
-                  <span>Subir Portada</span>
-                </label>
+                {hasUnsavedCover && (
+                  <button
+                    type="button"
+                    onClick={handleSaveCoverToDB}
+                    disabled={savingCover}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs py-2 px-4 rounded-xl shadow-lg backdrop-blur-sm transition-all flex items-center gap-1.5 animate-pulse shrink-0"
+                  >
+                    <Check className="h-4 w-4" />
+                    <span>{savingCover ? 'Guardando...' : 'Guardar Portada'}</span>
+                  </button>
+                )}
 
                 {editingCoverPosition && (
-                  <div className="absolute bottom-12 right-0 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-2xl p-4 flex flex-col gap-3 w-64 z-30 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-0 sm:top-auto sm:bottom-full sm:mb-2 bg-white/95 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl p-3.5 flex flex-col gap-2.5 sm:w-64 z-30 animate-in fade-in zoom-in-95 duration-200">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1">
-                        <Sliders className="h-3.5 w-3.5 text-primary" /> Posición Portada
+                        <Sliders className="h-3.5 w-3.5 text-primary" /> Posición Vertical
                       </span>
                       <span className="text-xs font-bold text-slate-500">{coverY}%</span>
                     </div>
@@ -2407,19 +2773,32 @@ const PublicProfile = () => {
                       }}
                       className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-primary"
                     />
-                    <div className="flex justify-end gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setEditingCoverPosition(false)}
-                        className="bg-primary text-white font-bold text-[10px] uppercase tracking-wider py-1.5 px-3 rounded-lg shadow-sm hover:bg-primary/95 transition-all"
-                      >
-                        Aceptar
-                      </button>
+                    <div className="flex justify-between items-center gap-1.5 pt-0.5">
+                      <span className="text-[10px] text-slate-400 font-medium">Desliza y guarda</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setEditingCoverPosition(false)}
+                          className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[10px] py-1 px-2.5 rounded-md transition-all"
+                        >
+                          Cerrar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveCoverToDB}
+                          disabled={savingCover}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] py-1 px-3 rounded-lg shadow-sm transition-all flex items-center gap-1"
+                        >
+                          <Check className="h-3 w-3" />
+                          <span>Guardar</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
             )}
+
           </div>
 
           {/* Profile details section */}
@@ -2592,28 +2971,55 @@ const PublicProfile = () => {
 
         {/* Tabs - Only for the profile owner */}
         {isMe && (
-          <div className="flex w-full sm:w-fit items-center gap-1 p-1 bg-slate-100/50 backdrop-blur-md rounded-2xl mb-8 border border-slate-250/20">
-            {[
-              { id: 'posts', label: 'Mis Destellos', icon: Sparkles },
-              { id: 'wellbeing', label: 'Mi Bienestar', icon: Activity },
-              { id: 'courses', label: 'Mis Cursos', icon: BookOpen },
-              { id: 'test', label: 'Test en Árbol', icon: GitBranch },
-              { id: 'settings', label: 'Ajustes', icon: Settings },
-            ].map(t => (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id as any)}
-                className={cn(
-                  'flex flex-1 sm:flex-initial items-center justify-center gap-1.5 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300',
-                  activeTab === t.id
-                    ? 'bg-white shadow-md text-slate-800 scale-[1.02]'
-                    : 'text-slate-500 hover:text-slate-800'
-                )}
-              >
-                <t.icon className={cn('h-3.5 w-3.5 sm:h-4 sm:w-4', activeTab === t.id ? 'text-primary' : 'text-slate-400')} />
-                {t.label}
-              </button>
-            ))}
+          <div className="w-full mb-8">
+            {/* Mobile: scrollable pill bar */}
+            <div className="flex sm:hidden w-full overflow-x-auto scrollbar-hide gap-2 pb-1">
+              {[
+                { id: 'posts', label: 'Destellos', icon: Sparkles },
+                { id: 'wellbeing', label: 'Bienestar', icon: Activity },
+                { id: 'courses', label: 'Cursos', icon: BookOpen },
+                { id: 'test', label: 'Test', icon: GitBranch },
+                { id: 'settings', label: 'Ajustes', icon: Settings },
+              ].map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id as any)}
+                  className={cn(
+                    'flex items-center gap-1.5 whitespace-nowrap shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300',
+                    activeTab === t.id
+                      ? 'bg-white shadow-md text-slate-800 border border-slate-200'
+                      : 'bg-slate-100/80 text-slate-500'
+                  )}
+                >
+                  <t.icon className={cn('h-3.5 w-3.5 shrink-0', activeTab === t.id ? 'text-primary' : 'text-slate-400')} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {/* Desktop: pill bar normal */}
+            <div className="hidden sm:flex w-fit items-center gap-1 p-1 bg-slate-100/50 backdrop-blur-md rounded-2xl border border-slate-200/20">
+              {[
+                { id: 'posts', label: 'Mis Destellos', icon: Sparkles },
+                { id: 'wellbeing', label: 'Mi Bienestar', icon: Activity },
+                { id: 'courses', label: 'Mis Cursos', icon: BookOpen },
+                { id: 'test', label: 'Test en Árbol', icon: GitBranch },
+                { id: 'settings', label: 'Ajustes', icon: Settings },
+              ].map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id as any)}
+                  className={cn(
+                    'flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300',
+                    activeTab === t.id
+                      ? 'bg-white shadow-md text-slate-800 scale-[1.02]'
+                      : 'text-slate-500 hover:text-slate-800'
+                  )}
+                >
+                  <t.icon className={cn('h-4 w-4 shrink-0', activeTab === t.id ? 'text-primary' : 'text-slate-400')} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -2660,14 +3066,211 @@ const PublicProfile = () => {
 
               {/* RIGHT COLUMN: User Posts Feed */}
               <main className="lg:col-span-8 space-y-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-4.5 w-4.5 text-primary" />
-                  <h2 className="font-black text-slate-700 text-sm uppercase tracking-widest">
-                    Destellos de {name.split(' ')[0]}
-                  </h2>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4.5 w-4.5 text-primary" />
+                    <h2 className="font-black text-slate-700 text-sm uppercase tracking-widest">
+                      Destellos de {decodedName.split(' ')[0]} ({userPosts.length})
+                    </h2>
+                  </div>
                 </div>
 
+                {/* Creator card for logged in user's own profile - ONLY if user has permission */}
+                {isMe && me?.canPublish && (
+                  <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl overflow-hidden shrink-0 border border-slate-100 shadow-sm">
+                        {userAvatar ? (
+                          <img src={userAvatar} alt="Avatar" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full bg-indigo-50 flex items-center justify-center font-bold text-indigo-600 text-xs">
+                            {me?.firstName?.[0] || 'M'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-xs font-bold text-slate-800 block">Comparte un nuevo destello de luz</span>
+                        <span className="text-[10px] text-slate-400">¿Qué reflexión o sensación quieres sembrar en la comunidad?</span>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleCreatePost} className="space-y-3">
+                      <textarea
+                        value={newPostContent}
+                        onChange={(e) => setNewPostContent(e.target.value)}
+                        placeholder="Escribe tu destello de luz aquí..."
+                        className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 focus:border-indigo-400 focus:bg-white text-sm outline-none resize-none min-h-[90px] transition-all"
+                      />
+
+                      {newPostImage && (
+                        <div className="relative rounded-2xl overflow-hidden border border-slate-200/80 max-h-64 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 shadow-lg">
+                          {/* Cinematic accent bar */}
+                          <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-emerald-500 via-indigo-500 to-emerald-500 z-10" />
+                          {newPostFile?.type.startsWith('video/') || newPostImage.startsWith('blob:') && newPostFile?.type.includes('video') ? (
+                            <div className="relative">
+                              <video src={newPostImage} controls className="w-full max-h-60 object-contain mx-auto" />
+                              <div className="absolute top-3 left-3 bg-emerald-600/90 backdrop-blur-sm text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span>▶</span> VIDEO
+                              </div>
+                            </div>
+                          ) : (
+                            <img src={newPostImage} alt="Post preview" className="w-full h-full object-cover" />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewPostImage(null);
+                              setNewPostFile(null);
+                            }}
+                            className="absolute top-2 right-2 bg-slate-900/90 backdrop-blur-sm text-white rounded-full p-1.5 text-xs hover:bg-rose-600 z-10 transition-all shadow-lg"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Upload Progress Bar (White System Design) */}
+                      {uploadProgress !== null && (
+                        <div className="bg-white text-slate-900 rounded-2xl p-4 shadow-md border border-slate-200/90 animate-in fade-in duration-200 space-y-3">
+                          <div className="flex justify-between items-center text-xs font-bold">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="relative h-7 w-7 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                                <span className="h-2 w-2 rounded-full bg-indigo-600 animate-ping absolute" />
+                                <span className="h-2 w-2 rounded-full bg-indigo-600 relative" />
+                              </div>
+                              <span className="text-slate-900 font-bold truncate">{uploadStatusText || `Subiendo archivo (${uploadProgress}%)...`}</span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="tabular-nums font-black text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-xl text-xs">{uploadProgress}%</span>
+                              <button
+                                type="button"
+                                title="Cancelar subida"
+                                onClick={() => {
+                                  if (uploadAbortRef.current) {
+                                    uploadAbortRef.current.abort();
+                                    uploadAbortRef.current = null;
+                                  }
+                                  setUploadProgress(null);
+                                  setUploadStatusText('');
+                                  setUploadError(null);
+                                  setCreatingPost(false);
+                                }}
+                                className="text-slate-400 hover:text-rose-600 transition-colors rounded-full p-1 hover:bg-rose-50 border border-transparent hover:border-rose-100"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                          <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 shadow-inner">
+                            <div
+                              className="h-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 transition-all duration-300 rounded-full shadow-xs"
+                              style={{ width: `${Math.max(4, uploadProgress)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Upload Error Message */}
+                      {uploadError && uploadProgress === null && (
+                        <div className="flex items-start gap-2 p-3 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-700">
+                          <span className="mt-0.5 shrink-0">⚠️</span>
+                          <div className="flex-1">
+                            <p className="font-bold mb-0.5">Error al subir</p>
+                            <p>{uploadError}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setUploadError(null)}
+                            className="shrink-0 text-red-400 hover:text-red-600 transition-colors"
+                          >✕</button>
+                        </div>
+                      )}
+
+                      {/* Emotion selector toggle */}
+                      {showFeelingSelector && (
+                        <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100">
+                          {FEELINGS_LIST.map(f => (
+                            <button
+                              key={f.label}
+                              type="button"
+                              onClick={() => setSelectedFeeling(selectedFeeling === f.label ? null : f.label)}
+                              className={cn(
+                                'text-xs font-bold px-3 py-1.5 rounded-full border transition-all flex items-center gap-1.5',
+                                selectedFeeling === f.label ? f.color : 'bg-slate-50 text-slate-600 border-slate-200/60'
+                              )}
+                            >
+                              <span>{f.emoji}</span>
+                              <span>{f.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2">
+                          <label className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 cursor-pointer transition-colors flex items-center gap-1 text-xs font-bold">
+                            <Camera className="w-4 h-4 text-indigo-500" />
+                            <span className="hidden sm:inline">Foto</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  setNewPostFile(file);
+                                  const objectUrl = URL.createObjectURL(file);
+                                  setNewPostImage(objectUrl);
+                                }
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+
+                          <label className="p-2 rounded-xl text-slate-500 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors flex items-center gap-1 text-xs font-bold border border-transparent hover:border-emerald-100">
+                            <Video className="w-4 h-4 text-emerald-600" />
+                            <span className="hidden sm:inline">Video</span>
+                            <input
+                              type="file"
+                              accept="video/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  setNewPostFile(file);
+                                  const objectUrl = URL.createObjectURL(file);
+                                  setNewPostImage(objectUrl);
+                                }
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => setShowFeelingSelector(!showFeelingSelector)}
+                            className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors flex items-center gap-1 text-xs font-bold"
+                          >
+                            <Smile className="w-4 h-4 text-amber-500" />
+                            <span className="hidden sm:inline">Sentimiento</span>
+                          </button>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={creatingPost || (!newPostContent.trim() && !newPostImage && !newPostFile)}
+                          className="py-2.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          <span>{creatingPost ? 'Publicando...' : 'Sembrar destello'}</span>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
                 {userPosts.length === 0 ? (
+
                   <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-12 text-center text-slate-400">
                     <Sun className="h-10 w-10 text-slate-300 mx-auto mb-3 animate-spin-slow" />
                     <p className="font-bold text-sm">Este usuario no ha sembrado ningún destello todavía.</p>
@@ -2693,13 +3296,13 @@ const PublicProfile = () => {
                         >
                           
                           {/* Post Author / Header */}
-                          <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-xl overflow-hidden shrink-0 border border-slate-100 shadow-sm relative z-10">
+                              <div className="h-10 w-10 rounded-full overflow-hidden shrink-0 border border-slate-200/80 shadow-xs relative z-10">
                                 {post.authorAvatar ? (
                                   <img src={post.authorAvatar} alt="Avatar" className="h-full w-full object-cover" />
                                 ) : (
-                                  <div className="h-full w-full bg-slate-50 flex items-center justify-center font-bold text-slate-655 text-xs font-bold text-slate-660 text-slate-600 text-xs">
+                                  <div className="h-full w-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
                                     {post.authorName?.[0] || 'M'}
                                   </div>
                                 )}
@@ -2710,16 +3313,16 @@ const PublicProfile = () => {
                                     {post.authorName}
                                   </span>
                                   <span className={cn(
-                                    'text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider',
+                                    'text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider',
                                     displayRole.includes('Terapeuta') || displayRole.includes('Psicó') || displayRole.includes('Psiqui')
-                                      ? 'bg-primary/10 text-primary border border-primary/15'
-                                      : 'bg-slate-100 text-slate-500 border border-slate-200/40'
+                                      ? 'bg-emerald-500/10 text-emerald-700 border border-emerald-500/20'
+                                      : 'bg-slate-100 text-slate-600 border border-slate-200/60'
                                   )}>
                                     {displayRole}
                                   </span>
                                 </div>
-                                <span className="text-[10px] text-slate-400 block mt-0.5">
-                                  {post.createdAt}
+                                <span className="text-xs text-slate-400 font-medium block mt-0.5">
+                                  {formatTimeAgo(post.createdAt)}
                                 </span>
                               </div>
                             </div>
@@ -2727,14 +3330,14 @@ const PublicProfile = () => {
                             {/* Emotion Tag or Edit/Delete Controls */}
                             <div className="flex items-center gap-2">
                               {post.feeling && feelingData && (
-                                  <span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border shadow-sm', feelingData.color)}>
+                                <span className={cn('text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 border shadow-xs', feelingData.color)}>
                                   <span>{feelingData.emoji}</span>
                                   <span>{feelingData.label}</span>
                                 </span>
                               )}
 
                               {post.authorName === myName && !post.isSystemPost && (
-                                <div className="flex items-center gap-0.5">
+                                <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200/60 rounded-xl p-1 shadow-2xs">
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -2742,7 +3345,7 @@ const PublicProfile = () => {
                                       setEditingPostContent(post.content);
                                       setDeletingPostId(null);
                                     }}
-                                    className="text-slate-450 hover:text-primary p-1 hover:bg-slate-50 rounded-lg transition-colors"
+                                    className="text-slate-400 hover:text-primary p-1.5 hover:bg-white rounded-lg transition-all cursor-pointer"
                                     title="Editar destello"
                                   >
                                     <Pencil className="h-3.5 w-3.5" />
@@ -2753,7 +3356,7 @@ const PublicProfile = () => {
                                       setDeletingPostId(post.id);
                                       setEditingPostId(null);
                                     }}
-                                    className="text-slate-450 hover:text-rose-500 p-1 hover:bg-slate-50 rounded-lg transition-colors"
+                                    className="text-slate-400 hover:text-rose-500 p-1.5 hover:bg-white rounded-lg transition-all cursor-pointer"
                                     title="Eliminar destello"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -2818,13 +3421,39 @@ const PublicProfile = () => {
                           ) : (
                             <>
                               {post.content && (
-                                <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap font-medium">
-                                  {post.content}
-                                </p>
+                                <ExpandableText
+                                  text={post.content}
+                                  className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap font-medium"
+                                />
                               )}
                               {post.image && (
-                                <div className="relative rounded-2xl overflow-hidden border border-slate-150 bg-slate-50 w-full max-h-96 mt-2">
-                                  <img src={post.image} alt="Publicación" className="w-full h-full object-cover" />
+                                <div className="relative rounded-2xl overflow-hidden mt-3 group/media cursor-pointer">
+                                  {isVideoMedia(post.image) ? (
+                                    <div className="relative group/vid">
+                                      <CustomVideoPlayer
+                                        src={post.image}
+                                        autoPlay={false}
+                                        autoPlayOnScroll={false}
+                                        viewsCount={post.viewsCount || 0}
+                                        isPaused={Boolean(selectedLightboxPostId)}
+                                        onTimeUpdate={(currentTime) => {
+                                          videoTimesRef.current[post.id] = currentTime;
+                                        }}
+                                        onClickContainer={(_e, currentTime) => {
+                                          handleOpenLightbox(post, currentTime);
+                                        }}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div onClick={() => handleOpenLightbox(post)} className="relative group/img">
+                                      <img src={post.image} alt="Publicación" loading="lazy" decoding="async" className="w-full h-full object-cover max-h-[560px] group-hover/img:scale-[1.01] transition-transform duration-300" />
+                                      <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                        <span className="bg-slate-900/90 text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/20 backdrop-blur-md flex items-center gap-1.5 shadow-xl">
+                                          <Maximize2 className="h-3.5 w-3.5 text-emerald-400" /> Ver en pantalla completa con comentarios
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </>
@@ -2833,7 +3462,7 @@ const PublicProfile = () => {
                           {/* Interactive Actions Row */}
                           <div className="flex items-center justify-between pt-2 border-t border-slate-50 text-xs text-slate-400">
                             
-                            {/* Illuminate Spark button */}
+                            {/* Illuminate Spark (like) button */}
                             <button
                               type="button"
                               onClick={() => handleLikePost(post.id)}
@@ -2848,19 +3477,33 @@ const PublicProfile = () => {
                               <span>Iluminar ({post.likes.length})</span>
                             </button>
 
-                            {/* Resonate (comment) button */}
+                            {/* Sembrar (comment) button */}
                             <button
                               type="button"
                               onClick={() => setActiveCommentsPostId(isCommentsOpen ? null : post.id)}
                               className={cn(
-                                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all duration-200',
+                                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition-all duration-200 cursor-pointer',
                                 isCommentsOpen
-                                  ? 'text-primary bg-primary/5 border border-primary/10 shadow-sm'
+                                  ? 'text-emerald-600 bg-emerald-50/80 border border-emerald-200 shadow-sm'
                                   : 'hover:bg-slate-50 hover:text-slate-700 text-slate-450'
                               )}
                             >
-                              <Wind className="h-4.5 w-4.5 text-sky-400" />
-                              <span>Resonar ({post.comments.length})</span>
+                              <Sprout className={cn('h-4.5 w-4.5 text-emerald-600', isCommentsOpen && 'fill-emerald-400')} />
+                              <span>Sembrar ({post.comments.length})</span>
+                            </button>
+
+                            {/* Compartir Button with WhatsApp, Facebook, Instagram and Link Copy */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSharePostId(post.id);
+                                setSharePostContent(post.content || '');
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold hover:bg-emerald-50 hover:text-emerald-700 text-slate-450 transition-all duration-200 border border-transparent hover:border-emerald-100 cursor-pointer"
+                              title="Compartir publicación"
+                            >
+                              <Share2 className="h-4 w-4 text-emerald-600" />
+                              <span>Compartir</span>
                             </button>
 
                           </div>
@@ -2908,125 +3551,26 @@ const PublicProfile = () => {
                                 </Link>
                               )}
 
-                              {/* Resonances list */}
-                              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                              {/* Resonances list with full multi-level replies, likes, editing & deletion */}
+                              <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
                                 {post.comments.length === 0 ? (
                                   <p className="text-[10px] text-slate-400 text-center py-2 italic">
                                     Aún no hay resonancias. Comparte tus palabras de apoyo o reflexión.
                                   </p>
                                 ) : (
                                   post.comments.map(comment => (
-                                    <div key={comment.id} className="flex gap-2.5 items-start">
-                                      <div className="h-7 w-7 rounded-lg overflow-hidden shrink-0 border border-slate-100 flex items-center justify-center font-bold text-[9px] text-slate-550 bg-slate-50">
-                                        {comment.authorAvatar ? (
-                                          <img src={comment.authorAvatar} alt="Avatar" className="h-full w-full object-cover" />
-                                        ) : (
-                                          comment.authorName?.[0] || 'M'
-                                        )}
-                                      </div>
-                                      <div className="flex-1 bg-slate-50/70 rounded-2xl px-3.5 py-2.5 border border-slate-150/40">
-                                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                                          <div className="flex items-center gap-1.5 flex-wrap">
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                              <span className="font-bold text-xs text-slate-800 leading-tight">
-                                                {comment.authorName}
-                                              </span>
-                                              <span className="text-[7px] bg-slate-200/50 text-slate-550 font-black px-1.5 py-0.2 rounded-full uppercase">
-                                                {comment.authorRole}
-                                              </span>
-                                            </div>
-
-                                            {comment.authorName === myName && (
-                                              <div className="flex items-center gap-0.5 ml-1">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    setEditingCommentId(comment.id);
-                                                    setEditingCommentContent(comment.content);
-                                                    setDeletingCommentId(null);
-                                                  }}
-                                                  className="text-slate-400 hover:text-primary p-0.5 hover:bg-slate-100 rounded transition-colors"
-                                                  title="Editar comentario"
-                                                >
-                                                  <Pencil className="h-2.5 w-2.5" />
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    setDeletingCommentId(comment.id);
-                                                    setEditingCommentId(null);
-                                                  }}
-                                                  className="text-slate-400 hover:text-rose-500 p-0.5 hover:bg-slate-100 rounded transition-colors"
-                                                  title="Eliminar comentario"
-                                                >
-                                                  <Trash2 className="h-2.5 w-2.5" />
-                                                </button>
-                                              </div>
-                                            )}
-                                          </div>
-                                          <span className="text-[9px] text-slate-400">
-                                            {comment.createdAt}
-                                          </span>
-                                        </div>
-                                        
-                                        {deletingCommentId === comment.id ? (
-                                          <div className="mt-1 bg-rose-50/50 border border-rose-100 rounded-xl p-2 flex items-center justify-between gap-3 animate-in fade-in duration-150">
-                                            <span className="text-[9px] text-rose-700 font-bold">
-                                              ¿Eliminar resonancia?
-                                            </span>
-                                            <div className="flex gap-1 shrink-0">
-                                              <button
-                                                type="button"
-                                                onClick={() => handleDeleteCommentSubmit(post.id, comment.id)}
-                                                className="bg-rose-500 hover:bg-rose-600 text-white font-bold text-[8px] py-1 px-2 rounded-lg shadow-sm transition-all"
-                                              >
-                                                Sí
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => setDeletingCommentId(null)}
-                                                className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-650 font-bold text-[8px] py-1 px-2 rounded-lg shadow-sm transition-all"
-                                              >
-                                                No
-                                              </button>
-                                            </div>
-                                          </div>
-                                        ) : editingCommentId === comment.id ? (
-                                          <div className="mt-1.5 space-y-2 animate-in fade-in duration-150">
-                                            <input
-                                              type="text"
-                                              value={editingCommentContent}
-                                              onChange={e => setEditingCommentContent(e.target.value)}
-                                              className="w-full bg-white border border-slate-150 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/30 transition-all"
-                                            />
-                                            <div className="flex gap-1.5 justify-end">
-                                              <button
-                                                type="button"
-                                                onClick={() => handleEditCommentSubmit(post.id, comment.id)}
-                                                disabled={!editingCommentContent.trim()}
-                                                className="bg-primary text-white font-bold text-[8px] py-1 px-2.5 rounded-lg shadow-sm hover:scale-[1.02] transition-all disabled:opacity-50"
-                                              >
-                                                Guardar
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  setEditingCommentId(null);
-                                                  setEditingCommentContent('');
-                                                }}
-                                                className="bg-slate-100 hover:bg-slate-200 text-slate-655 text-slate-650 font-bold text-[8px] py-1 px-2.5 rounded-lg shadow-sm transition-all"
-                                              >
-                                                Cancelar
-                                              </button>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <p className="text-slate-600 text-xs leading-relaxed mt-1 whitespace-pre-wrap">
-                                            {comment.content}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
+                                    <CommentItem
+                                      key={comment.id}
+                                      comment={comment}
+                                      postId={post.id}
+                                      level={0}
+                                      onLikeComment={likeComment}
+                                      onAddReply={addReply}
+                                      onEditComment={editComment}
+                                      onDeleteComment={handleDeleteCommentSubmit}
+                                      myName={myName}
+                                      isAuthed={isAuthed}
+                                    />
                                   ))
                                 )}
                               </div>
@@ -3330,6 +3874,59 @@ const PublicProfile = () => {
           )}
         </div>
       </div>
+
+      {/* Fullscreen Post Lightbox Modal */}
+      <PostDetailModal
+        post={selectedLightboxPost}
+        isOpen={Boolean(selectedLightboxPost)}
+        initialTime={modalInitialTime}
+        onTimeUpdate={(currentTime) => {
+          if (selectedLightboxPost) {
+            videoTimesRef.current[selectedLightboxPost.id] = currentTime;
+          }
+        }}
+        onClose={() => setSelectedLightboxPostId(null)}
+        onLike={(postId) => handleLikePost(postId)}
+        onAddComment={async (postId, text) => {
+          await handleAddComment(postId, { preventDefault: () => {} } as any);
+        }}
+        onDeleteComment={async (postId, commentId) => {
+          if (handleDeleteCommentSubmit) {
+            await handleDeleteCommentSubmit(postId, commentId);
+          }
+        }}
+        myName={myName}
+        isLikedByMe={selectedLightboxPost ? selectedLightboxPost.likes.includes(myName) : false}
+        isAuthed={isAuthed}
+        hasPrev={Boolean(selectedLightboxPost && userPosts.findIndex(p => p.id === selectedLightboxPost.id) > 0)}
+        hasNext={Boolean(selectedLightboxPost && userPosts.findIndex(p => p.id === selectedLightboxPost.id) < userPosts.length - 1)}
+        onPrevPost={() => {
+          if (!selectedLightboxPost) return;
+          const idx = userPosts.findIndex(p => p.id === selectedLightboxPost.id);
+          if (idx > 0) {
+            const prevPost = userPosts[idx - 1];
+            const time = videoTimesRef.current[prevPost.id] || 0;
+            handleOpenLightbox(prevPost, time);
+          }
+        }}
+        onNextPost={() => {
+          if (!selectedLightboxPost) return;
+          const idx = userPosts.findIndex(p => p.id === selectedLightboxPost.id);
+          if (idx >= 0 && idx < userPosts.length - 1) {
+            const nextPost = userPosts[idx + 1];
+            const time = videoTimesRef.current[nextPost.id] || 0;
+            handleOpenLightbox(nextPost, time);
+          }
+        }}
+      />
+
+      {/* Share Modal */}
+      <ShareMenuModal
+        postId={sharePostId || ''}
+        postContent={sharePostContent}
+        isOpen={Boolean(sharePostId)}
+        onClose={() => setSharePostId(null)}
+      />
     </PublicLayout>
   );
 };

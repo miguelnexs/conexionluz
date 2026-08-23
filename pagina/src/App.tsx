@@ -25,10 +25,13 @@ import RegisterPage from "./pages/Register";
 import ProfilePage from "./pages/Profile";
 import PublicProfilePage from "./pages/PublicProfile";
 import MiCalendarioPage from "./pages/MiCalendario";
+import LumiStorePage from "./pages/LumiStorePage";
+import LumiCheckoutPage from "./pages/LumiCheckoutPage";
 import NotFound from "./pages/NotFound";
-import MembresiaPage from "./pages/Membresia";
+import PostDetailPage from "./pages/PostDetailPage";
 // ── Actividades ──────────────────────────────────────
 import TestsBienestarPage from "./pages/actividades/TestsBienestar";
+import TestResultPage from "./pages/actividades/TestResultPage";
 import EjerciciosGuiadosPage from "./pages/actividades/EjerciciosGuiados";
 import DiarioEmocionalPage from "./pages/actividades/DiarioEmocional";
 import RelajacionPage from "./pages/actividades/Relajacion";
@@ -90,6 +93,10 @@ const App = () => (
           <Route path="/registro" element={<RegisterPage />} />
           <Route path="/mi-perfil" element={<MiPerfilRedirect />} />
           <Route path="/mi-calendario" element={<MiCalendarioPage />} />
+          <Route path="/comprar-lumis" element={<LumiStorePage />} />
+          <Route path="/comprar-lumis/checkout" element={<LumiCheckoutPage />} />
+          <Route path="/comprar-lumis/checkout/:packageId" element={<LumiCheckoutPage />} />
+          <Route path="/billetera" element={<LumiStorePage />} />
           <Route path="/mi-biblioteca" element={<Navigate to="/mi-perfil" replace />} />
           <Route path="/hipnosis-interdimencional" element={<Navigate to="/cursos/hipnosis-interdimencional" replace />} />
           <Route path="/testimonios" element={<TestimonialsPage />} />
@@ -99,14 +106,18 @@ const App = () => (
           <Route path="/foro/nuevo" element={<ForumCreatePage />} />
           <Route path="/foro/:id" element={<ForumDetailPage />} />
           <Route path="/perfil/:name" element={<PublicProfilePage />} />
+          <Route path="/publicacion/:postId" element={<Index />} />
+          <Route path="/destello/:postId" element={<Index />} />
           <Route path="/contacto" element={<ContactPage />} />
           <Route path="/membresia" element={<Navigate to="/" replace />} />
           {/* ── Actividades ───────────────────────────────────── */}
           <Route path="/actividades/tests" element={<TestsBienestarPage />} />
+          <Route path="/actividades/tests/resultado" element={<TestResultPage />} />
           <Route path="/actividades/ejercicios" element={<EjerciciosGuiadosPage />} />
           <Route path="/actividades/diario" element={<DiarioEmocionalPage />} />
           <Route path="/actividades/relajacion" element={<RelajacionPage />} />
-          <Route path="/actividades/progreso" element={<MiProgresoPage />} />
+          <Route path="/mi-progreso" element={<MiProgresoPage />} />
+          <Route path="/actividades/progreso" element={<Navigate to="/mi-progreso" replace />} />
           {/* ── Información ──────────────────────────────────── */}
           <Route path="/quienes-somos" element={<QuienesSomosPage />} />
           <Route path="/blog" element={<BlogPage />} />

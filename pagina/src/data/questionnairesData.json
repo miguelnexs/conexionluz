@@ -1,0 +1,760 @@
+{
+  "warmIntro": {
+    "title": "Bienvenido/a a tu espacio de autoconocimiento",
+    "disclaimer": "Este cuestionario no reemplaza una valoración profesional.",
+    "purpose": "Su propósito es ayudarte a comprender mejor cómo te has sentido durante las últimas dos semanas.",
+    "reassurance": "Responde con sinceridad. No existen respuestas correctas o incorrectas.",
+    "buttonText": "Comenzar evaluación"
+  },
+  "motivationalMessages": [
+    "Gracias por responder con sinceridad.",
+    "Cada respuesta nos ayuda a comprender mejor tu bienestar.",
+    "Conocerte es el primer paso hacia el cambio.",
+    "Estás dedicando unos minutos para cuidar de ti.",
+    "No tienes que enfrentar todo solo."
+  ],
+  "analyzing": {
+    "title": "Analizando respuestas...",
+    "subtitle": "Estamos preparando una interpretación personalizada."
+  },
+  "hopeMessage": {
+    "title": "No estás definido por cómo te sientes hoy.",
+    "text": "Las emociones cambian y las personas también. Con el acompañamiento adecuado es posible comprender el origen de lo que estás viviendo, desarrollar nuevas herramientas y recuperar el equilibrio emocional."
+  },
+  "cta": {
+    "title": "¿Quieres comprender la causa de este resultado?",
+    "text": "Este cuestionario identifica señales importantes, pero no explica el origen profundo de aquello que estás experimentando. En Conexión Luz acompañamos procesos terapéuticos personalizados mediante un enfoque integrador que busca comprender la raíz emocional de los conflictos y ayudarte a desarrollar recursos para una transformación duradera.",
+    "primaryButton": "Agendar mi primera sesión",
+    "secondaryButton": "Quiero recibir más información",
+    "trustBadges": [
+      "Atención personalizada",
+      "Sesiones presenciales y virtuales",
+      "Ambiente confidencial",
+      "Evaluación integral",
+      "Acompañamiento profesional"
+    ]
+  },
+  "finalMessage": "Gracias por dedicar este tiempo a cuidar de tu bienestar. Recuerda que pedir ayuda no significa debilidad; significa reconocer que mereces sentirte mejor.",
+  "scales": {
+    "ansiedad": {
+      "name": "Nivel de Ansiedad (GAD-7)",
+      "exercises": [
+        {
+          "title": "Respiración Diafragmática 4-7-8",
+          "category": "Respiración Guiada",
+          "duration": "3 a 5 minutos",
+          "icon": "Wind",
+          "description": "Inhala profundamente por la nariz durante 4 segundos, sostén el aire durante 7 segundos y exhala suavemente por la boca durante 8 segundos. Esta técnica activa el sistema nervioso parasimpático y reduce el ritmo cardíaco.",
+          "steps": [
+            "Siéntate cómodo/a con la espalda recta y apoya ambos pies en el suelo.",
+            "Inhala por la nariz contando mentalmente hasta 4.",
+            "Retén el aire sintiendo tu abdomen inflarse suavemente hasta 7.",
+            "Exhala despacio liberando toda tensión mientras cuentas hasta 8."
+          ]
+        },
+        {
+          "title": "Anclaje Sensorial (Grounding 5-4-3-2-1)",
+          "category": "Interiorización y Presente",
+          "duration": "3 minutos",
+          "icon": "Compass",
+          "description": "Un ejercicio físico y mental para sacar la atención de la espiral de pensamientos rumiantes y volver al momento presente mediante los 5 sentidos.",
+          "steps": [
+            "Nombra 5 cosas que puedas ver a tu alrededor en este instante.",
+            "Toca o reconoce 4 texturas o sensaciones físicas en tu cuerpo.",
+            "Escucha con atención 3 sonidos distintos de tu entorno.",
+            "Identifica 2 olores en el ambiente.",
+            "Toma conciencia de 1 sabor en tu boca."
+          ]
+        }
+      ],
+      "levels": [
+        {
+          "minScore": 0,
+          "maxScore": 4,
+          "levelKey": "bajo",
+          "label": "Ansiedad Mínima o Nula",
+          "color": "#10b981",
+          "badgeBg": "bg-emerald-50 text-emerald-700 border-emerald-200",
+          "interpretation": "Tus respuestas reflejan que en las últimas dos semanas has mantenido niveles bajos de tensión o inquietud. Tu mente y cuerpo muestran estabilidad frente al estrés cotidiano.",
+          "recommendations": [
+            "Mantén tus rutinas de descanso y actividades recreativas que fortalezcan tu calma.",
+            "Practica ejercicios breves de respiración al iniciar tu jornada para cultivar tu enfoque.",
+            "Registra periódicamente en tu diario emocional aquellas situaciones que te brindan tranquilidad."
+          ],
+          "hopeMessage": {
+            "quote": "Si estás en paz contigo mismo, estás en paz con el mundo.",
+            "author": "Séneca (Filósofo Estoico)",
+            "title": "La serenidad es un hábito que se entrena día a día.",
+            "text": "Séneca nos recuerda que la calma interior no es la ausencia de retos externos, sino la capacidad de gobernar nuestro templo mental. Tu nivel bajo de tensión refleja que estás cuidando tu centro; sigue nutriendo esa paz con pausas de gratitud."
+          },
+          "exercises": [
+            {
+              "title": "Respiración Coherente 5-5",
+              "category": "Mantenimiento y Foco",
+              "duration": "3 minutos",
+              "icon": "Wind",
+              "description": "Ritmo respiratorio de 5 segundos de inhalación y 5 de exhalación que optimiza la variabilidad cardíaca y sostiene tu estabilidad mental.",
+              "steps": [
+                "Siéntate erguido/a de forma cómoda soltando la tensión en hombros.",
+                "Inhala suavemente por la nariz contando hasta 5.",
+                "Exhala sin pausar por la nariz o boca contando hasta 5.",
+                "Mantén este ritmo continuo durante 3 minutos reconociendo tu paz interna."
+              ]
+            },
+            {
+              "title": "Escaneo de Gratitud Corporal",
+              "category": "Conciencia Plena",
+              "duration": "4 minutos",
+              "icon": "Heart",
+              "description": "Una breve interiorización para agradecer a tu cuerpo la salud, resistencia y serenidad demostrada en tu cotidianidad.",
+              "steps": [
+                "Cierra los ojos e inhala profundo sintiendo el aire entrar en tus pulmones.",
+                "Lleva tu atención a tu corazón y agradece su latido constante.",
+                "Siente la firmeza de tus piernas y columna que te sostienen en cada actividad.",
+                "Termina sonriendo levemente y reconociendo tus valiosos recursos internos."
+              ]
+            }
+          ]
+        },
+        {
+          "minScore": 5,
+          "maxScore": 9,
+          "levelKey": "leve",
+          "label": "Ansiedad Leve",
+          "color": "#f59e0b",
+          "badgeBg": "bg-amber-50 text-amber-700 border-amber-200",
+          "interpretation": "Las respuestas indican que has experimentado ligeros episodios de inquietud, nerviosismo o dificultad para relajarte en las últimas semanas.",
+          "recommendations": [
+            "Dedica 20 minutos diarios a caminar o realizar actividad física ligera para liberar tensión corporal.",
+            "Mantén horarios regulares para dormir y limita las pantallas antes de acostarte.",
+            "Habla con alguien de confianza sobre cómo te has sentido ante eventos estresantes."
+          ],
+          "hopeMessage": {
+            "quote": "Sufrimos más a menudo en la imaginación que en la realidad.",
+            "author": "Marco Aurelio (Emperador y Filósofo Estoico)",
+            "title": "Distingue la realidad presente de la preocupación futura.",
+            "text": "Marco Aurelio nos enseña que la mente ansiosa tiende a fabricar catástrofes antes de que ocurran. La inquietud leve que sientes hoy es simplemente una señal de tu sistema nervioso pidiéndote volver al momento presente y soltar el control sobre lo incierto."
+          },
+          "exercises": [
+            {
+              "title": "Respiración Diafragmática 4-7-8",
+              "category": "Respiración Guiada",
+              "duration": "3 a 5 minutos",
+              "icon": "Wind",
+              "description": "Inhala profundamente por la nariz durante 4 segundos, sostén el aire durante 7 segundos y exhala suavemente por la boca durante 8 segundos. Esta técnica activa el sistema nervioso parasimpático y reduce el ritmo cardíaco.",
+              "steps": [
+                "Siéntate cómodo/a con la espalda recta y apoya ambos pies en el suelo.",
+                "Inhala por la nariz contando mentalmente hasta 4.",
+                "Retén el aire sintiendo tu abdomen inflarse suavemente hasta 7.",
+                "Exhala despacio liberando toda tensión mientras cuentas hasta 8."
+              ]
+            },
+            {
+              "title": "Anclaje Sensorial (Grounding 5-4-3-2-1)",
+              "category": "Interiorización y Presente",
+              "duration": "3 minutos",
+              "icon": "Compass",
+              "description": "Un ejercicio físico y mental para sacar la atención de la espiral de pensamientos rumiantes y volver al momento presente mediante los 5 sentidos.",
+              "steps": [
+                "Nombra 5 cosas que puedas ver a tu alrededor en este instante.",
+                "Toca o reconoce 4 texturas o sensaciones físicas en tu cuerpo.",
+                "Escucha con atención 3 sonidos distintos de tu entorno.",
+                "Identifica 2 olores en el ambiente.",
+                "Toma conciencia de 1 sabor en tu boca."
+              ]
+            }
+          ]
+        },
+        {
+          "minScore": 10,
+          "maxScore": 14,
+          "levelKey": "moderado",
+          "label": "Ansiedad Moderada",
+          "color": "#f97316",
+          "badgeBg": "bg-orange-50 text-orange-700 border-orange-200",
+          "interpretation": "Se observa una acumulación importante de preocupación e hiperactividad mental durante los últimos días, afectando potencialmente tu energía y relajación.",
+          "recommendations": [
+            "Reduce la sobrecarga de responsabilidades y actividades no esenciales durante algunos días.",
+            "Practica respiración consciente (técnica 4-7-8) durante cinco minutos al despertar y al acostarte.",
+            "Programa espacios diarios sin celular ni estímulos digitales para favorecer el descanso mental."
+          ],
+          "hopeMessage": {
+            "quote": "Hasta que lo inconsciente no se haga consciente, el subconsciente dirigirá tu vida y tú lo llamarás destino.",
+            "author": "Carl Gustav Jung (Psiquiatra y Ensayista)",
+            "title": "Tu inquietud es un llamado a escuchar lo que necesita tu cuerpo.",
+            "text": "Jung nos muestra que la tensión acumulada no surge para dañarte, sino como un mensajero inconsciente que pide límites, descanso y espacio. Al hacer pausa y respirar con compasión, transformas esa ansiedad en autoconocimiento."
+          },
+          "exercises": [
+            {
+              "title": "Desactivación Somática del Nervio Vago",
+              "category": "Regulación del Sistema Nervioso",
+              "duration": "5 minutos",
+              "icon": "Activity",
+              "description": "Movimientos mandibulares y oculares suaves combinados con respiración profunda para enviar señales biológicas inmediatas de calma al tronco encefálico.",
+              "steps": [
+                "Recuéstate cómodamente y apoya las manos cruzadas detrás de la nuca.",
+                "Sin mover la cabeza, gira tus ojos lentamente hacia la derecha hasta sentir un suspiro espontáneo.",
+                "Regresa la mirada al centro y gira los ojos hacia la izquierda hasta volver a suspirar.",
+                "Respira suavemente sintiendo cómo tus músculos del cuello y hombros se ablandan."
+              ]
+            },
+            {
+              "title": "Técnica de Abrazar el Árbol (Grounding Físico)",
+              "category": "Descarga Corporal",
+              "duration": "4 minutos",
+              "icon": "Compass",
+              "description": "Postura corporal de enraizamiento para descargar el exceso de adrenalina e hipertensión en las piernas hacia la tierra.",
+              "steps": [
+                "Ponte de pie dobla ligeramente las rodillas sintiendo el peso bien distribuido en los pies.",
+                "Imagina raíces profundas brotando de tus plantas hacia el centro de la tierra.",
+                "Al exhalar, suelta conscientemente la tensión acumulada por la boca.",
+                "Siente la firmeza del suelo que te sostiene en todo momento."
+              ]
+            }
+          ]
+        },
+        {
+          "minScore": 15,
+          "maxScore": 21,
+          "levelKey": "alto",
+          "label": "Ansiedad Elevada / Severa",
+          "color": "#ef4444",
+          "badgeBg": "bg-rose-50 text-rose-700 border-rose-200",
+          "interpretation": "Tus respuestas muestran síntomas intensos y frecuentes de ansiedad que pueden estar interfiriendo significativamente con tu día a día y sensación de seguridad.",
+          "recommendations": [
+            "Evita enfrentar este proceso completamente solo/a; la contención es clave en este momento.",
+            "Busca apoyo emocional y contención en personas cercanas de total confianza.",
+            "Considera solicitar una orientación profesional para comprender el origen profundo de lo que estás experimentando."
+          ],
+          "hopeMessage": {
+            "quote": "Cuando ya no somos capaces de cambiar una situación, nos enfrentamos al desafío de cambiarnos a nosotros mismos.",
+            "author": "Viktor Frankl (Neurólogo, Psiquiatra y Creador de la Logoterapia)",
+            "title": "En medio de la tormenta interna, recibir contención te devuelve el control.",
+            "text": "Frankl, tras sobrevivir a las mayores adversidades humanas, descubrió que en el miedo más profundo aún conservamos la libertad de elegir cómo acompañarnos. No tienes por qué cargar este peso en soledad; recibir orientación terapéutica es un acto de profunda valentía."
+          },
+          "exercises": [
+            {
+              "title": "Respiración con Exhalación Prolongada (Freno Vagal 4-8)",
+              "category": "Auxilio y Calma Inmediata",
+              "duration": "3 a 5 minutos",
+              "icon": "Wind",
+              "description": "Una técnica de regulación urgente donde la exhalación dura el doble de la inhalación para frenar inmediatamente el pánico o la hiperventilación.",
+              "steps": [
+                "Coloca una mano sobre el centro de tu pecho y la otra sobre tu abdomen.",
+                "Inhala suavemente por la nariz contando hasta 4.",
+                "Exhala muy despacio como si soplaras por un pitillo contando hasta 8.",
+                "Repite este ciclo 6 veces sintiendo tu corazón ralentizar su pulso."
+              ]
+            },
+            {
+              "title": "Visualización de la Burbuja de Seguridad Terapéutica",
+              "category": "Santuario Interno",
+              "duration": "5 minutos",
+              "icon": "Eye",
+              "description": "Ejercicio imaginativo donde construyes un escudo de luz y contención cálida alrededor de tu cuerpo para protegerte del abrumamiento.",
+              "steps": [
+                "Cierra los ojos e imagina una luz dorada y tibia envolviéndote a medio metro de ti.",
+                "Reconoce que dentro de esta burbuja nada de afuera puede lastimarte ni exigirte.",
+                "Siente la temperatura agradable y la paz profunda en tu respiración.",
+                "Permanecer en este espacio sabiendo que estás protegido/a en este momento."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "estado-animo": {
+      "name": "Estado de Ánimo (PHQ-9)",
+      "levels": [
+        {
+          "minScore": 0,
+          "maxScore": 4,
+          "levelKey": "bajo",
+          "label": "Estado de Ánimo Estable",
+          "color": "#10b981",
+          "badgeBg": "bg-emerald-50 text-emerald-700 border-emerald-200",
+          "interpretation": "Tus niveles de energía y motivación se perciben estables y sin señales significativas de desánimo durante el periodo evaluado.",
+          "recommendations": [
+            "Continúa cultivando pasatiempos y conexiones sociales que te resulten gratificantes.",
+            "Reconoce y celebra diariamente los pequeños logros de tu jornada.",
+            "Mantén un equilibrio entre trabajo, descanso y actividades al aire libre."
+          ],
+          "hopeMessage": {
+            "quote": "El secreto de la felicidad no es hacer siempre lo que se quiere, sino querer siempre lo que se hace.",
+            "author": "Lev Tolstói (Escritor y Pensador Humanista)",
+            "title": "Sostener la alegría cotidiana a través de la presencia.",
+            "text": "Tolstói nos invita a apreciar el valor de las acciones conscientes. Mantener la motivación requiere seguir conectando con lo que le da verdadero sentido a tus momentos familiares, laborales y personales."
+          },
+          "exercises": [
+            {
+              "title": "Pausa de Afirmación de Vitalidad",
+              "category": "Energización Consciente",
+              "duration": "3 minutos",
+              "icon": "Smile",
+              "description": "Una breve recarga matutina para alinear tu intención y agradecer la claridad de tu mente.",
+              "steps": [
+                "De pie con la espalda erguida, eleva los brazos al inhalar profundo.",
+                "Repite mentalmente: 'Doy la bienvenida a este nuevo día con apertura y entusiasmo'.",
+                "Exhala soltando los brazos suavemente hacia los lados.",
+                "Sonríe hacia tu interior sintiendo la vitalidad fluir en tus manos."
+              ]
+            },
+            {
+              "title": "Registro de Pequeños Gozos",
+              "category": "Psicología Positiva",
+              "duration": "4 minutos",
+              "icon": "Heart",
+              "description": "Práctica de enfoque positivo donde anotas tres momentos sencillos que te brindaron satisfacción en el día.",
+              "steps": [
+                "Toma tu libreta o notas en el teléfono antes de acostarte.",
+                "Escribe 3 detalles agradables que viviste hoy (un café, una charla, el sol).",
+                "Relee cada detalle reviviendo la sensación placentera en tu pecho.",
+                "Descansa sabiendo que tu día estuvo lleno de pequeñas bendiciones."
+              ]
+            }
+          ]
+        },
+        {
+          "minScore": 5,
+          "maxScore": 9,
+          "levelKey": "leve",
+          "label": "Desánimo Leve",
+          "color": "#f59e0b",
+          "badgeBg": "bg-amber-50 text-amber-700 border-amber-200",
+          "interpretation": "Has experimentado cierta falta de motivación, cansancio o momentos de decaimiento en las últimas semanas.",
+          "recommendations": [
+            "Establece una rutina ligera por las mañanas que incluya exposición a la luz solar natural.",
+            "Divide tareas complejas en pasos pequeños y alcanzables para no abrumarte.",
+            "Conéctate con amigos o familiares, compartiendo momentos sinceros sin exigencias."
+          ],
+          "hopeMessage": {
+            "quote": "En medio del invierno, aprendí por fin que había en mí un verano invencible.",
+            "author": "Albert Camus (Filósofo y Premio Nobel de Literatura)",
+            "title": "Tu vitalidad interna renace cuando respetas tu tiempo de descanso.",
+            "text": "Camus comprendió que la falta temporal de fuerza no es el fin de tu luz, sino un invierno breve en tu ciclo natural. El desánimo leve es un recordatorio de renovar tus fuerzas; trátate con paciencia y pequeños pasos amables."
+          },
+          "exercises": [
+            {
+              "title": "Caminata Somática Consciente",
+              "category": "Ejercicio Físico y Presencia",
+              "duration": "10 a 15 minutos",
+              "icon": "Activity",
+              "description": "Una caminata suave al aire libre combinada con la observación consciente del peso del cuerpo en los pies. Ayuda a liberar endorfinas y contrarrestar la inmovilidad del desánimo.",
+              "steps": [
+                "Camina a un ritmo pausado prefiriendo un parque o espacio con vegetación.",
+                "Siente el contacto completo de la planta de los pies al dar cada paso.",
+                "Observa la respiración sin forzarla y siente el aire fresco en la cara.",
+                "Permite que tus hombros caigan relajados soltando la pesadez acumulada."
+              ]
+            },
+            {
+              "title": "Visualización del Refugio Interno Cálido",
+              "category": "Visualización Guiada",
+              "duration": "5 minutos",
+              "icon": "Eye",
+              "description": "Una meditación imaginativa donde visualizas un santuario natural o cálido que te genera seguridad, luz y alivio interno.",
+              "steps": [
+                "Cierra suavemente los ojos e imagina un lugar seguro (un bosque, la playa o un rincón cálido).",
+                "Siente la temperatura agradable, la luz suave y los aromas reconfortantes de ese lugar.",
+                "Imagina una luz tibia envolviendo tu pecho y devolviendo gradualmente la energía a tu cuerpo.",
+                "Agradece este espacio seguro sabiendo que siempre puedes regresar a él."
+              ]
+            }
+          ]
+        },
+        {
+          "minScore": 10,
+          "maxScore": 14,
+          "levelKey": "moderado",
+          "label": "Síntomas Depresivos Moderados",
+          "color": "#f97316",
+          "badgeBg": "bg-orange-50 text-orange-700 border-orange-200",
+          "interpretation": "Las respuestas indican una disminución marcada del entusiasmo, cambios en el patrón de sueño o apetito y sensación recurrente de fatiga.",
+          "recommendations": [
+            "Prioriza el autocuidado básico: alimentación nutritiva, hidratación constante y descanso adecuado.",
+            "Realiza caminatas suaves en espacios verdes para estimular tu vitalidad de forma respetuosa.",
+            "Evita el aislamiento y reflexiona sobre la posibilidad de compartir tu estado emocional en un ambiente terapéutico."
+          ],
+          "hopeMessage": {
+            "quote": "La curiosa paradoja es que cuando me acepto tal como soy, entonces puedo cambiar.",
+            "author": "Carl Rogers (Padre de la Psicología Humanista)",
+            "title": "Permítete sentir tu cansancio sin culparfe ni juzgarte.",
+            "text": "Rogers demostró que luchar ferozmente contra nuestra tristeza o cansancio solo aumenta la frustración. Aceptar que hoy necesitas pausa y compasión es el primer acto de amor propio que abre la puerta a tu restauración."
+          },
+          "exercises": [
+            {
+              "title": "Movilización Suave de Energía y Estiramiento",
+              "category": "Activación Conductual Leve",
+              "duration": "5 minutos",
+              "icon": "Activity",
+              "description": "Secuencia sutil de movimiento sentado o de pie para vencer suavemente la resistencia física producida por el bajón de ánimo.",
+              "steps": [
+                "Siéntate a la orilla de una silla y realiza círculos lentos con tus hombros.",
+                "Gira tu cuello despacio de un lado a otro liberando la rigidez del trapecio.",
+                "Estira los brazos hacia el techo inhalando aire renovado.",
+                "Sacude las manos y pies como si desprendieras la pesadez de tu cuerpo."
+              ]
+            },
+            {
+              "title": "Técnica de Autocompasión Terapéutica (Kristin Neff)",
+              "category": "Aceptación Emocional",
+              "duration": "5 minutos",
+              "icon": "Heart",
+              "description": "Un diálogo interno amoroso para detener los pensamientos de culpa o desvalorización cuando la energía está baja.",
+              "steps": [
+                "Coloca ambas manos tibias sobre tu corazón.",
+                "Repite con gentileza: 'Este es un momento de dificultad, pero la tristeza es parte del camino humano'.",
+                "Agrega: 'Que yo pueda tratarme con amabilidad y darme la paciencia que necesito hoy'.",
+                "Respira profundo sintiendo el calor de tu propia presencia."
+              ]
+            }
+          ]
+        },
+        {
+          "minScore": 15,
+          "maxScore": 27,
+          "levelKey": "alto",
+          "label": "Síntomas Depresivos Intensos",
+          "color": "#ef4444",
+          "badgeBg": "bg-rose-50 text-rose-700 border-rose-200",
+          "interpretation": "Tus respuestas reflejan una carga emocional pesada con impacto en tu sensación de valía, energía y capacidad de disfrutar de la cotidianeidad.",
+          "recommendations": [
+            "Recuerda que lo que sientes tiene explicación y no tienes por qué cargarlo en soledad.",
+            "Apóyate de forma inmediata en tus seres queridos más comprensivos y cercanos.",
+            "Agenda una valoración psicológica profesional para recibir acompañamiento especializado y recuperar progresivamente tu bienestar."
+          ],
+          "hopeMessage": {
+            "quote": "Quien tiene un porqué para vivir, puede soportar casi cualquier cómo.",
+            "author": "Friedrich Nietzsche (Filósofo y Pensador)",
+            "title": "Tu vida guarda un valor y propósito sagrado que nada puede borrar.",
+            "text": "Nietzsche y Viktor Frankl descubrieron que ni la sombra más pesada puede despojar a la persona de su dignidad intrínseca. Aunque hoy sientas un velo de tristeza, tu chispa interior sigue viva. Permite que la guía profesional te acompañe a reencontrar tu luz."
+          },
+          "exercises": [
+            {
+              "title": "Sostén Corporal con Mantita y Calor (Anclaje Físico)",
+              "category": "Contención Somática",
+              "duration": "5 minutos",
+              "icon": "Heart",
+              "description": "Uso de peso y calor táctil para enviar señales biológicas de refugio y protección al sistema nervioso cuando la tristeza agobia.",
+              "steps": [
+                "Envuélvete en una manta cómoda o sostén una taza de té tibio con ambas manos.",
+                "Recuéstate de lado apoyando la cabeza en una almohada suave.",
+                "Inhala lentamente sintiendo el peso reconfortante sobre tus hombros.",
+                "Permítete descansar sin exigirte estar bien en este instante exacto."
+              ]
+            },
+            {
+              "title": "Micro-Paso Único de Autocuidado",
+              "category": "Activación Mínima",
+              "duration": "3 minutos",
+              "icon": "CheckCircle2",
+              "description": "Dividir cualquier acción en un solo micro-paso realizable de 2 minutos para evitar la parálisis.",
+              "steps": [
+                "Elige una sola cosa mínima (beber un vaso de agua, abrir una ventana o lavarte la cara).",
+                "Realiza exclusivamente ese paso sin pensar en el resto del día.",
+                "Felicítate mentalmente por haber dedicado ese gesto a tu cuerpo.",
+                "Vuelve a descansar sabiendo que cada pequeño paso cuenta."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "bienestar": {
+      "name": "Bienestar General (WHO-5)",
+      "levels": [
+        {
+          "minScore": 11,
+          "maxScore": 15,
+          "levelKey": "alto",
+          "label": "Excelente Bienestar",
+          "color": "#10b981",
+          "badgeBg": "bg-emerald-50 text-emerald-700 border-emerald-200",
+          "interpretation": "Tu autoevaluación refleja una alta percepción de vitalidad, entusiasmo y paz interior en tu cotidianidad.",
+          "recommendations": [
+            "Sigue protegiendo tus espacios personales y hábitos de autocuidado.",
+            "Comparte tus recursos emocionales inspirando a las personas de tu entorno.",
+            "Práctica la gratitud diaria al terminar tu jornada para afianzar tus emociones positivas."
+          ],
+          "hopeMessage": {
+            "quote": "La felicidad depende de nosotros mismos.",
+            "author": "Aristóteles (Filósofo Griego)",
+            "title": "La eudaimonía es la realización del alma en armonía.",
+            "text": "Aristóteles definió el verdadero bienestar como el cultivo constante de virtudes y la paz interior. Tu alta vitalidad refleja el cuidado que le has dedicado a tu mente y cuerpo."
+          },
+          "exercises": [
+            {
+              "title": "Meditación de Bondad Amorosa (Metta)",
+              "category": "Expansión Emocional",
+              "duration": "5 minutos",
+              "icon": "Heart",
+              "description": "Una práctica contemplativa para irradiar deseos de paz y bienestar hacia ti y hacia tus seres queridos.",
+              "steps": [
+                "Cierra los ojos e imagina a alguien que ames profundamente.",
+                "Envía mentalmente: 'Que tengas paz, que estés con salud, que vivas con alegría'.",
+                "Lleva esos mismos deseos hacia ti: 'Que yo tenga paz, que esté con salud'.",
+                "Siente la calidez expandiéndose en tu pecho."
+              ]
+            },
+            {
+              "title": "Estiramiento Torácico y Expansión Vital",
+              "category": "Movimiento Corporal Suave",
+              "duration": "4 minutos",
+              "icon": "Activity",
+              "description": "Apertura del centro del pecho combinada con respiración profunda para liberar tensión postural acumulada por el estrés laboral o sedentario.",
+              "steps": [
+                "Ponte de pie con las piernas abiertas al ancho de las caderas.",
+                "Entrelaza las manos detrás de la espalda y estira suavemente los brazos hacia abajo.",
+                "Eleva ligeramente el esternón mirando hacia arriba mientras inhalas profundo.",
+                "Exhala soltando los brazos y sacudiendo suavemente las manos y piernas."
+              ]
+            }
+          ]
+        },
+        {
+          "minScore": 8,
+          "maxScore": 10,
+          "levelKey": "moderado",
+          "label": "Bienestar Moderado",
+          "color": "#f59e0b",
+          "badgeBg": "bg-amber-50 text-amber-700 border-amber-200",
+          "interpretation": "Tienes una base emocional adecuada, aunque han existido fluctuaciones en tu nivel de energía o sentido de tranquilidad.",
+          "recommendations": [
+            "Identifica cuáles actividades específicas restauran tu energía cuando sientes desgaste.",
+            "Integra pausas activas de 5 minutos durante tus horas de trabajo o estudio.",
+            "Protege tus horas de sueño reparador creando una atmósfera serena en tu habitación."
+          ],
+          "hopeMessage": {
+            "quote": "Nada es suficiente para quien lo suficiente es poco.",
+            "author": "Epicuro (Filósofo de la Ataraxia y el Bienestar)",
+            "title": "Simplificar para recuperar la frescura en tu día.",
+            "text": "Epicuro enseñaba que la tranquilidad nace de saborear las cosas sencillas sin sobrecargarse de expectativas. Cuando sientas fluctuaciones en tu energía, vuelve a lo esencial: naturaleza, aire limpio y descanso."
+          },
+          "exercises": [
+            {
+              "title": "Escaneo Corporal de Vitalidad (Body Scan)",
+              "category": "Interiorización Consciente",
+              "duration": "5 a 8 minutos",
+              "icon": "Heart",
+              "description": "Práctica de atención plena que recorre el cuerpo desde los pies hasta la cabeza liberando contracturas residuales y reconectando con las sensaciones de vida.",
+              "steps": [
+                "Recuéstate o siéntate cómodamente cerrando los ojos.",
+                "Lleva tu atención amorosa a los pies, tobillos y piernas, soltando el peso en la superficie.",
+                "Sube por el abdomen y el pecho observando cómo el ritmo del aliento te mece suavemente.",
+                "Relaja hombros, cuello y rostro, esbozando una ligera sonrisa de gratitud hacia tu cuerpo."
+              ]
+            },
+            {
+              "title": "Respiración Diafragmática Equilibrante",
+              "category": "Pausa Reguladora",
+              "duration": "4 minutos",
+              "icon": "Wind",
+              "description": "Inhalación limpia por la nariz guiada al abdomen para restaurar el ritmo respiratorio ante el cansancio acumulado.",
+              "steps": [
+                "Siéntate cómodo/a apoyando la mano en el estómago.",
+                "Inhala sintiendo tu mano elevarse levemente en 4 tiempos.",
+                "Exhala lento por la boca observando cómo tu mano desciende.",
+                "Repite durante 4 minutos sintiendo recuperar la compostura."
+              ]
+            }
+          ]
+        },
+        {
+          "minScore": 0,
+          "maxScore": 7,
+          "levelKey": "bajo",
+          "label": "Bienestar Moderadamente Bajo",
+          "color": "#ef4444",
+          "badgeBg": "bg-rose-50 text-rose-700 border-rose-200",
+          "interpretation": "Las respuestas indican que durante las últimas semanas has experimentado una disminución notable en tu satisfacción y calidad de vida emocional.",
+          "recommendations": [
+            "Revisa tus niveles de sobreexigencia y concédete permiso para desacelerar.",
+            "Retoma progresivamente actividades sencillas que en el pasado solían generarte calma o alegría.",
+            "Considera una valoración integradora para explorar herramientas profesionales que impulsen tu vitalidad."
+          ],
+          "hopeMessage": {
+            "quote": "Incluso la noche más oscura terminará y el sol saldrá.",
+            "author": "Victor Hugo (Poeta y Dramaturgo Humanista)",
+            "title": "Tu capacidad de recuperar el entusiasmo sigue intacta.",
+            "text": "Victor Hugo nos recuerda que todo periodo de agotamiento o insatisfacción tiene un final cuando nos abrimos a cuidar nuestro descanso. Permitirte desacelerar y pedir apoyo es el inicio de un nuevo despertar emocional."
+          },
+          "exercises": [
+            {
+              "title": "Reconexión con los Sentidos al Aire Libre",
+              "category": "Reactivación Sensorial",
+              "duration": "5 minutos",
+              "icon": "Compass",
+              "description": "Ejercicio al aire libre para recibir luz solar natural e ingresar insumos sensoriales frescos al cerebro.",
+              "steps": [
+                "Sal al patio, balcón o ventana abierta sintiendo el aire fresco en la piel.",
+                "Observa los colores de las plantas o el cielo durante 2 minutos en silencio.",
+                "Siente el calor de la luz solar entibiando tus brazos o rostro.",
+                "Inhala profundamente nutriendo tu cuerpo con nueva energía."
+              ]
+            },
+            {
+              "title": "Baño de Luz y Respiración Terapéutica",
+              "category": "Restauración de Energía",
+              "duration": "5 minutos",
+              "icon": "Eye",
+              "description": "Visualización guiada donde imaginas una luz restauradora que disuelve el cansancio acumulado.",
+              "steps": [
+                "Cierra los ojos e imagina una cascada de luz tibia cayendo sobre tu cabeza.",
+                "Siente la luz limpiar suavemente la pesadez en hombros, espalda y mentón.",
+                "Inhala luz brillante y exhala cualquier tensión en forma de sombra.",
+                "Abre los ojos sintiendo mayor ligereza física."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "autoestima": {
+      "name": "Autoestima (Escala de Rosenberg)",
+      "levels": [
+        {
+          "minScore": 22,
+          "maxScore": 30,
+          "levelKey": "alto",
+          "label": "Autoestima Saludable",
+          "color": "#10b981",
+          "badgeBg": "bg-emerald-50 text-emerald-700 border-emerald-200",
+          "interpretation": "Demuestras un autorreconocimiento sólido, apreciando tu propio valor de forma constructiva y balanceada.",
+          "recommendations": [
+            "Sigue estableciendo límites asertivos con respeto en tus relaciones interpersonales.",
+            "Cultiva la autocompasión ante los errores en lugar de la autocrítica dura.",
+            "Continúa desarrollando proyectos personales alineados a tus valores verdaderos."
+          ],
+          "hopeMessage": {
+            "quote": "Sé fiel a lo que existe dentro de ti mismo.",
+            "author": "André Gide (Premio Nobel de Literatura)",
+            "title": "Tu autenticidad es tu mayor fortaleza espiritual.",
+            "text": "Gide nos invita a habitar nuestra propia verdad sin disculparnos por ser quienes somos. Mantener un autorreconocimiento sano te permite relacionarte con otros desde la generosidad y el respeto."
+          },
+          "exercises": [
+            {
+              "title": "Postura Somática de Presencia y Dignidad",
+              "category": "Postura y Fortaleza Corporal",
+              "duration": "3 minutos",
+              "icon": "Compass",
+              "description": "Ejercicio biológico de enraizamiento y alineación postural para fortalecer la sensación interna de autovalía y seguridad.",
+              "steps": [
+                "Ponte de pie con los pies bien apoyados, la columna erguida y los hombros abiertos.",
+                "Coloca una mano sobre el centro de tu pecho y la otra sobre el abdomen.",
+                "Siente la estabilidad de tu eje corporal mientras respiras con aplomo.",
+                "Reconoce tu derecho innato a ocupar espacio y expresar tu voz con autenticidad."
+              ]
+            },
+            {
+              "title": "Diario de Valores y Autenticidad",
+              "category": "Reflexión Existencial",
+              "duration": "5 minutos",
+              "icon": "Heart",
+              "description": "Anotar las convicciones profundas que guían tus decisiones para afianzar tu identidad.",
+              "steps": [
+                "Escribe dos valores esenciales para ti (honestidad, compasión, libertad, lealtad).",
+                "Registra una acción concreta donde hayas honrado esos valores esta semana.",
+                "Reconoce tu coherencia personal sintiendo orgullo sano por tus pasos."
+              ]
+            }
+          ]
+        },
+        {
+          "minScore": 16,
+          "maxScore": 21,
+          "levelKey": "moderado",
+          "label": "Autoestima Moderada",
+          "color": "#f59e0b",
+          "badgeBg": "bg-amber-50 text-amber-700 border-amber-200",
+          "interpretation": "Reconoces tus fortalezas pero a veces puedes ser propenso/a a la duda personal o a comparar tus procesos con los de otros.",
+          "recommendations": [
+            "Practica llevar un registro escrito de tus cualidades y pequeños logros semanales.",
+            "Observa cuando surja el diálogo interno crítico y reemplázalo por palabras amables.",
+            "Dedica tiempo a aficiones en las que te sientas cómodo/a sin juzgar tus resultados."
+          ],
+          "hopeMessage": {
+            "quote": "Tú mismo, tanto como cualquier otro ser en el universo entero, mereces tu amor y afecto.",
+            "author": "Buda (Maestro de la Compasión)",
+            "title": "Trátate con la misma ternura que le ofrecerías a un ser querido.",
+            "text": "Esta enseñanza atemporal nos recuerda que a menudo ofrecemos comprensión a los demás pero nos juzgamos con dureza. Reemplazar la duda por autocompasión es el camino para afianzar tu autovalía."
+          },
+          "exercises": [
+            {
+              "title": "Meditación del Auto-Abrazo y Compasión",
+              "category": "Autotacto Terapéutico",
+              "duration": "3 a 5 minutos",
+              "icon": "Heart",
+              "description": "Una práctica donde utilizas el contacto físico propio para enviar señales de seguridad, ternura y aceptación incondicional al cerebro.",
+              "steps": [
+                "Cruza los brazos sobre el pecho abrazándote suavemente por los hombros.",
+                "Mécete de un lado a otro muy despacio sintiendo el calor de tus propias manos.",
+                "Repite mentalmente: 'Merezco amarme, cuidarme y tratarme con paciencia en cada paso'.",
+                "Respira profundo dejando que la sensación de protección llene tu cuerpo."
+              ]
+            },
+            {
+              "title": "Cuestionamiento del Crítico Interno",
+              "category": "Reestructuración Cognitiva",
+              "duration": "5 minutos",
+              "icon": "Activity",
+              "description": "Pausar el diálogo autocrítico y formular una versión basada en hechos objetivos y benevolencia.",
+              "steps": [
+                "Identifica un juicio negativo recurrente que te hayas hecho reciamente.",
+                "Pregúntate: '¿Se lo diría esto a una persona que amo profundamente?'.",
+                "Reformula el pensamiento: 'Cometí un error, pero eso no define mi valía total'.",
+                "Respiros profundos afianzando el nuevo diálogo interno."
+              ]
+            }
+          ]
+        },
+        {
+          "minScore": 0,
+          "maxScore": 15,
+          "levelKey": "bajo",
+          "label": "Autoestima Baja",
+          "color": "#ef4444",
+          "badgeBg": "bg-rose-50 text-rose-700 border-rose-200",
+          "interpretation": "Las respuestas reflejan una autoevaluación severa hacia ti mismo/a, con presencia de pensamientos autodevaluativos recurrentes.",
+          "recommendations": [
+            "Comienza a tratarte a ti mismo/a con la misma compasión y respeto que ofrecerías a un ser querido.",
+            "Cuestiona las creencias limitantes que te llevan a dudar de tu valor inherente.",
+            "Acompañarte de un profesional puede ayudarte a reconstruir una imagen propia amorosa y segura."
+          ],
+          "hopeMessage": {
+            "quote": "No eres una gota en el océano. Eres el océano entero en una gota.",
+            "author": "Rumi (Poeta y Místico)",
+            "title": "Tu valor verdadero es sagrado e inquebrantable.",
+            "text": "Rumi nos regaló esta hermosa certeza: las heridas o críticas del pasado pueden hacerte dudar de tu valor, pero tu dignidad esencial jamás disminuye. Reconstruir tu amor propio con acompañamiento terapéutico te enseñará a mirarte con compasión y honor."
+          },
+          "exercises": [
+            {
+              "title": "Abrazo Somático de Seguridad Incondicional",
+              "category": "Restauración del Valor Propio",
+              "duration": "4 minutos",
+              "icon": "Heart",
+              "description": "Contacto terapéutico sobre el corazón e hígados para regular la vergüenza o el sentimiento de no ser suficiente.",
+              "steps": [
+                "Coloca la mano derecha sobre tu mejilla o cuello y la mano izquierda sobre el corazón.",
+                "Siente la calidez táctil directa de tus palmas.",
+                "Susurra para ti: 'Estoy aquí para mí. No estoy defectuoso/a; soy un ser valioso en aprendizaje'.",
+                "Mantén esta postura respirando lento durante 4 minutos."
+              ]
+            },
+            {
+              "title": "Carta de Perdón y Amabilidad Hacia Uno Mismo",
+              "category": "Escritura Terapéutica",
+              "duration": "5 minutos",
+              "icon": "Heart",
+              "description": "Escribir un párrafo liberador donde te perdonas por exigirte perfección.",
+              "steps": [
+                "Escribe: 'Me perdono por exigirme ser perfecto/a y por haberme juzgado con dureza'.",
+                "Añade: 'Hoy decido empezar a ser mi propio aliado compasivo'.",
+                "Lee la carta en voz baja sintiendo la liberación en el pecho."
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

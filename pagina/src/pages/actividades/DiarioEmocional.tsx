@@ -4,9 +4,10 @@ import {
   NotebookPen, Plus, Smile, Meh, Frown, Angry, Heart, Trash2, 
   Calendar, TrendingUp, ChevronDown, ChevronUp, Tag, Search, 
   Lock, SmilePlus, Award, Sparkles, BookOpen,
-  Feather, PenLine, ArrowRight, AlertTriangle
+  Feather, PenLine, ArrowRight, AlertTriangle, ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { api } from '../../api/client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Mood = { 
@@ -15,7 +16,7 @@ type Mood = {
   color: string; 
   value: number; 
   emoji: string; 
-  bgLight: string; 
+  bgBadge: string; 
   textDark: string;
   positiveMessage: string;
   physicalActivity: string;
@@ -23,11 +24,61 @@ type Mood = {
 type Entry = { id: string; date: string; mood: Mood; text: string; tags: string[]; gratitude: string };
 
 const MOODS: Mood[] = [
-  { label: 'Excelente', icon: Heart, color: '#10b981', value: 5, emoji: '🤩', bgLight: 'bg-emerald-50 text-emerald-800', textDark: 'text-emerald-500', positiveMessage: '¡Qué alegría! Aprovecha esta ola de energía positiva para celebrar tus logros y compartir tu luz con quienes te rodean.', physicalActivity: 'Celebración Corporal: Pon una canción alegre durante 3 minutos y baila libremente. Deja que el movimiento te ayude a identificar el gozo expandiéndose por tu pecho.' },
-  { label: 'Bien', icon: Smile, color: '#6366f1', value: 4, emoji: '😊', bgLight: 'bg-indigo-50 text-indigo-800', textDark: 'text-indigo-500', positiveMessage: 'Te encuentras en un buen estado de calma y claridad mental. Es un gran momento para avanzar con paso firme y reflexionar con serenidad.', physicalActivity: 'Estiramiento Consciente: Dedica 3 minutos a estirar tus brazos al cielo, hombros y cuello. Siente la tensión muscular acumulada disolverse con cada exhalación.' },
-  { label: 'Regular', icon: Meh, color: '#f59e0b', value: 3, emoji: '😐', bgLight: 'bg-amber-50 text-amber-800', textDark: 'text-amber-500', positiveMessage: 'Está bien sentirse neutro o sin mucha energía. Escucha a tu cuerpo, no te exijas de más. Este espacio es ideal para recuperar tu centro.', physicalActivity: 'Caminata de Conexión: Da un paseo de 5 minutos, concentrándote en la planta de tus pies tocando el suelo. Esto ayuda a anclar tu mente y liberar presión mental.' },
-  { label: 'Mal', icon: Frown, color: '#f97316', value: 2, emoji: '😔', bgLight: 'bg-orange-50 text-orange-800', textDark: 'text-orange-500', positiveMessage: 'Permítete sentir la melancolía o el desánimo. No tienes que fingir estar bien siempre. Estás en un proceso natural de asimilación.', physicalActivity: 'Apertura de Pecho y Respiración: Siéntate derecho, abre los brazos al inhalar, y abrázate a ti mismo al exhalar. Hazlo por 2 minutos para liberar la opresión física en el pecho.' },
-  { label: 'Muy mal', icon: Angry, color: '#ef4444', value: 1, emoji: '😢', bgLight: 'bg-red-50 text-red-800', textDark: 'text-red-500', positiveMessage: 'Aunque la emoción se sienta abrumadora, recuerda que estás a salvo y esto también pasará. Respira despacio, estamos contigo.', physicalActivity: 'Sacudida Corporal Liberadora (Tapping/Shaking): De pie, sacude tus manos, brazos y piernas vigorosamente durante 1 o 2 minutos. Ayuda al cuerpo a descargar la adrenalina y el cortisol acumulados.' },
+  { 
+    label: 'Excelente', 
+    icon: Heart, 
+    color: '#059669', 
+    value: 5, 
+    emoji: '🤩', 
+    bgBadge: 'bg-emerald-50 text-emerald-700 border-emerald-100', 
+    textDark: 'text-emerald-600', 
+    positiveMessage: '¡Qué alegría! Aprovecha esta ola de energía positiva para celebrar tus logros y compartir tu luz con quienes te rodean.', 
+    physicalActivity: 'Celebración Corporal: Pon una canción alegre durante 3 minutos y baila libremente. Deja que el movimiento te ayude a identificar la expansión de la calma en tu pecho.' 
+  },
+  { 
+    label: 'Bien', 
+    icon: Smile, 
+    color: '#4f46e5', 
+    value: 4, 
+    emoji: '😊', 
+    bgBadge: 'bg-indigo-50 text-indigo-700 border-indigo-100', 
+    textDark: 'text-indigo-600', 
+    positiveMessage: 'Te encuentras en un buen estado de calma y claridad mental. Es un gran momento para avanzar con paso firme y reflexionar con serenidad.', 
+    physicalActivity: 'Estiramiento Consciente: Dedica 3 minutos a estirar tus brazos al cielo, hombros y cuello. Siente la tensión muscular acumulada disolverse con cada exhalación.' 
+  },
+  { 
+    label: 'Regular', 
+    icon: Meh, 
+    color: '#d97706', 
+    value: 3, 
+    emoji: '😐', 
+    bgBadge: 'bg-amber-50 text-amber-700 border-amber-100', 
+    textDark: 'text-amber-600', 
+    positiveMessage: 'Está bien sentirse neutro o sin mucha energía. Escucha a tu cuerpo, no te exijas de más. Este espacio es ideal para recuperar tu centro.', 
+    physicalActivity: 'Caminata de Conexión: Da un paseo de 5 minutos, concentrándote en la planta de tus pies tocando el suelo. Esto ayuda a anclar tu mente y liberar presión mental.' 
+  },
+  { 
+    label: 'Desanimado', 
+    icon: Frown, 
+    color: '#2563eb', 
+    value: 2, 
+    emoji: '😔', 
+    bgBadge: 'bg-blue-50 text-blue-700 border-blue-100', 
+    textDark: 'text-blue-600', 
+    positiveMessage: 'Permítete sentir el cansancio o el desánimo. No tienes que estar bien el 100% del tiempo. Trátate con la compasión de un buen amigo/a.', 
+    physicalActivity: 'Apertura de Pecho y Respiración: Siéntate derecho, abre los brazos al inhalar, y abrázate a ti mismo al exhalar. Hazlo por 2 minutos para liberar la opresión física en el pecho.' 
+  },
+  { 
+    label: 'Abrumado', 
+    icon: Angry, 
+    color: '#e11d48', 
+    value: 1, 
+    emoji: '😢', 
+    bgBadge: 'bg-rose-50 text-rose-700 border-rose-100', 
+    textDark: 'text-rose-600', 
+    positiveMessage: 'Aunque la emoción se sienta pesada hoy, recuerda que estás a salvo y este estado es transitorio. Respira despacio, estamos contigo.', 
+    physicalActivity: 'Sacudida Corporal Liberadora (Shaking): De pie, sacude tus manos, brazos y piernas suavemente durante 1 o 2 minutos. Ayuda al cuerpo a descargar la adrenalina acumulada.' 
+  },
 ];
 
 const TAGS_OPTIONS = ['Familia', 'Trabajo', 'Salud', 'Relaciones', 'Sueño', 'Ejercicio', 'Alimentación', 'Estrés', 'Logro', 'Gratitud', 'Hobby', 'Amigos'];
@@ -43,17 +94,6 @@ const INSPIRATIONAL_QUOTES = [
 function loadEntries(): Entry[] { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } }
 function saveEntries(entries: Entry[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
 function formatDate(iso: string) { return new Date(iso).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
-
-// ─── Inline styles for the unique paper/journal aesthetic ──────────────────────
-const paperBg = { background: '#faf9f6' };
-const linedPaper = {
-  backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, rgba(16,120,100,0.06) 27px, rgba(16,120,100,0.06) 28px)',
-  backgroundAttachment: 'local' as const,
-};
-const marginLine = {
-  borderLeft: '2px solid rgba(16,120,100,0.08)',
-  paddingLeft: '1rem',
-};
 
 // ─── New entry form ────────────────────────────────────────────────────────────
 function NewEntryForm({ onSave, onCancel }: { onSave: (e: Entry) => void; onCancel: () => void }) {
@@ -71,279 +111,276 @@ function NewEntryForm({ onSave, onCancel }: { onSave: (e: Entry) => void; onCanc
   };
 
   return (
-    <div className="relative" style={{ perspective: '1200px' }}>
-      {/* Stacked paper sheets behind */}
-      <div className="absolute inset-0 rounded-2xl border border-gray-200/60 rotate-[1deg] translate-y-1 translate-x-1" style={paperBg} />
-      <div className="absolute inset-0 rounded-2xl border border-gray-200/40 rotate-[0.5deg] translate-y-0.5" style={paperBg} />
-
-      {/* Main paper */}
-      <div className="relative rounded-2xl border border-gray-200 shadow-xl overflow-hidden" style={paperBg}>
-        {/* Red margin line along left */}
-        <div className="absolute left-10 md:left-14 top-0 bottom-0 w-px bg-rose-200/50 hidden md:block" />
-
-        {/* Header: date strip */}
-        <div className="flex items-center justify-between px-5 md:px-8 py-4 border-b border-gray-200/60">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-              <PenLine className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h2 className="font-bold text-base text-gray-800">Nueva página de tu diario</h2>
-              <p className="text-[11px] text-gray-400 font-medium">{formatDate(new Date().toISOString())}</p>
-            </div>
+    <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-6 md:p-8 space-y-6 animate-in zoom-in-95 duration-300">
+      {/* Header: Date strip */}
+      <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+            <PenLine className="h-5 w-5" />
           </div>
-          <span className="text-[9px] uppercase font-bold tracking-widest text-gray-400 flex items-center gap-1 bg-gray-100 px-2.5 py-1 rounded-full">
-            <Lock className="h-3 w-3 text-primary/70" /> Privado
-          </span>
-        </div>
-
-        <div className="p-5 md:p-8 space-y-6">
-          {/* Quote — handwritten feel */}
-          <div className="text-center py-2.5 border-y border-dashed border-primary/10">
-            <p className="text-[13px] italic text-primary/70 font-medium">{quote}</p>
-          </div>
-
-          {/* Form Content: 2 Columns on desktop to expand sideways */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-            
-            {/* Left Column: Mood & Tags & Guidance */}
-            <div className="lg:col-span-5 space-y-6">
-              {/* Mood selection */}
-              <div>
-                <label className="text-xs font-bold text-gray-600 mb-3 block uppercase tracking-wider flex items-center gap-1.5">
-                  <SmilePlus className="h-3.5 w-3.5 text-primary" /> ¿Cómo te sientes hoy?
-                </label>
-                <div className="grid grid-cols-5 gap-2">
-                  {MOODS.map(mood => (
-                    <button
-                      key={mood.label}
-                      onClick={() => setSelectedMood(mood)}
-                      className={cn(
-                        'flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 transition-all duration-300',
-                        selectedMood?.value === mood.value 
-                          ? 'scale-105 shadow-md' 
-                          : 'border-transparent bg-white hover:bg-gray-50 shadow-sm'
-                      )}
-                      style={selectedMood?.value === mood.value ? { background: `${mood.color}10`, borderColor: mood.color, boxShadow: `0 6px 20px ${mood.color}25` } : {}}
-                    >
-                      <span className="text-2xl sm:text-3xl">{mood.emoji}</span>
-                      <span className="text-[9px] font-bold text-gray-600 leading-tight text-center truncate w-full px-1">{mood.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Mood advice */}
-              {selectedMood && (
-                <div className={cn("rounded-xl p-4 border text-sm space-y-3 animate-fade-in shadow-sm", selectedMood.bgLight.split(' ')[0], "border-gray-100/50")}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">💡</span>
-                    <h4 className="font-bold text-gray-800 text-[13px]">Guía: {selectedMood.label}</h4>
-                  </div>
-                  <div className="space-y-3 text-[13px]">
-                    <div className="space-y-1">
-                      <h5 className="text-[9px] uppercase font-bold tracking-wider opacity-60">Mensaje</h5>
-                      <p className="text-gray-700 leading-relaxed">{selectedMood.positiveMessage}</p>
-                    </div>
-                    <div className="space-y-1 border-t border-gray-200/40 pt-2">
-                      <h5 className="text-[9px] uppercase font-bold tracking-wider opacity-60">Actividad Física</h5>
-                      <p className="text-gray-700 leading-relaxed">{selectedMood.physicalActivity}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Tags */}
-              <div>
-                <label className="text-xs font-bold text-gray-600 mb-2.5 block uppercase tracking-wider flex items-center gap-1.5">
-                  <Tag className="h-3.5 w-3.5 text-primary" /> Temas del día
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {TAGS_OPTIONS.map(t => (
-                    <button key={t} onClick={() => toggleTag(t)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 border',
-                        selectedTags.includes(t)
-                          ? 'bg-primary text-white border-primary shadow-sm'
-                          : 'bg-white border-gray-200 text-gray-500 hover:border-primary/30 hover:text-primary'
-                      )}
-                    >{t}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Writing Textarea & Gratitude */}
-            <div className="lg:col-span-7 space-y-6 flex flex-col justify-between h-full">
-              {/* Text textarea with lined paper effect */}
-              <div className="flex-1 flex flex-col">
-                <label className="text-xs font-bold text-gray-600 mb-2 block uppercase tracking-wider flex items-center gap-1.5">
-                  <BookOpen className="h-3.5 w-3.5 text-primary" /> Escribe libremente
-                </label>
-                <textarea
-                  value={text} onChange={e => setText(e.target.value)} rows={7}
-                  placeholder="Este es tu espacio seguro, sin juicios..."
-                  className="w-full flex-1 min-h-[180px] rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-350 focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/40 resize-none transition-all leading-[28px]"
-                  style={{ ...linedPaper, ...paperBg }}
-                />
-              </div>
-
-              {/* Gratitude */}
-              <div>
-                <label className="text-xs font-bold text-gray-600 mb-2 block uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" /> Gratitud
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-3 text-base">💛</span>
-                  <input value={gratitude} onChange={e => setGratitude(e.target.value)}
-                    placeholder="Hoy agradezco..."
-                    className="w-full rounded-xl border border-gray-200 pl-10 pr-4 py-3 text-sm text-gray-700 placeholder:text-gray-350 focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/40 transition-all"
-                    style={paperBg}
-                  />
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onCancel}
-                  className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-bold text-sm hover:bg-gray-50 transition-colors"
-                >Cancelar</button>
-                <button type="button" onClick={handleSave} disabled={!selectedMood}
-                  className="flex-1 py-3 rounded-xl font-bold text-sm text-white bg-primary shadow-md hover:shadow-lg hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
-                >
-                  <Feather className="h-4 w-4" /> Guardar Entrada
-                </button>
-              </div>
-            </div>
-
+          <div>
+            <h2 className="font-black text-slate-900 text-lg md:text-xl">Nueva página de tu diario</h2>
+            <p className="text-xs font-semibold text-slate-500">{formatDate(new Date().toISOString())}</p>
           </div>
         </div>
+        <span className="text-[11px] uppercase font-bold tracking-wider text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 flex items-center gap-1.5">
+          <Lock className="h-3.5 w-3.5" /> Privado
+        </span>
+      </div>
+
+      {/* Quote Banner */}
+      <div className="bg-indigo-50/70 border border-indigo-100/80 p-4 rounded-2xl text-center text-xs md:text-sm font-medium italic text-indigo-950">
+        {quote}
+      </div>
+
+      {/* Form Content: 2 Columns on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        
+        {/* Left Column: Mood & Tags & Guidance */}
+        <div className="lg:col-span-5 space-y-6">
+          {/* Mood selection */}
+          <div>
+            <label className="text-xs font-bold text-slate-600 mb-3 block uppercase tracking-wider flex items-center gap-1.5">
+              <SmilePlus className="h-4 w-4 text-indigo-600" /> ¿Cómo te sientes hoy?
+            </label>
+            <div className="grid grid-cols-5 gap-2">
+              {MOODS.map(mood => {
+                const isSelected = selectedMood?.value === mood.value;
+                return (
+                  <button
+                    key={mood.label}
+                    onClick={() => setSelectedMood(mood)}
+                    type="button"
+                    className={cn(
+                      'flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl border-2 transition-all duration-200 cursor-pointer',
+                      isSelected 
+                        ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-900/20 scale-105' 
+                        : 'border-slate-100 bg-white hover:border-slate-300 hover:bg-slate-50'
+                    )}
+                  >
+                    <span className="text-2xl">{mood.emoji}</span>
+                    <span className={cn('text-[10px] font-bold truncate w-full text-center px-1', isSelected ? 'text-white' : 'text-slate-700')}>
+                      {mood.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Mood advice */}
+          {selectedMood && (
+            <div className={cn('rounded-2xl p-4 border text-sm space-y-3 animate-fade-in shadow-sm', selectedMood.bgBadge)}>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">💡</span>
+                <h4 className="font-bold text-slate-900 text-sm">Guía: {selectedMood.label}</h4>
+              </div>
+              <div className="space-y-2.5 text-xs md:text-sm">
+                <div>
+                  <h5 className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-0.5">Mensaje Terapéutico</h5>
+                  <p className="text-slate-800 leading-relaxed font-medium">{selectedMood.positiveMessage}</p>
+                </div>
+                <div className="border-t border-slate-200/60 pt-2">
+                  <h5 className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-0.5">Práctica Recomendada</h5>
+                  <p className="text-slate-800 leading-relaxed font-medium">{selectedMood.physicalActivity}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tags */}
+          <div>
+            <label className="text-xs font-bold text-slate-600 mb-2.5 block uppercase tracking-wider flex items-center gap-1.5">
+              <Tag className="h-4 w-4 text-indigo-600" /> Temas del día
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {TAGS_OPTIONS.map(t => {
+                const isSelected = selectedTags.includes(t);
+                return (
+                  <button 
+                    key={t} 
+                    type="button"
+                    onClick={() => toggleTag(t)}
+                    className={cn(
+                      'px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 border cursor-pointer',
+                      isSelected
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                    )}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Writing Textarea & Gratitude */}
+        <div className="lg:col-span-7 space-y-5 flex flex-col justify-between h-full">
+          {/* Text area */}
+          <div className="flex-1 flex flex-col">
+            <label className="text-xs font-bold text-slate-600 mb-2 block uppercase tracking-wider flex items-center gap-1.5">
+              <BookOpen className="h-4 w-4 text-indigo-600" /> Escribe libremente
+            </label>
+            <textarea
+              value={text} 
+              onChange={e => setText(e.target.value)} 
+              rows={7}
+              placeholder="Este es tu espacio seguro. Expresa tus pensamientos, sensaciones y vivencias sin juicios..."
+              className="w-full flex-1 min-h-[180px] rounded-2xl border border-slate-200 bg-slate-50/50 p-4 text-sm text-slate-800 font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 resize-none transition-all leading-relaxed"
+            />
+          </div>
+
+          {/* Gratitude */}
+          <div>
+            <label className="text-xs font-bold text-slate-600 mb-2 block uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-amber-500" /> Gratitud del día
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-3.5 text-base">💛</span>
+              <input 
+                value={gratitude} 
+                onChange={e => setGratitude(e.target.value)}
+                placeholder="Hoy agradezco por..."
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-3 text-sm text-slate-800 font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex gap-3 pt-2">
+            <button 
+              type="button" 
+              onClick={onCancel}
+              className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button" 
+              onClick={handleSave} 
+              disabled={!selectedMood}
+              className="flex-1 py-3.5 rounded-2xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 active:scale-[0.99] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Feather className="h-4 w-4" /> Guardar Entrada
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   );
 }
 
-// ─── Entry card — journal page style with custom deletion ──────────────────────
+// ─── Entry card ────────────────────────────────────────────────────────────────
 function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const d = new Date(entry.date);
 
   return (
-    <div className="flex gap-3 h-full">
-      {/* Left: vertical date column with connector line */}
-      <div className="shrink-0 flex flex-col items-center w-11">
-        <div className="text-center bg-white border border-gray-200/80 rounded-lg py-1 px-1.5 shadow-sm w-full">
-          <div className="text-lg font-black text-gray-800 leading-none">{d.getDate()}</div>
-          <div className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">{d.toLocaleDateString('es-CO', { month: 'short' }).replace('.','')}</div>
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all overflow-hidden p-6 space-y-4 flex flex-col justify-between">
+      <div className="h-1.5 w-full -mt-6 -mx-6 mb-2" style={{ background: entry.mood.color }} />
+
+      {confirmDelete ? (
+        <div className="space-y-4 py-2">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
+              <AlertTriangle className="h-5 w-5 text-rose-600" />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-slate-900">¿Eliminar esta entrada de tu diario?</h4>
+              <p className="text-xs text-slate-500 font-medium">Esta acción no se puede deshacer.</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              className="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-md hover:bg-rose-700 transition-all flex items-center gap-1.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Sí, eliminar
+            </button>
+          </div>
         </div>
-        <div className="w-0.5 flex-1 mt-1.5 rounded-full" style={{ backgroundColor: `${entry.mood.color}35` }} />
-      </div>
-
-      {/* Right: card */}
-      <div className="flex-1 min-w-0 pb-1">
-        <div className={cn(
-          "rounded-xl border shadow-sm transition-all duration-300 overflow-hidden h-full flex flex-col justify-between",
-          confirmDelete ? "border-rose-300 ring-2 ring-rose-500/20 bg-rose-50/30" : "border-gray-200/80 hover:shadow-md"
-        )} style={paperBg}>
-          {/* Top accent stripe */}
-          <div className="h-1.5 w-full" style={{ background: confirmDelete ? '#f43f5e' : `linear-gradient(90deg, ${entry.mood.color}, ${entry.mood.color}60)` }} />
-
-          {confirmDelete ? (
-            /* Custom Delete Confirmation Banner inside Card */
-            <div className="p-4 flex-1 flex flex-col justify-between space-y-4 animate-in fade-in duration-200">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-rose-100/80 border border-rose-200 flex items-center justify-center shrink-0">
-                  <AlertTriangle className="h-5 w-5 text-rose-600" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="font-bold text-sm text-gray-900 leading-snug">¿Eliminar esta página de tu diario?</h4>
-                  <p className="text-xs text-rose-700/80 font-medium">Esta acción quitará el registro de tu dispositivo permanentemente.</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-rose-200/60">
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  className="px-3.5 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 font-bold text-xs hover:bg-gray-50 transition-colors shadow-xs"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={onDelete}
-                  className="px-4 py-2 rounded-lg bg-rose-600 text-white font-bold text-xs shadow-md hover:bg-rose-700 active:scale-95 transition-all flex items-center gap-1.5"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Sí, eliminar
-                </button>
+      ) : (
+        <>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">{entry.mood.emoji}</span>
+              <div>
+                <span className={cn('text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border', entry.mood.bgBadge)}>
+                  {entry.mood.label}
+                </span>
+                <p className="text-xs font-semibold text-slate-500 mt-1">{formatDate(entry.date)}</p>
               </div>
             </div>
-          ) : (
-            <>
-              <div className="px-4 py-3 flex-1 flex flex-col justify-between">
-                <div className="flex items-start gap-2.5">
-                  <span className="text-2xl shrink-0">{entry.mood.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-bold text-sm text-gray-800 block">{entry.mood.label}</span>
-                    {entry.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {entry.tags.map(t => (
-                          <span key={t} className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">{t}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {(entry.text || entry.gratitude) && (
-                      <button onClick={() => setExpanded(!expanded)} className="p-1.5 text-gray-400 hover:text-primary rounded-lg transition-colors">
-                        {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </button>
-                    )}
-                    <button 
-                      onClick={() => setConfirmDelete(true)} 
-                      title="Eliminar entrada" 
-                      className="p-1.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
 
-                {/* Preview text if collapsed */}
-                {!expanded && entry.text && (
-                  <p className="text-xs text-gray-500 line-clamp-2 mt-2 font-medium italic">
-                    "{entry.text}"
-                  </p>
-                )}
-              </div>
+            <div className="flex items-center gap-1">
+              {(entry.text || entry.gratitude) && (
+                <button onClick={() => setExpanded(!expanded)} className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg transition-colors cursor-pointer">
+                  {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </button>
+              )}
+              <button 
+                onClick={() => setConfirmDelete(true)} 
+                title="Eliminar entrada" 
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
 
-              {expanded && (
-                <div className="px-4 pb-4 pt-2 space-y-3 border-t border-gray-100">
-                  {entry.text && (
-                    <div className="text-sm text-gray-600 leading-[28px] whitespace-pre-wrap" style={{ ...linedPaper, ...marginLine }}>
-                      {entry.text}
-                    </div>
-                  )}
-                  {entry.gratitude && (
-                    <div className="flex gap-2.5 p-3 rounded-lg bg-amber-50/60 border border-amber-100/50">
-                      <span className="text-lg shrink-0">✨</span>
-                      <div>
-                        <div className="text-[9px] uppercase tracking-wider text-amber-600 font-bold mb-0.5">Gratitud</div>
-                        <p className="text-sm text-amber-800 font-medium">{entry.gratitude}</p>
-                      </div>
-                    </div>
-                  )}
+          {entry.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {entry.tags.map(t => (
+                <span key={t} className="text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200/60 rounded-full px-2.5 py-0.5">
+                  #{t}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {!expanded && entry.text && (
+            <p className="text-xs md:text-sm text-slate-600 line-clamp-2 font-medium italic">
+              "{entry.text}"
+            </p>
+          )}
+
+          {expanded && (
+            <div className="space-y-4 pt-2 border-t border-slate-100">
+              {entry.text && (
+                <p className="text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap bg-slate-50/60 p-4 rounded-2xl border border-slate-100">
+                  {entry.text}
+                </p>
+              )}
+              {entry.gratitude && (
+                <div className="flex gap-3 p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100/80">
+                  <span className="text-xl shrink-0">✨</span>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-indigo-700 font-bold mb-0.5">Gratitud</div>
+                    <p className="text-xs md:text-sm text-slate-800 font-medium">{entry.gratitude}</p>
+                  </div>
                 </div>
               )}
-            </>
+            </div>
           )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }
+
+import { AuthPromptModal, isUserLoggedIn } from '@/components/AuthPromptModal';
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function DiarioEmocionalPage() {
@@ -352,8 +389,18 @@ export default function DiarioEmocionalPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMood, setFilterMood] = useState<string>('todos');
   const [filterTag, setFilterTag] = useState<string>('todos');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const isLoggedIn = isUserLoggedIn();
 
   useEffect(() => saveEntries(entries), [entries]);
+
+  const handleStartWriting = () => {
+    if (!isLoggedIn) {
+      setShowAuthModal(true);
+      return;
+    }
+    setWriting(true);
+  };
 
   const addEntry = (e: Entry) => { setEntries(prev => [e, ...prev]); setWriting(false); };
   const deleteEntry = (id: string) => {
@@ -378,192 +425,170 @@ export default function DiarioEmocionalPage() {
   const allUsedTags = Array.from(new Set(entries.flatMap(e => e.tags)));
 
   return (
-    <PublicLayout contentClassName="p-0">
-      <div style={paperBg} className="min-h-screen">
-        {/* ─── Hero: asymmetric journal cover ────────────────────────────── */}
-        <div className="relative overflow-hidden border-b border-gray-200/60">
-          {/* Watercolor-style blobs — organic, not circles */}
-          <div className="absolute -top-20 -right-20 w-96 h-96 rounded-[40%_60%_60%_40%/60%_30%_70%_40%] bg-primary/[0.04] rotate-12 blur-sm pointer-events-none" />
-          <div className="absolute bottom-0 -left-16 w-80 h-80 rounded-[60%_40%_50%_50%/40%_60%_40%_60%] bg-accent/[0.04] -rotate-6 blur-sm pointer-events-none" />
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 lg:px-12 py-12 md:py-16 relative z-10">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
-                {/* Left: large decorative icon */}
-                <div className="shrink-0">
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-3xl bg-white border border-gray-200/80 shadow-lg flex items-center justify-center rotate-[-3deg] hover:rotate-0 transition-transform duration-500">
-                    <span className="text-4xl md:text-5xl select-none">📓</span>
-                  </div>
-                </div>
-
-                {/* Right: text */}
-                <div className="space-y-2 flex-1">
-                  <div className="flex items-center gap-2">
-                    <Lock className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary">Solo para ti · Cifrado local</span>
-                  </div>
-                  <h1 className="text-3xl md:text-5xl font-black text-gray-800 tracking-tight leading-[1.1]">
-                    Diario <span className="text-primary">Emocional</span>
-                  </h1>
-                  <p className="text-gray-500 text-sm md:text-base leading-relaxed max-w-xl">
-                    Tu santuario personal para registrar lo que sientes. Todo se guarda de forma privada en tu dispositivo.
-                  </p>
-                </div>
-              </div>
-
-              {!writing && (
-                <button
-                  onClick={() => setWriting(true)}
-                  className="inline-flex items-center justify-center gap-2 bg-primary text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-lg hover:shadow-xl hover:brightness-110 active:scale-[0.98] transition-all self-start md:self-auto shrink-0"
-                >
-                  <PenLine className="h-4 w-4" /> Escribir Nueva Entrada
-                </button>
+    <PublicLayout>
+      <div className="max-w-5xl mx-auto space-y-8">
+        {/* Top Header bar with Action button */}
+        {!writing && (
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900">Diario Emocional</h1>
+            <button
+              onClick={handleStartWriting}
+              className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-6 py-3 rounded-2xl shadow-lg shadow-indigo-600/20 hover:scale-105 transition-all cursor-pointer"
+            >
+              {isLoggedIn ? (
+                <><PenLine className="h-4 w-4" /> Escribir Nueva Entrada</>
+              ) : (
+                <><Lock className="h-4 w-4" /> Escribir Nueva Entrada (Requiere Cuenta)</>
               )}
+            </button>
+          </div>
+        )}
+
+        {!isLoggedIn && (
+          <div className="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm">Espacio Personal e Historial Protegido</h4>
+                <p className="text-xs text-slate-600 font-medium">Inicia sesión o crea tu cuenta gratuita para guardar y mantener tu Diario Emocional sin límites.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all shrink-0 cursor-pointer"
+            >
+              🔒 Iniciar Sesión / Registro
+            </button>
+          </div>
+        )}
+
+        {/* ─── Top Dashboard: Stats & Mood Trend ──────────────────────── */}
+        {entries.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 text-center">
+              <div className="text-3xl font-black text-indigo-600">{entries.length}</div>
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-1">Entradas Totales</div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 text-center">
+              <div className="text-3xl font-black text-indigo-600">{avgMood ?? '—'}</div>
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-1">Ánimo Promedio (×7)</div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 text-center">
+              <div className="text-xl font-black text-indigo-600 truncate">{topTag ?? '—'}</div>
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-1">Foco Principal</div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* ─── Main Content Container (Expanded Horizontally max-w-7xl) ──── */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 lg:px-12 py-8 space-y-8">
+        {/* ─── New entry form ──────────────────────────────────────────── */}
+        {writing && (
+          <NewEntryForm onSave={addEntry} onCancel={() => setWriting(false)} />
+        )}
 
-          {/* ─── Top Dashboard: Stats & Mood Trend Side-by-Side ────────────── */}
-          {entries.length > 0 && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              
-              {/* Stats: horizontal metric cards */}
-              <div className="lg:col-span-5 flex items-stretch gap-0 rounded-2xl border border-gray-200/80 overflow-hidden bg-white shadow-sm">
-                <div className="flex-1 px-4 py-5 text-center border-r border-gray-100 flex flex-col justify-center">
-                  <div className="text-3xl font-black text-primary">{entries.length}</div>
-                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Entradas Totales</div>
+        {/* ─── Search and filters bar ─────────────────────────────────── */}
+        {entries.length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+                <input 
+                  type="text" 
+                  value={searchQuery} 
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Buscar en tus notas o gratitudes..."
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+                />
+              </div>
+              <div className="flex gap-2.5 w-full sm:w-auto shrink-0">
+                <div className="relative flex-1 sm:w-40">
+                  <select 
+                    value={filterMood} 
+                    onChange={e => setFilterMood(e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-slate-200 pl-3.5 pr-8 py-2.5 text-xs text-slate-800 font-bold bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600/20 cursor-pointer"
+                  >
+                    <option value="todos">Todo ánimo</option>
+                    {MOODS.map(m => <option key={m.label} value={m.label}>{m.emoji} {m.label}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-3 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                 </div>
-                <div className="flex-1 px-4 py-5 text-center border-r border-gray-100 flex flex-col justify-center">
-                  <div className="text-3xl font-black text-primary">{avgMood ?? '—'}</div>
-                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Ánimo Promedio (×7)</div>
-                </div>
-                <div className="flex-1 px-4 py-5 text-center flex flex-col justify-center">
-                  <div className="text-xl font-black text-primary truncate px-1">{topTag ?? '—'}</div>
-                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Foco Principal</div>
+                <div className="relative flex-1 sm:w-40">
+                  <select 
+                    value={filterTag} 
+                    onChange={e => setFilterTag(e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-slate-200 pl-3.5 pr-8 py-2.5 text-xs text-slate-800 font-bold bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600/20 cursor-pointer"
+                  >
+                    <option value="todos">Toda etiqueta</option>
+                    {allUsedTags.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-3 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                 </div>
               </div>
-
-              {/* Mood trend: horizontal bar chart */}
-              <div className="lg:col-span-7 bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
-                    <TrendingUp className="h-4 w-4 text-primary" /> Historial Reciente de Ánimo
-                  </span>
-                  <span className="text-[10px] text-gray-400 font-bold">Últimas {last7.length} entradas</span>
-                </div>
-                {last7.length > 0 ? (
-                  <div className="flex items-end gap-2 h-16 pt-2">
-                    {[...last7].reverse().map((e) => (
-                      <div key={e.id} className="flex-1 flex flex-col items-center gap-1.5 group relative">
-                        <div className="absolute bottom-full mb-1.5 opacity-0 group-hover:opacity-100 bg-gray-800 text-white text-[9px] font-bold px-2 py-1 rounded shadow-md pointer-events-none transition-opacity z-20 whitespace-nowrap">
-                          {e.mood.label} · {formatDate(e.date)}
-                        </div>
-                        <div
-                          className="w-full rounded-md transition-all duration-300 group-hover:opacity-100"
-                          style={{ height: `${(e.mood.value / 5) * 44}px`, backgroundColor: e.mood.color, opacity: 0.7 }}
-                        />
-                        <span className="text-xs select-none">{e.mood.emoji}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-xs text-gray-400 italic text-center py-4">Agrega entradas para ver la tendencia gráfica.</div>
-                )}
-              </div>
-
             </div>
-          )}
-
-          {/* ─── New entry form ──────────────────────────────────────────── */}
-          {writing && (
-            <NewEntryForm onSave={addEntry} onCancel={() => setWriting(false)} />
-          )}
-
-          {/* ─── Search and filters bar (Wide layout) ───────────────────── */}
-          {entries.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-4 space-y-3">
-              <div className="flex flex-col sm:flex-row gap-3 items-center">
-                <div className="relative flex-1 w-full">
-                  <Search className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
-                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Buscar en tus notas o gratitudes..."
-                    className="w-full rounded-xl border border-gray-200 pl-10 pr-4 py-2.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all font-medium"
-                    style={paperBg}
-                  />
-                </div>
-                <div className="flex gap-2.5 w-full sm:w-auto shrink-0">
-                  <div className="relative flex-1 sm:w-40">
-                    <select value={filterMood} onChange={e => setFilterMood(e.target.value)}
-                      className="w-full appearance-none rounded-xl border border-gray-200 pl-3.5 pr-8 py-2.5 text-xs text-gray-700 font-bold bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                    >
-                      <option value="todos">Todo ánimo</option>
-                      {MOODS.map(m => <option key={m.label} value={m.label}>{m.emoji} {m.label}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-3 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-                  </div>
-                  <div className="relative flex-1 sm:w-40">
-                    <select value={filterTag} onChange={e => setFilterTag(e.target.value)}
-                      className="w-full appearance-none rounded-xl border border-gray-200 pl-3.5 pr-8 py-2.5 text-xs text-gray-700 font-bold bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                    >
-                      <option value="todos">Toda etiqueta</option>
-                      {allUsedTags.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-3 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-                  </div>
-                </div>
+            {(searchQuery || filterMood !== 'todos' || filterTag !== 'todos') && (
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span className="text-[11px] text-indigo-600 font-bold">Mostrando {filteredEntries.length} de {entries.length} entradas</span>
+                <button 
+                  onClick={() => { setSearchQuery(''); setFilterMood('todos'); setFilterTag('todos'); }}
+                  className="text-[11px] font-bold text-rose-600 hover:text-rose-700 uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Limpiar Filtros
+                </button>
               </div>
-              {(searchQuery || filterMood !== 'todos' || filterTag !== 'todos') && (
-                <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-                  <span className="text-[11px] text-primary font-bold">Mostrando {filteredEntries.length} de {entries.length} entradas</span>
-                  <button onClick={() => { setSearchQuery(''); setFilterMood('todos'); setFilterTag('todos'); }}
-                    className="text-[11px] font-bold text-rose-500 hover:text-rose-600 uppercase tracking-wider transition-colors"
-                  >Limpiar Filtros</button>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
+        )}
 
-          {/* ─── Entries Grid: 2 Columns on MD/LG screens to expand sideways ──── */}
-          <div>
-            {filteredEntries.length === 0 && !writing && (
-              <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm py-16 text-center">
-                <div className="text-5xl mb-4 select-none">📓</div>
-                <h3 className="font-bold text-gray-800 text-base mb-1">
-                  {entries.length === 0 ? 'Comienza tu viaje emocional' : 'Sin resultados'}
-                </h3>
-                <p className="text-gray-400 text-xs max-w-xs mx-auto leading-relaxed mb-6">
-                  {entries.length === 0
-                    ? 'Registrar lo que sientes te ayuda a verte con más claridad.'
-                    : 'Intenta ajustar los criterios de búsqueda o filtros.'}
-                </p>
-                {entries.length === 0 && (
-                  <button onClick={() => setWriting(true)}
-                    className="inline-flex items-center gap-2 bg-primary text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md hover:shadow-lg hover:brightness-110 transition-all"
+        {/* ─── Entries Grid ───────────────────────────────────────────── */}
+        <div>
+          {filteredEntries.length === 0 && !writing && (
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-xl py-16 px-6 text-center space-y-4">
+              <div className="h-16 w-16 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-3xl select-none">
+                📓
+              </div>
+              <h3 className="font-black text-slate-900 text-xl">
+                {entries.length === 0 ? 'Comienza tu viaje emocional' : 'Sin resultados'}
+              </h3>
+              <p className="text-slate-500 text-sm max-w-sm mx-auto leading-relaxed font-medium">
+                {entries.length === 0
+                  ? 'Registrar lo que sientes te ayuda a procesar tus emociones con claridad y autocompasión.'
+                  : 'Intenta ajustar los criterios de búsqueda o filtros.'}
+              </p>
+              {entries.length === 0 && (
+                <div className="pt-2">
+                  <button 
+                    onClick={handleStartWriting}
+                    className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-6 py-3.5 rounded-2xl shadow-lg shadow-indigo-600/20 hover:scale-105 transition-all cursor-pointer"
                   >
                     <PenLine className="h-4 w-4" /> Escribir mi primera nota
                   </button>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
+          )}
 
-            {filteredEntries.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                {filteredEntries.map(e => <EntryCard key={e.id} entry={e} onDelete={() => deleteEntry(e.id)} />)}
-              </div>
-            )}
-          </div>
-
-          {entries.length > 0 && (
-            <div className="flex items-center justify-center gap-1.5 text-gray-400 text-[11px] py-4 border-t border-dashed border-gray-200/60">
-              <Lock className="h-3.5 w-3.5 text-primary/60" />
-              <span className="font-medium">Tus datos están cifrados localmente en este dispositivo.</span>
+          {filteredEntries.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              {filteredEntries.map(e => <EntryCard key={e.id} entry={e} onDelete={() => deleteEntry(e.id)} />)}
             </div>
           )}
         </div>
+
+        {entries.length > 0 && (
+          <div className="flex items-center justify-center gap-1.5 text-slate-400 text-xs py-4 border-t border-slate-100">
+            <Lock className="h-3.5 w-3.5 text-indigo-500" />
+            <span className="font-medium">Tus datos están cifrados localmente en este dispositivo.</span>
+          </div>
+        )}
       </div>
+
+      <AuthPromptModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        title="Desbloquea tu Diario Emocional"
+        featureName="el Diario Emocional"
+      />
     </PublicLayout>
   );
 }

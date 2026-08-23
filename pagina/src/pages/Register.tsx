@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import PublicLayout from '../components/PublicLayout';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, Eye, EyeOff, Sparkles, CheckCircle2, Star, Zap, Gift } from 'lucide-react';
+import { UserPlus, Eye, EyeOff, Sparkles, Shield, Heart, Users, Star, Zap, Gift, CheckCircle2 } from 'lucide-react';
 import { api } from '../api/client';
+import OnboardingWelcomeWizard from '../components/awe/OnboardingWelcomeWizard';
 
 type RegisterResponse = {
   token: string;
@@ -16,64 +17,57 @@ type RegisterResponse = {
   };
 };
 
-const STEPS = [
-  { icon: Star,  title: 'Acceso a tu portal personal', sub: 'Gestiona tus citas, cursos y progreso' },
-  { icon: Zap,   title: 'Contenido exclusivo', sub: 'Recursos y talleres diseñados para ti' },
-  { icon: Gift,  title: 'Primera consulta sin costo', sub: 'Comienza sin compromiso económico' },
+const FEATURES = [
+  { icon: Star, label: 'Portal personal exclusivo', sub: 'Gestiona tu progreso y consultas', color: '#10b981' },
+  { icon: Zap, label: 'Contenido y ejercicios guiados', sub: 'Recursos diseñados para tu autorregulación', color: '#60a5fa' },
+  { icon: Heart, label: 'Comunidad de apoyo y cuidado', sub: 'Un espacio seguro y confidencial', color: '#f472b6' },
+  { icon: Sparkles, label: 'Acompañamiento a tu ritmo', sub: 'Herramientas de psicología positiva', color: '#fbbf24' },
 ];
 
-// Password strength helper
 const getStrength = (pwd: string) => {
   let score = 0;
   if (pwd.length >= 8) score++;
   if (/[A-Z]/.test(pwd)) score++;
   if (/[0-9]/.test(pwd)) score++;
   if (/[^A-Za-z0-9]/.test(pwd)) score++;
-  return score; // 0-4
+  return score;
 };
 
 const STRENGTH_LABELS = ['', 'Débil', 'Regular', 'Buena', 'Fuerte'];
-const STRENGTH_COLORS = ['#e2e8f0', '#ef4444', '#f59e0b', '#3b82f6', '#22c55e'];
+const STRENGTH_COLORS = ['#e5e7eb', '#ef4444', '#f59e0b', '#3b82f6', '#10b981'];
 
-const inputStyle = (focused: boolean): React.CSSProperties => ({
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '0.8rem 1.1rem',
-  borderRadius: '14px',
-  border: focused ? '2px solid hsl(193,82%,40%)' : '2px solid #e2e8f0',
-  background: focused ? 'hsl(193,82%,98%)' : '#f8fafc',
-  fontSize: '0.9rem',
-  color: '#0f172a',
-  outline: 'none',
-  transition: 'border-color 0.2s, background 0.2s, box-shadow 0.2s',
-  boxShadow: focused ? '0 0 0 4px hsl(193,82%,92%)' : 'none',
-});
-
-const labelStyle: React.CSSProperties = {
-  fontSize: '0.8rem',
-  fontWeight: 600,
-  color: '#374151',
-  display: 'block',
-  marginBottom: '0.45rem',
-  letterSpacing: '0.02em',
-};
+const Particle = ({ style }: { style: React.CSSProperties }) => (
+  <div style={{
+    position: 'absolute',
+    borderRadius: '50%',
+    pointerEvents: 'none',
+    ...style,
+  }} />
+);
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const [firstName, setFirstName]   = useState('');
-  const [lastName, setLastName]     = useState('');
-  const [username, setUsername]     = useState('');
-  const [email, setEmail]           = useState('');
-  const [password, setPassword]     = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError]           = useState<string | null>(null);
-  const [loading, setLoading]       = useState(false);
-  const [focused, setFocused]       = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
+  const [registeredPatient, setRegisteredPatient] = useState<{ firstName: string } | null>(null);
 
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
-  const [googleEnabled, setGoogleEnabled]   = useState(false);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
 
   const strength = getStrength(password);
+
+  useEffect(() => {
+    setTimeout(() => setMounted(true), 50);
+  }, []);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -95,6 +89,9 @@ const RegisterPage = () => {
         g.accounts.id.initialize({
           client_id: googleClientId,
           callback: handleGoogleCallback,
+          ux_mode: 'popup',
+          auto_select: false,
+          itp_support: true,
         });
         const btnContainer = document.getElementById('google-register-btn');
         if (btnContainer) {
@@ -135,7 +132,7 @@ const RegisterPage = () => {
     if (res.ok === false) { setError(res.error); setLoading(false); return; }
     localStorage.setItem('conexionluz:token', res.data.token);
     setLoading(false);
-    navigate('/mi-perfil', { replace: true });
+    setRegisteredPatient({ firstName: res.data.patient?.firstName || firstName || 'Bienvenido/a' });
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -147,146 +144,284 @@ const RegisterPage = () => {
     if (res.ok === false) { setError(res.error); setLoading(false); return; }
     localStorage.setItem('conexionluz:token', res.data.token);
     setLoading(false);
-    navigate('/mi-perfil', { replace: true });
+    setRegisteredPatient({ firstName: res.data.patient?.firstName || firstName || 'Bienvenido/a' });
+  };
+
+  if (registeredPatient) {
+    return (
+      <PublicLayout contentClassName="p-0">
+        <OnboardingWelcomeWizard
+          firstName={registeredPatient.firstName}
+          onCompleted={() => {
+            navigate('/mi-perfil', { replace: true });
+          }}
+        />
+      </PublicLayout>
+    );
+  }
+
+  const inputStyle = (fieldName: string): React.CSSProperties => {
+    const isFocused = focusedField === fieldName;
+    return {
+      width: '100%',
+      boxSizing: 'border-box',
+      padding: '0.85rem 1.1rem',
+      borderRadius: '14px',
+      border: isFocused ? '1.5px solid #10b981' : '1.5px solid #d1d5db',
+      background: isFocused ? '#ffffff' : '#f9fafb',
+      fontSize: '0.92rem',
+      color: '#111827',
+      outline: 'none',
+      transition: 'all 0.25s ease',
+      boxShadow: isFocused ? '0 0 0 3px rgba(16, 185, 129, 0.15)' : 'none',
+    };
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: '0.78rem',
+    fontWeight: 700,
+    color: '#6b7280',
+    display: 'block',
+    marginBottom: '0.45rem',
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
   };
 
   return (
     <PublicLayout contentClassName="p-0">
-      <div style={{ minHeight: '100vh', display: 'flex', background: '#f8fafc' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', background: '#fcfcfc', overflow: 'hidden', position: 'relative' }}>
 
-        {/* ── Left brand panel ── */}
-        <div
-          style={{
-            display: 'none', flex: 1, position: 'relative', overflow: 'hidden',
-            background: 'linear-gradient(150deg, hsl(142,76%,22%) 0%, hsl(160,70%,27%) 35%, hsl(193,82%,28%) 70%, hsl(193,82%,35%) 100%)',
-          }}
-          className="reg-left-panel"
-        >
-          {/* Orbs */}
-          <div style={{ position:'absolute', top:'-60px', right:'-80px', width:'340px', height:'340px', borderRadius:'50%', background:'rgba(255,255,255,0.07)', filter:'blur(40px)' }} />
-          <div style={{ position:'absolute', bottom:'-80px', left:'-60px', width:'380px', height:'380px', borderRadius:'50%', background:'rgba(255,255,255,0.06)', filter:'blur(50px)' }} />
+        {/* ── Animated Background Canvas ── */}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          {/* Large ambient orbs */}
+          <div style={{
+            position: 'absolute', top: '-20%', left: '-10%',
+            width: '700px', height: '700px', borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)',
+            animation: 'orb1 12s ease-in-out infinite',
+          }} />
+          <div style={{
+            position: 'absolute', bottom: '-20%', right: '-10%',
+            width: '600px', height: '600px', borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)',
+            animation: 'orb2 15s ease-in-out infinite',
+          }} />
+          <div style={{
+            position: 'absolute', top: '40%', left: '30%',
+            width: '400px', height: '400px', borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%)',
+            animation: 'orb3 20s ease-in-out infinite',
+          }} />
 
-          {/* Inner content */}
-          <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', justifyContent:'center', height:'100%', padding:'3rem 3.5rem' }}>
+          {/* Floating particles */}
+          {[
+            { w: 6, h: 6, top: '15%', left: '5%', bg: 'rgba(16, 185, 129, 0.4)', anim: 'particle1 8s ease-in-out infinite' },
+            { w: 4, h: 4, top: '25%', left: '15%', bg: 'rgba(59, 130, 246, 0.3)', anim: 'particle2 11s ease-in-out infinite' },
+            { w: 8, h: 8, top: '60%', left: '8%', bg: 'rgba(139, 92, 246, 0.3)', anim: 'particle3 14s ease-in-out infinite' },
+            { w: 5, h: 5, top: '80%', left: '20%', bg: 'rgba(16, 185, 129, 0.3)', anim: 'particle1 9s ease-in-out infinite 2s' },
+            { w: 3, h: 3, top: '10%', left: '40%', bg: 'rgba(245, 158, 11, 0.3)', anim: 'particle2 7s ease-in-out infinite 1s' },
+          ].map((p, i) => (
+            <Particle key={i} style={{
+              width: p.w, height: p.h,
+              top: p.top, left: p.left,
+              background: p.bg,
+              animation: p.anim,
+              boxShadow: `0 0 ${p.w * 4}px ${p.bg}`,
+            }} />
+          ))}
 
-            {/* Brand pill */}
-            <div style={{ marginBottom:'3rem' }}>
-              <div style={{
-                display:'inline-flex', alignItems:'center', gap:'0.75rem',
-                background:'rgba(255,255,255,0.12)', borderRadius:'50px',
-                padding:'0.6rem 1.25rem', backdropFilter:'blur(10px)',
-                border:'1px solid rgba(255,255,255,0.2)',
-              }}>
-                <Sparkles size={18} color="rgba(255,255,255,0.9)" />
-                <span style={{ color:'rgba(255,255,255,0.9)', fontSize:'0.85rem', fontWeight:600, letterSpacing:'0.05em' }}>ConexiónLuz</span>
-              </div>
-            </div>
+          {/* Grid lines subtle */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            backgroundImage: `
+              linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+          }} />
+        </div>
 
-            <h2 style={{ fontSize:'2.5rem', fontWeight:800, lineHeight:1.15, color:'#ffffff', marginBottom:'1rem', textShadow:'0 2px 20px rgba(0,0,0,0.15)' }}>
-              Comienza tu<br />
-              <span style={{ color:'rgba(255,255,255,0.72)' }}>camino de sanación</span>
-            </h2>
-            <p style={{ color:'rgba(255,255,255,0.68)', fontSize:'1rem', lineHeight:1.7, maxWidth:'340px', marginBottom:'2.5rem' }}>
-              Únete a nuestra comunidad y accede a recursos de bienestar diseñados especialmente para ti.
-            </p>
+        {/* ── Left panel – brand & features ── */}
+        <div style={{
+          display: 'none',
+          flex: 1,
+          position: 'relative',
+          zIndex: 1,
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '3rem 3.5rem',
+        }} className="register-left-panel">
 
-            {/* Benefits */}
-            <div style={{ display:'flex', flexDirection:'column', gap:'1.25rem', marginBottom:'3rem' }}>
-              {STEPS.map(({ icon: Icon, title, sub }) => (
-                <div key={title} style={{ display:'flex', alignItems:'flex-start', gap:'1rem' }}>
-                  <div style={{
-                    width:'42px', height:'42px', borderRadius:'12px', flexShrink:0,
-                    background:'rgba(255,255,255,0.13)', border:'1px solid rgba(255,255,255,0.2)',
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                    backdropFilter:'blur(6px)',
-                  }}>
-                    <Icon size={18} color="rgba(255,255,255,0.9)" />
-                  </div>
-                  <div>
-                    <p style={{ color:'#fff', fontWeight:600, fontSize:'0.88rem', margin:0 }}>{title}</p>
-                    <p style={{ color:'rgba(255,255,255,0.58)', fontSize:'0.77rem', margin:'2px 0 0' }}>{sub}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Already have account nudge */}
+          {/* Brand */}
+          <div style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(30px)',
+            transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+            marginBottom: '2.5rem',
+          }}>
             <div style={{
-              background:'rgba(255,255,255,0.1)', backdropFilter:'blur(8px)',
-              border:'1px solid rgba(255,255,255,0.18)', borderRadius:'16px',
-              padding:'1rem 1.25rem', display:'flex', alignItems:'center', gap:'0.75rem',
+              display: 'inline-flex', alignItems: 'center', gap: '0.75rem',
+              background: 'rgba(16, 185, 129, 0.1)',
+              borderRadius: '50px', padding: '0.6rem 1.25rem',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              marginBottom: '2rem',
             }}>
-              <CheckCircle2 size={18} color="rgba(255,255,255,0.85)" />
-              <p style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.82rem', margin:0, lineHeight:1.5 }}>
-                ¿Ya tienes cuenta?{' '}
-                <Link to="/login" style={{ color:'#fff', fontWeight:700, textDecoration:'underline', textUnderlineOffset:'3px' }}>
-                  Inicia sesión aquí
-                </Link>
-              </p>
+              <Sparkles size={16} color="#059669" />
+              <span style={{ color: '#059669', fontSize: '0.82rem', fontWeight: 700, letterSpacing: '0.1em' }}>
+                CONEXIÓNLUZ
+              </span>
             </div>
+
+            <h2 style={{
+              fontSize: '3rem', fontWeight: 900, lineHeight: 1.15,
+              color: '#111827', margin: 0,
+              letterSpacing: '-0.02em',
+            }}>
+              Comienza tu<br />
+              <span style={{
+                background: 'linear-gradient(135deg, #10b981, #0ea5e9)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>camino de bienestar</span>
+            </h2>
+            <p style={{
+              color: '#4b5563', fontSize: '1rem',
+              lineHeight: 1.7, maxWidth: '360px', marginTop: '1rem', marginBottom: 0,
+            }}>
+              Crea tu cuenta gratuita y accede a tus ejercicios guiados, tests clínicos y diario emocional personal.
+            </p>
+          </div>
+
+          {/* Features */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '2.5rem' }}>
+            {FEATURES.map(({ icon: Icon, label, sub, color }, i) => (
+              <div
+                key={label}
+                onMouseEnter={() => setHoveredFeature(i)}
+                onMouseLeave={() => setHoveredFeature(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '1rem',
+                  padding: '0.9rem 1.1rem',
+                  borderRadius: '16px',
+                  background: hoveredFeature === i ? '#f9fafb' : '#ffffff',
+                  border: `1px solid ${hoveredFeature === i ? '#d1d5db' : '#e5e7eb'}`,
+                  transition: 'all 0.3s ease',
+                  cursor: 'default',
+                  opacity: mounted ? 1 : 0,
+                  transform: mounted ? 'translateX(0)' : 'translateX(-30px)',
+                  transitionDelay: `${0.4 + i * 0.1}s`,
+                }}
+              >
+                <div style={{
+                  width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
+                  background: `${color}15`,
+                  border: `1px solid ${color}30`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.3s ease',
+                  boxShadow: hoveredFeature === i ? `0 0 15px ${color}20` : 'none',
+                }}>
+                  <Icon size={17} color={color} />
+                </div>
+                <div>
+                  <p style={{ color: '#1f2937', fontWeight: 600, fontSize: '0.88rem', margin: 0 }}>{label}</p>
+                  <p style={{ color: '#6b7280', fontSize: '0.76rem', margin: '2px 0 0' }}>{sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Already have account nudge */}
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e5e7eb', borderRadius: '16px',
+            padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem',
+            opacity: mounted ? 1 : 0,
+            transition: 'all 0.8s ease 0.8s',
+          }}>
+            <CheckCircle2 size={18} color="#10b981" />
+            <p style={{ color: '#4b5563', fontSize: '0.85rem', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
+              ¿Ya tienes cuenta?{' '}
+              <Link to="/login" style={{ color: '#059669', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+                Inicia sesión aquí
+              </Link>
+            </p>
           </div>
         </div>
 
-        {/* ── Right form panel ── */}
+        {/* ── Right panel – form ── */}
         <div style={{
-          flex:1, display:'flex', alignItems:'center', justifyContent:'center',
-          padding:'2rem 1.5rem', background:'#ffffff', position:'relative', overflowY:'auto',
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '2rem 1.5rem',
+          position: 'relative', zIndex: 1, overflowY: 'auto',
         }}>
-          {/* Top-left decoration (mirror of login's top-right) */}
+          {/* Form card */}
           <div style={{
-            position:'absolute', top:0, left:0,
-            width:'260px', height:'260px', borderRadius:'0 0 100% 0',
-            background:'linear-gradient(135deg, hsl(142,76%,96%) 0%, hsl(193,82%,97%) 100%)',
-            pointerEvents:'none',
-          }} />
+            width: '100%', maxWidth: '480px',
+            background: '#ffffff',
+            borderRadius: '28px',
+            border: '1px solid #e5e7eb',
+            padding: '2.5rem',
+            boxShadow: '0 25px 80px rgba(0,0,0,0.05)',
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0) scale(1)' : 'translateY(40px) scale(0.97)',
+            transition: 'all 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s',
+          }}>
 
-          <div style={{ width:'100%', maxWidth:'460px', position:'relative', zIndex:1 }}>
-
-            {/* Mobile brand */}
-            <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'1.75rem' }} className="reg-mobile-brand">
+            {/* Mobile brand pill */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '2rem',
+            }} className="register-mobile-brand">
               <div style={{
-                width:'36px', height:'36px', borderRadius:'10px',
-                background:'linear-gradient(135deg, hsl(142,76%,36%), hsl(193,82%,31%))',
-                display:'flex', alignItems:'center', justifyContent:'center',
+                width: '38px', height: '38px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #10b981, #0ea5e9)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
               }}>
                 <Sparkles size={16} color="#fff" />
               </div>
-              <span style={{ fontWeight:700, fontSize:'1.05rem', color:'hsl(142,76%,28%)' }}>ConexiónLuz</span>
+              <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#111827' }}>
+                ConexiónLuz
+              </span>
             </div>
 
             {/* Heading */}
-            <div style={{ marginBottom:'1.75rem' }}>
+            <div style={{ marginBottom: '1.75rem' }}>
               <div style={{
-                display:'inline-flex', alignItems:'center', gap:'0.5rem',
-                background:'hsl(142,76%,95%)', borderRadius:'50px',
-                padding:'0.35rem 0.9rem', marginBottom:'1rem',
-                border:'1px solid hsl(142,76%,85%)',
+                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                background: 'rgba(16, 185, 129, 0.1)',
+                borderRadius: '50px',
+                padding: '0.35rem 0.9rem', marginBottom: '1rem',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
               }}>
-                <UserPlus size={13} color="hsl(142,76%,30%)" />
-                <span style={{ fontSize:'0.75rem', fontWeight:600, color:'hsl(142,76%,25%)', letterSpacing:'0.04em' }}>
-                  CREAR CUENTA GRATIS
+                <UserPlus size={12} color="#059669" />
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', letterSpacing: '0.1em' }}>
+                  REGISTRO GRATUITO
                 </span>
               </div>
-              <h1 style={{ fontSize:'2rem', fontWeight:800, color:'#0f172a', lineHeight:1.2, margin:0 }}>
-                Empieza hoy
+              <h1 style={{
+                fontSize: '2rem', fontWeight: 900,
+                color: '#111827', lineHeight: 1.2, margin: 0,
+                letterSpacing: '-0.02em',
+              }}>
+                Crea tu cuenta gratis ✨
               </h1>
-              <p style={{ color:'#64748b', marginTop:'0.5rem', fontSize:'0.92rem', lineHeight:1.6 }}>
-                Crea tu perfil y accede a cursos, citas y tu comunidad.
+              <p style={{ color: '#4b5563', marginTop: '0.5rem', fontSize: '0.92rem', lineHeight: 1.6 }}>
+                Únete para desbloquear todas las herramientas de bienestar.
               </p>
             </div>
 
-            {/* Google first (above the fold) */}
+            {/* Google register option */}
             {googleEnabled && googleClientId && (
-              <div style={{ marginBottom:'1.5rem' }}>
-                <div style={{ display:'flex', justifyContent:'center', minHeight:'44px' }}>
-                  <div id="google-register-btn" style={{ width:'100%' }} />
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', minHeight: '44px' }}>
+                  <div id="google-register-btn" style={{ width: '100%' }} />
                 </div>
-                <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginTop:'1.25rem', marginBottom:'0.25rem' }}>
-                  <div style={{ flex:1, height:'1px', background:'#e2e8f0' }} />
-                  <span style={{ color:'#94a3b8', fontSize:'0.75rem', fontWeight:600, letterSpacing:'0.06em', whiteSpace:'nowrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.25rem', marginBottom: '0.5rem' }}>
+                  <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+                  <span style={{ color: '#9ca3af', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                     O REGÍSTRATE CON EMAIL
                   </span>
-                  <div style={{ flex:1, height:'1px', background:'#e2e8f0' }} />
+                  <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
                 </div>
               </div>
             )}
@@ -294,30 +429,36 @@ const RegisterPage = () => {
             {/* Error */}
             {error && (
               <div style={{
-                background:'#fef2f2', border:'1px solid #fecaca', borderRadius:'12px',
-                padding:'0.85rem 1.1rem', color:'#dc2626', fontSize:'0.875rem',
-                marginBottom:'1.1rem', display:'flex', alignItems:'center', gap:'0.5rem',
+                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: '14px', padding: '0.85rem 1.1rem',
+                color: '#dc2626', fontSize: '0.875rem',
+                marginBottom: '1.25rem',
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
               }}>
-                <span style={{ fontSize:'1.1rem' }}>⚠</span> {error}
+                <span style={{ fontSize: '1.1rem' }}>⚠</span>
+                {error}
               </div>
             )}
 
             {/* Form */}
-            <form onSubmit={handleRegister} style={{ display:'flex', flexDirection:'column', gap:'0.9rem' }}>
+            <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '0.95rem' }}>
 
-              {/* Name row */}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
+              {/* First Name & Last Name row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={labelStyle}>Nombre <span style={{ color:'#ef4444' }}>*</span></label>
+                  <label style={labelStyle}>
+                    Nombre <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
                   <input
                     id="reg-firstname"
                     value={firstName}
-                    onChange={e => setFirstName(e.target.value)}
-                    onFocus={() => setFocused('fn')}
-                    onBlur={() => setFocused(null)}
-                    placeholder="Tu nombre"
+                    onChange={(e) => setFirstName(e.target.value)}
+                    onFocus={() => setFocusedField('firstName')}
+                    onBlur={() => setFocusedField(null)}
+                    type="text"
                     autoComplete="given-name"
-                    style={inputStyle(focused === 'fn')}
+                    placeholder="Tu nombre"
+                    style={inputStyle('firstName')}
                   />
                 </div>
                 <div>
@@ -325,182 +466,193 @@ const RegisterPage = () => {
                   <input
                     id="reg-lastname"
                     value={lastName}
-                    onChange={e => setLastName(e.target.value)}
-                    onFocus={() => setFocused('ln')}
-                    onBlur={() => setFocused(null)}
-                    placeholder="Apellido"
+                    onChange={(e) => setLastName(e.target.value)}
+                    onFocus={() => setFocusedField('lastName')}
+                    onBlur={() => setFocusedField(null)}
+                    type="text"
                     autoComplete="family-name"
-                    style={inputStyle(focused === 'ln')}
+                    placeholder="Apellido"
+                    style={inputStyle('lastName')}
                   />
                 </div>
               </div>
 
               {/* Username */}
               <div>
-                <label style={labelStyle}>Usuario <span style={{ color:'#ef4444' }}>*</span></label>
+                <label style={labelStyle}>
+                  Usuario <span style={{ color: '#ef4444' }}>*</span>
+                </label>
                 <input
                   id="reg-username"
                   value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  onFocus={() => setFocused('un')}
-                  onBlur={() => setFocused(null)}
-                  placeholder="tu.usuario"
+                  onChange={(e) => setUsername(e.target.value)}
+                  onFocus={() => setFocusedField('username')}
+                  onBlur={() => setFocusedField(null)}
+                  type="text"
                   autoComplete="username"
-                  style={inputStyle(focused === 'un')}
+                  placeholder="crea_tu_usuario"
+                  style={inputStyle('username')}
                 />
-                <p style={{ fontSize:'0.72rem', color:'#94a3b8', marginTop:'0.35rem' }}>
-                  Letras, números y . _ – (mínimo 3 caracteres)
-                </p>
               </div>
 
               {/* Email */}
               <div>
-                <label style={labelStyle}>Email</label>
+                <label style={labelStyle}>Correo Electrónico</label>
                 <input
                   id="reg-email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  onFocus={() => setFocused('em')}
-                  onBlur={() => setFocused(null)}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setFocusedField('email')}
+                  onBlur={() => setFocusedField(null)}
                   type="email"
-                  placeholder="tu@email.com (opcional)"
                   autoComplete="email"
-                  style={inputStyle(focused === 'em')}
+                  placeholder="tu@email.com"
+                  style={inputStyle('email')}
                 />
               </div>
 
               {/* Password */}
               <div>
-                <label style={labelStyle}>Contraseña <span style={{ color:'#ef4444' }}>*</span></label>
-                <div style={{ position:'relative' }}>
+                <label style={labelStyle}>
+                  Contraseña <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div style={{ position: 'relative' }}>
                   <input
                     id="reg-password"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    onFocus={() => setFocused('pw')}
-                    onBlur={() => setFocused(null)}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
                     autoComplete="new-password"
-                    style={{ ...inputStyle(focused === 'pw'), paddingRight:'3rem' }}
+                    placeholder="Mínimo 8 caracteres"
+                    style={{
+                      ...inputStyle('password'),
+                      paddingRight: '3.2rem',
+                    }}
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(v => !v)}
-                    tabIndex={-1}
-                    aria-label={showPassword ? 'Ocultar' : 'Mostrar'}
+                    onClick={() => setShowPassword(!showPassword)}
                     style={{
-                      position:'absolute', right:'1rem', top:'50%', transform:'translateY(-50%)',
-                      background:'none', border:'none', cursor:'pointer',
-                      color:'#94a3b8', padding:'4px', display:'flex', alignItems:'center',
+                      position: 'absolute', right: '0.9rem', top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none', border: 'none',
+                      color: '#9ca3af', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', padding: 0,
                     }}
                   >
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
 
-                {/* Strength bar */}
+                {/* Password strength meter */}
                 {password.length > 0 && (
-                  <div style={{ marginTop:'0.5rem' }}>
-                    <div style={{ display:'flex', gap:'4px', marginBottom:'4px' }}>
-                      {[1,2,3,4].map(i => (
-                        <div key={i} style={{
-                          flex:1, height:'4px', borderRadius:'99px',
-                          background: i <= strength ? STRENGTH_COLORS[strength] : '#e2e8f0',
-                          transition:'background 0.3s',
-                        }} />
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                      {[1, 2, 3, 4].map(step => (
+                        <div
+                          key={step}
+                          style={{
+                            flex: 1, height: '4px', borderRadius: '2px',
+                            backgroundColor: step <= strength ? STRENGTH_COLORS[strength] : '#e5e7eb',
+                            transition: 'all 0.3s ease',
+                          }}
+                        />
                       ))}
                     </div>
-                    <p style={{ fontSize:'0.72rem', color: strength > 0 ? STRENGTH_COLORS[strength] : '#94a3b8', margin:0, fontWeight:600 }}>
-                      {strength > 0 ? `Contraseña ${STRENGTH_LABELS[strength]}` : 'Mínimo 8 caracteres'}
-                    </p>
+                    <span style={{ fontSize: '0.72rem', color: STRENGTH_COLORS[strength], fontWeight: 700 }}>
+                      Fortaleza: {STRENGTH_LABELS[strength]}
+                    </span>
                   </div>
-                )}
-                {password.length === 0 && (
-                  <p style={{ fontSize:'0.72rem', color:'#94a3b8', marginTop:'0.35rem' }}>Mínimo 8 caracteres</p>
                 )}
               </div>
 
-              {/* Submit */}
+              {/* Submit button */}
               <button
-                id="reg-submit-btn"
                 type="submit"
-                disabled={loading}
+                disabled={loading || !firstName || !username || !password}
                 style={{
-                  width:'100%', padding:'0.95rem',
-                  borderRadius:'14px', border:'none',
-                  background: loading
-                    ? '#94a3b8'
-                    : 'linear-gradient(135deg, hsl(142,76%,30%) 0%, hsl(160,70%,30%) 50%, hsl(193,82%,31%) 100%)',
-                  color:'#fff', fontWeight:700, fontSize:'1rem',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  transition:'all 0.25s',
-                  boxShadow: loading ? 'none' : '0 4px 20px rgba(34,197,94,0.3)',
-                  letterSpacing:'0.02em',
-                  marginTop:'0.4rem',
-                }}
-                onMouseEnter={e => {
-                  if (!loading) {
-                    (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 28px rgba(34,197,94,0.42)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = loading ? 'none' : '0 4px 20px rgba(34,197,94,0.3)';
+                  marginTop: '0.75rem',
+                  width: '100%',
+                  padding: '0.95rem',
+                  borderRadius: '14px',
+                  border: 'none',
+                  background: loading || !firstName || !username || !password
+                    ? '#9ca3af'
+                    : 'linear-gradient(135deg, #10b981, #059669)',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  cursor: loading || !firstName || !username || !password ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)',
+                  transition: 'all 0.3s ease',
                 }}
               >
-                {loading ? (
-                  <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.6rem' }}>
-                    <span style={{
-                      width:'16px', height:'16px', border:'2px solid rgba(255,255,255,0.3)',
-                      borderTopColor:'#fff', borderRadius:'50%',
-                      animation:'spin 0.7s linear infinite', display:'inline-block',
-                    }} />
-                    Creando tu cuenta...
-                  </span>
-                ) : 'Crear cuenta gratuita'}
+                {loading ? 'Creando cuenta...' : 'Crear Mi Cuenta Gratuita'}
               </button>
             </form>
 
-            {/* Login link */}
+            {/* Footer Nudge */}
             <div style={{
-              marginTop:'1.5rem', textAlign:'center',
-              padding:'1rem', borderRadius:'14px',
-              background:'#f8fafc', border:'1px solid #e2e8f0',
+              marginTop: '1.75rem',
+              paddingTop: '1.25rem',
+              borderTop: '1px solid #f3f4f6',
+              textAlign: 'center',
             }}>
-              <span style={{ color:'#64748b', fontSize:'0.9rem' }}>¿Ya tienes cuenta?{' '}</span>
-              <Link
-                to="/login"
-                style={{
-                  color:'hsl(142,76%,30%)', fontWeight:700,
-                  textDecoration:'none', fontSize:'0.9rem',
-                  borderBottom:'2px solid hsl(142,76%,80%)',
-                  paddingBottom:'1px', transition:'border-color 0.2s',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(142,76%,30%)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(142,76%,80%)'; }}
-              >
-                Iniciar sesión →
-              </Link>
+              <p style={{ color: '#4b5563', fontSize: '0.88rem', margin: 0, fontWeight: 500 }}>
+                ¿Ya tienes una cuenta?{' '}
+                <Link
+                  to="/login"
+                  style={{
+                    color: '#059669',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Inicia sesión aquí
+                </Link>
+              </p>
             </div>
-
-            {/* Legal */}
-            <p style={{ marginTop:'1rem', textAlign:'center', color:'#94a3b8', fontSize:'0.72rem', lineHeight:1.5 }}>
-              Al registrarte aceptas nuestra{' '}
-              <a href="#" style={{ color:'hsl(193,82%,40%)', textDecoration:'none' }}>política de privacidad</a>
-              {' '}y{' '}
-              <a href="#" style={{ color:'hsl(193,82%,40%)', textDecoration:'none' }}>términos de uso</a>.
-            </p>
           </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes orb1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(60px, 40px) scale(1.2); }
+        }
+        @keyframes orb2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-50px, -30px) scale(1.15); }
+        }
+        @keyframes orb3 {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); }
+          50% { transform: translate(-50%, -50%) scale(1.3); }
+        }
+        @keyframes particle1 {
+          0%, 100% { transform: translateY(0) translateX(0); opacity: 0.6; }
+          50% { transform: translateY(-40px) translateX(20px); opacity: 1; }
+        }
+        @keyframes particle2 {
+          0%, 100% { transform: translateY(0) translateX(0); opacity: 0.4; }
+          50% { transform: translateY(30px) translateX(-20px); opacity: 0.9; }
+        }
+        @keyframes particle3 {
+          0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.5; }
+          50% { transform: translateY(-25px) rotate(180deg); opacity: 0.8; }
+        }
+        input::placeholder {
+          color: #9ca3af !important;
+        }
         @media (min-width: 900px) {
-          .reg-left-panel  { display: flex !important; }
-          .reg-mobile-brand { display: none !important; }
+          .register-left-panel {
+            display: flex !important;
+          }
+          .register-mobile-brand {
+            display: none !important;
+          }
         }
       `}</style>
     </PublicLayout>

@@ -66,10 +66,17 @@ const ContactPage = () => {
     },
     {
       icon: MessageCircle,
-      title: "WhatsApp",
-      info: "Chat directo",
-      description: "Respuesta inmediata",
+      title: "WhatsApp Principal",
+      info: "+57 301 331 7868",
+      description: "Atención y consultas inmediatas",
       action: "https://wa.me/573013317868"
+    },
+    {
+      icon: MessageCircle,
+      title: "WhatsApp Alterno",
+      info: "+57 315 866 3910",
+      description: "Atención, citas y soporte",
+      action: "https://wa.me/573158663910"
     }
   ];
 
@@ -128,20 +135,22 @@ const ContactPage = () => {
       {/* Contact Info Cards */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 stagger-animation">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 stagger-animation">
             {contactInfo.map((contact, index) => (
               <a
                 key={index}
                 href={contact.action}
-                className="group bg-gray-50 rounded-xl p-6 hover:shadow-lg transition-all duration-300 transform hover:scale-105 animate-fade-in block"
+                target={contact.action.startsWith('http') ? '_blank' : undefined}
+                rel={contact.action.startsWith('http') ? 'noopener noreferrer' : undefined}
+                className="group bg-gray-50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 animate-fade-in block border border-slate-100"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-sm">
                   <contact.icon className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-800 mb-2">{contact.title}</h3>
-                <p className="text-primary font-semibold mb-1">{contact.info}</p>
-                <p className="text-gray-600 text-sm">{contact.description}</p>
+                <h3 className="text-base font-bold text-gray-800 mb-1">{contact.title}</h3>
+                <p className="text-primary font-bold text-sm mb-1">{contact.info}</p>
+                <p className="text-gray-500 text-xs leading-relaxed">{contact.description}</p>
               </a>
             ))}
           </div>
@@ -325,7 +334,7 @@ const ContactPage = () => {
                 <div className="space-y-3">
                   <a
                     href="tel:+573013317868"
-                    className="block bg-white/20 backdrop-blur-sm rounded-lg p-4 hover:bg-white/30 transition-all duration-300"
+                    className="block bg-white/20 backdrop-blur-sm rounded-xl p-4 hover:bg-white/30 transition-all duration-300"
                   >
                     <div className="flex items-center space-x-3">
                       <Phone className="h-6 w-6" />
@@ -338,13 +347,30 @@ const ContactPage = () => {
                   
                   <a
                     href="https://wa.me/573013317868"
-                    className="block bg-white/20 backdrop-blur-sm rounded-lg p-4 hover:bg-white/30 transition-all duration-300"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block bg-white/20 backdrop-blur-sm rounded-xl p-4 hover:bg-white/30 transition-all duration-300"
                   >
                     <div className="flex items-center space-x-3">
                       <MessageCircle className="h-6 w-6" />
                       <div>
-                        <p className="font-semibold">WhatsApp</p>
-                        <p className="text-sm opacity-90">Chat inmediato</p>
+                        <p className="font-semibold">WhatsApp Principal</p>
+                        <p className="text-sm opacity-90">+57 301 331 7868</p>
+                      </div>
+                    </div>
+                  </a>
+
+                  <a
+                    href="https://wa.me/573158663910"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block bg-white/20 backdrop-blur-sm rounded-xl p-4 hover:bg-white/30 transition-all duration-300"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <MessageCircle className="h-6 w-6" />
+                      <div>
+                        <p className="font-semibold">WhatsApp Alterno</p>
+                        <p className="text-sm opacity-90">+57 315 866 3910</p>
                       </div>
                     </div>
                   </a>

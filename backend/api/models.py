@@ -20,6 +20,7 @@ class Course(TimestampedModel):
     description = models.TextField(blank=True)
     description_html = models.TextField(blank=True)
     cover_file = models.FileField(upload_to="courses/covers/", null=True, blank=True)
+    cover_url = models.TextField(blank=True, default="")
     category = models.CharField(max_length=120, blank=True)
     tags = models.JSONField(default=list, blank=True)
     price_cop = models.PositiveIntegerField(default=0)
@@ -118,13 +119,63 @@ class Patient(TimestampedModel):
     is_active = models.BooleanField(default=True)
     user_type = models.CharField(max_length=50, default="miembro")
     can_publish = models.BooleanField(default=True)
+    lumi_balance = models.PositiveIntegerField(default=150)
     
     profile_picture_file = models.ImageField(upload_to="patients/profile/", null=True, blank=True)
     profile_picture_url = models.CharField(max_length=500, blank=True)
+    cover_picture_file = models.ImageField(upload_to="patients/covers/", null=True, blank=True)
+    cover_picture_url = models.TextField(blank=True)
+    cover_position_y = models.IntegerField(default=50)
 
     def __str__(self) -> str:
         full = f"{self.first_name} {self.last_name}".strip()
         return full or self.first_name
+
+
+class LumiWallet(TimestampedModel):
+    patient = models.OneToOneField(Patient, on_delete=models.CASCADE, related_name="lumi_wallet")
+    balance = models.PositiveIntegerField(default=150)
+    total_earned = models.PositiveIntegerField(default=150)
+    last_login_bonus_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"Billetera Lumi ({self.patient}): {self.balance} Lumis"
+
+
+class LumiTransaction(TimestampedModel):
+    class TxType(models.TextChoices):
+        WELCOME_BONUS = "welcome_bonus", "Bono de Bienvenida (150 Lumis)"
+        LOGIN_BONUS = "login_bonus", "Bono por Inicio de Sesión"
+        DAILY_CHECKIN = "daily_checkin", "Check-in Diario de Bienestar"
+        COURSE_REWARD = "course_reward", "Recompensa por Completar Lección"
+        SERVICE_REDEMPTION = "service_redemption", "Canje por Servicio"
+        ADMIN_CREDIT = "admin_credit", "Crédito Administrativo"
+        ADMIN_DEBIT = "admin_debit", "Débito Administrativo"
+
+    wallet = models.ForeignKey(LumiWallet, on_delete=models.CASCADE, related_name="transactions")
+    tx_type = models.CharField(max_length=40, choices=TxType.choices)
+    amount = models.IntegerField()
+    balance_after = models.PositiveIntegerField()
+    description = models.CharField(max_length=255)
+    reference_code = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+class LumiUnlockedItem(TimestampedModel):
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="unlocked_lumi_items")
+    item_type = models.CharField(max_length=50)  # 'test', 'course', 'exercise', 'story', 'talk'
+    item_id = models.CharField(max_length=100)
+    item_title = models.CharField(max_length=255, blank=True)
+    lumis_spent = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ("patient", "item_type", "item_id")
+
+    def __str__(self) -> str:
+        return f"Unlocked [{self.item_type}:{self.item_id}] for {self.patient}"
+
+
 
 
 class DailyCheckin(TimestampedModel):
@@ -160,6 +211,7 @@ class CommunityPost(TimestampedModel):
     image_url = models.TextField(blank=True)
     feeling = models.CharField(max_length=100, blank=True)
     like_patient_ids = models.JSONField(default=list, blank=True)
+    views_count = models.PositiveIntegerField(default=0)
     is_approved = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
@@ -175,6 +227,9 @@ class CommunityPostComment(TimestampedModel):
     post = models.ForeignKey(
         CommunityPost, on_delete=models.CASCADE, related_name='post_comments'
     )
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies'
+    )
     patient = models.ForeignKey(
         Patient, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='community_post_comments'
@@ -183,6 +238,7 @@ class CommunityPostComment(TimestampedModel):
     author_avatar_url = models.CharField(max_length=500, blank=True)
     author_role = models.CharField(max_length=100, blank=True)
     content = models.TextField()
+    like_patient_ids = models.JSONField(default=list, blank=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -346,8 +402,10 @@ class TestimonialLike(TimestampedModel):
 
 class Story(TimestampedModel):
     title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200, null=True, blank=True)
     content = models.TextField()
     image_file = models.FileField(upload_to="stories/images/", null=True, blank=True)
+    image_url = models.TextField(blank=True, default="")
     author = models.CharField(max_length=200, blank=True)
     category = models.CharField(max_length=100, blank=True)
     tags = models.JSONField(default=list, blank=True)
@@ -564,3 +622,61 @@ class WellbeingTest(TimestampedModel):
 
     def __str__(self) -> str:
         return self.title
+
+
+# ============================================================
+# Adaptive Wisdom Engine (AWE)
+# ============================================================
+
+class AWEUserProfile(TimestampedModel):
+    """Perfil de preferencias AWE por paciente."""
+
+    class PsychProfile(models.TextChoices):
+        VIGILANTE = "Vigilante", "Vigilante"
+        GUERRERO = "Guerrero Agotado", "Guerrero Agotado"
+        BUSCADOR = "Buscador de Sentido", "Buscador de Sentido"
+        CORAZON = "Corazón Abierto", "Corazón Abierto"
+        ANALITICO = "Mente Analítica", "Mente Analítica"
+
+    patient = models.OneToOneField(
+        Patient, on_delete=models.CASCADE, related_name="awe_profile"
+    )
+    psych_profile = models.CharField(
+        max_length=30, choices=PsychProfile.choices, default=PsychProfile.BUSCADOR
+    )
+    current_emotions = models.JSONField(default=list, blank=True)
+    current_week = models.PositiveSmallIntegerField(default=1)
+    risk_level = models.CharField(
+        max_length=10,
+        choices=[("leve", "Leve"), ("moderado", "Moderado"), ("severo", "Severo"), ("critico", "Crítico")],
+        default="leve",
+    )
+    preferred_moment = models.CharField(
+        max_length=20,
+        choices=[("mañana", "Mañana"), ("tarde", "Tarde"), ("noche", "Noche"), ("cualquiera", "Cualquiera")],
+        default="cualquiera",
+    )
+    delivered_resource_ids = models.JSONField(default=list, blank=True)
+    last_resource_date = models.DateField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"AWE Profile – {self.patient}"
+
+
+class AWEDeliveryLog(TimestampedModel):
+    """Registro de entrega de recursos AWE al paciente."""
+
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="awe_logs")
+    resource_id = models.IntegerField()
+    resource_tipo = models.CharField(max_length=30)
+    resource_escuela = models.CharField(max_length=30)
+    resource_tema = models.CharField(max_length=60)
+    delivered_at = models.DateTimeField(auto_now_add=True)
+    channel = models.CharField(max_length=30, default="portal")
+    was_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-delivered_at"]
+
+    def __str__(self) -> str:
+        return f"AWE Log – {self.patient} – resource {self.resource_id}"
