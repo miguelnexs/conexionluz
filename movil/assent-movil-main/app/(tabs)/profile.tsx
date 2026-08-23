@@ -39,6 +39,7 @@ import {
   Eye,
 } from 'lucide-react-native';
 import { mobileApi, PatientUser, getAuthToken, setAuthToken } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -56,14 +57,18 @@ interface ProfileFormData {
   emergencyContactPhone: string;
 }
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar, Platform } from 'react-native';
+
 export default function Profile() {
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : Math.max(insets.top, 16);
+  const { user: me, isAuthenticated: isAuthed, login: authLogin, register: authRegister, logout: authLogout } = useAuth();
   const [activeTab, setActiveTab] = useState<'wellbeing' | 'courses' | 'settings'>('wellbeing');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   
   // AUTH STATE
-  const [me, setMe] = useState<PatientUser | null>(null);
-  const [isAuthed, setIsAuthed] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [authLoading, setAuthLoading] = useState<boolean>(false);
@@ -79,9 +84,9 @@ export default function Profile() {
 
   // Profile Form state
   const [form, setForm] = useState<ProfileFormData>({
-    firstName: 'Sofía',
-    lastName: 'Varela',
-    email: 'sofia@conexionluz.com',
+    firstName: me?.firstName || 'Sofía',
+    lastName: me?.lastName || 'Varela',
+    email: me?.email || 'sofia@conexionluz.com',
     phone: '+57 300 123 4567',
     birthDate: '1995-06-15',
     gender: 'Femenino',
@@ -93,31 +98,15 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    loadUserProfile();
-  }, []);
-
-  const loadUserProfile = async () => {
-    setLoading(true);
-    const token = getAuthToken();
-    if (token) {
-      const res = await mobileApi.getMe();
-      if (res.ok && res.patient) {
-        setMe(res.patient);
-        setIsAuthed(true);
-        setForm((prev) => ({
-          ...prev,
-          firstName: res.patient.firstName || prev.firstName,
-          lastName: res.patient.lastName || prev.lastName,
-          email: res.patient.email || prev.email,
-        }));
-      } else {
-        setIsAuthed(false);
-      }
-    } else {
-      setIsAuthed(false);
+    if (me) {
+      setForm((prev) => ({
+        ...prev,
+        firstName: me.firstName || prev.firstName,
+        lastName: me.lastName || prev.lastName,
+        email: me.email || prev.email,
+      }));
     }
-    setLoading(false);
-  };
+  }, [me]);
 
   const handleAuthSubmit = async () => {
     if (!emailInput.trim() || !passwordInput.trim()) {
@@ -128,19 +117,11 @@ export default function Profile() {
     setAuthLoading(true);
 
     if (authMode === 'login') {
-      const res = await mobileApi.login(emailInput.trim(), passwordInput.trim());
+      const res = await authLogin(emailInput.trim(), passwordInput.trim());
       setAuthLoading(false);
 
       if (res.ok) {
-        setMe(res.patient);
-        setIsAuthed(true);
         setShowAuthModal(false);
-        setForm((prev) => ({
-          ...prev,
-          firstName: res.patient.firstName || prev.firstName,
-          lastName: res.patient.lastName || prev.lastName,
-          email: res.patient.email || prev.email,
-        }));
       } else {
         Alert.alert('Error de inicio de sesión', res.error || 'Credenciales incorrectas');
       }
@@ -151,7 +132,7 @@ export default function Profile() {
         return;
       }
 
-      const res = await mobileApi.register(
+      const res = await authRegister(
         firstNameInput.trim(),
         lastNameInput.trim(),
         emailInput.trim(),
@@ -160,8 +141,6 @@ export default function Profile() {
       setAuthLoading(false);
 
       if (res.ok) {
-        setMe(res.patient);
-        setIsAuthed(true);
         setShowAuthModal(false);
       } else {
         Alert.alert('Error de registro', res.error || 'No se pudo crear la cuenta');
@@ -171,27 +150,13 @@ export default function Profile() {
 
   const handleQuickDemoLogin = async () => {
     setAuthLoading(true);
-    const res = await mobileApi.login('paciente@ejemplo.com', 'paciente123');
+    const res = await authLogin('paciente@ejemplo.com', 'paciente123');
     setAuthLoading(false);
 
     if (res.ok) {
-      setMe(res.patient);
-      setIsAuthed(true);
       setShowAuthModal(false);
     } else {
-      // Fallback auth
-      const mockPatient: PatientUser = {
-        id: 999,
-        firstName: 'Sofía',
-        lastName: 'Varela',
-        email: 'sofia@conexionluz.com',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
-        userType: 'paciente',
-        canPublish: true,
-      };
-      setMe(mockPatient);
-      setIsAuthed(true);
-      setShowAuthModal(false);
+      Alert.alert('Error de inicio de sesión', res.error || 'No se pudo ingresar');
     }
   };
 
@@ -204,9 +169,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    setAuthToken(null);
-    setMe(null);
-    setIsAuthed(false);
+    authLogout();
   };
 
   const initials = me
@@ -214,8 +177,8 @@ export default function Profile() {
     : 'SV';
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.container, { paddingTop: topPadding }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" translucent={true} />
         
         {/* HEADER SECTION */}
         <View style={styles.profileHeader}>
@@ -759,7 +722,6 @@ export default function Profile() {
           </View>
         </Modal>
 
-      </SafeAreaView>
     </View>
   );
 }

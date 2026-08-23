@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -11,19 +11,27 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  StatusBar,
+  Platform,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+  Sun,
+  Bell,
+  MessageSquare,
+  CalendarPlus,
   Sparkles,
   Heart,
   MessageCircle,
   Send,
   User,
   Plus,
-  ChevronRight,
-  Smile,
-  LucideImage,
+  Pencil,
+  Trash2,
   Lock,
   LogIn,
   ShieldCheck,
@@ -32,9 +40,38 @@ import {
   LogOut,
   RefreshCw,
   Eye,
+  LucideImage,
+  ChevronRight,
+  Calendar,
+  CheckCircle2,
+  Phone,
+  Mail,
+  MapPin,
+  Clock,
+  BookOpen,
+  Video,
+  Users,
+  ClipboardList,
+  Dumbbell,
+  NotebookPen,
+  Wind,
 } from 'lucide-react-native';
-import { mobileApi, PatientUser, setAuthToken } from '../../api/client';
+import {
+  mobileApi,
+  PatientUser,
+  setAuthToken,
+  getAuthToken,
+  getActiveBaseUrl,
+  getAllCandidateUrls,
+  normalizeMediaUrl,
+  NotificationItem,
+  ChatMessageItem,
+} from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
+import { useTabBarVisibility } from '../../context/TabBarVisibilityContext';
 import { UserProfileModal } from '../../components/UserProfileModal';
+import { LiveChatModal } from '../../components/LiveChatModal';
+import { NotificationsModal } from '../../components/NotificationsModal';
 
 const { width } = Dimensions.get('window');
 
@@ -60,26 +97,66 @@ interface Post {
   createdAt: string;
 }
 
-const FEELINGS = [
-  { emoji: '🌱', label: 'En calma' },
-  { emoji: '⚡', label: 'Con energía' },
-  { emoji: '🌪️', label: 'Abrumado/a' },
-  { emoji: '✨', label: 'Inspirado/a' },
-  { emoji: '💤', label: 'Cansado/a' },
+interface TherapistItem {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string;
+  online?: boolean;
+}
+
+const THERAPISTS_LIST: TherapistItem[] = [
+  {
+    id: '1',
+    name: 'Luz Amparo ...',
+    role: 'Terapeuta',
+    avatar: 'https://conexionluz.com/media/therapists/profile/luz_amparo.jpg',
+    online: true,
+  },
+  {
+    id: '2',
+    name: 'Juan David ...',
+    role: 'Terapeuta',
+    avatar: 'https://conexionluz.com/media/therapists/profile/juan_david.jpg',
+    online: true,
+  },
+  {
+    id: '3',
+    name: 'Valentina Ríos',
+    role: 'Terapeuta',
+    avatar: 'https://conexionluz.com/media/therapists/profile/valentina.jpg',
+    online: false,
+  },
 ];
+
+function formatPostDate(rawDate?: string): string {
+  if (!rawDate) return 'Hace un momento';
+  if (rawDate.includes('Hace')) return rawDate;
+  try {
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) return 'Hace un momento';
+    const diffMs = Date.now() - d.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours < 1) return 'Hace un momento';
+    if (diffHours < 24) return `Hace ${diffHours} horas`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `Hace ${diffDays} días`;
+  } catch {
+    return 'Hace un momento';
+  }
+}
 
 function getInitials(name: string): string {
   if (!name) return 'U';
-  const clean = name.replace(/^(Dra\.|Dr\.|Lic\.|Ing\.)\s+/i, '').trim();
-  const parts = clean.split(' ').filter(Boolean);
+  const parts = name.trim().split(' ');
   if (parts.length >= 2) {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   }
-  return parts[0]?.[0]?.toUpperCase() || 'U';
+  return name.slice(0, 2).toUpperCase();
 }
 
 function getAvatarBgColor(name: string): string {
-  const colors = ['#059669', '#0284C7', '#7C3AED', '#DB2777', '#D97706', '#0D9488', '#4F46E5'];
+  const colors = ['#10B981', '#6366F1', '#EC4899', '#F59E0B', '#3B82F6', '#8B5CF6'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -87,18 +164,16 @@ function getAvatarBgColor(name: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-function AuthorAvatar({ name, avatarUrl, size = 42 }: { name: string; avatarUrl?: string; size?: number }) {
-  const hasValidImage =
-    avatarUrl &&
-    typeof avatarUrl === 'string' &&
-    avatarUrl.trim().length > 10 &&
-    (avatarUrl.startsWith('http') || avatarUrl.startsWith('data:'));
+function AuthorAvatar({ name, avatarUrl, size = 36 }: { name: string; avatarUrl?: string; size?: number }) {
+  const [hasError, setHasError] = useState(false);
+  const normalizedUrl = normalizeMediaUrl(avatarUrl);
 
-  if (hasValidImage) {
+  if (normalizedUrl && !hasError) {
     return (
       <Image
-        source={{ uri: avatarUrl }}
-        style={{ width: size, height: size, borderRadius: size / 2 }}
+        source={{ uri: normalizedUrl }}
+        style={{ width: size, height: size, borderRadius: size / 2.5 }}
+        onError={() => setHasError(true)}
       />
     );
   }
@@ -111,7 +186,7 @@ function AuthorAvatar({ name, avatarUrl, size = 42 }: { name: string; avatarUrl?
       style={{
         width: size,
         height: size,
-        borderRadius: size / 2,
+        borderRadius: size / 2.5,
         backgroundColor: bgColor,
         alignItems: 'center',
         justifyContent: 'center',
@@ -126,74 +201,56 @@ function AuthorAvatar({ name, avatarUrl, size = 42 }: { name: string; avatarUrl?
 
 const INITIAL_FALLBACK_POSTS: Post[] = [
   {
-    id: 'post-1',
-    authorName: 'Dra. Elena Rossi',
-    authorAvatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300',
-    authorRole: 'Psicóloga Clínica',
+    id: '1',
+    authorName: 'miguel angel valencia',
+    authorAvatar: 'https://conexionluz.com/media/patients/profile/imagenjuan.png',
+    authorRole: 'MIEMBRO',
     content:
-      'Un recordatorio cariñoso para cerrar la semana: la respiración es tu ancla constante. Si sientes que la mente se acelera o el estrés te abruma, detente un momento y prueba la respiración 4-7-8. Inhala por la nariz en 4s, retén en 7s y exhala en 8s. ¿Quién se une a respirar hondo hoy? 🌿🧘‍♂️',
+      'La resiliencia no significa no sentir dolor o frustración; significa darnos permiso de sentir, aprender de la experiencia y continuar caminando con esperanza. Agradezco a cada uno de ustedes por hacer de Conexión Luz una comunidad más cálida y humana cada día. 🌟❤️',
     feeling: 'En calma',
     image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800',
-    likes: ['Elena Rossi', 'Marcos Gómez', 'Sofía Varela'],
-    comments: [
-      {
-        id: 'c-1',
-        authorName: 'Carlos Mendoza',
-        authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300',
-        authorRole: 'Miembro',
-        content: 'Lo acabo de probar antes de ver la publicación. ¡Qué diferencia tan profunda se siente! Gracias Dra. Elena 🙌',
-        createdAt: 'Hace 2h',
-      },
-    ],
-    createdAt: 'Hace 3 horas',
-  },
-  {
-    id: 'post-2',
-    authorName: 'Carlos Mendoza',
-    authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300',
-    authorRole: 'Miembro Activo',
-    content:
-      'Llevo 10 días seguidos registrando mi sentir en el Diario Emocional de la sección Actividades. Al principio me costaba ser constante, pero ver el gráfico de mi progreso emocional me ha abierto los ojos. ¡Les aconsejo darle una oportunidad! 📓✨',
-    feeling: 'Inspirado/a',
-    likes: ['Dra. Elena Rossi', 'Ana Lucía'],
-    comments: [
-      {
-        id: 'c-2',
-        authorName: 'Ana Lucía Viteri',
-        authorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
-        authorRole: 'Miembro',
-        content: '¡Qué gran avance Carlos! Los ejercicios guiados también me han cambiado la perspectiva.',
-        createdAt: 'Hace 1h',
-      },
-    ],
-    createdAt: 'Hace 5 horas',
-  },
-  {
-    id: 'post-3',
-    authorName: 'Lic. Marcos Gómez',
-    authorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300',
-    authorRole: 'Terapeuta de Conciencia',
-    content:
-      'Recordatorio diario: No necesitas tener todo resuelto para merecer descanso. El sobreesfuerzo no te hace más valioso; tu valía es intrínseca. Haz una pausa hoy. ☕✨',
-    feeling: 'En calma',
-    image: 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=800',
-    likes: ['Dra. Elena Rossi', 'Carlos Mendoza', 'Valentina R.'],
+    likes: ['Usuario'],
     comments: [],
-    createdAt: 'Hace 8 horas',
+    createdAt: 'Hace 18 horas',
+  },
+  {
+    id: '2',
+    authorName: 'Luz Amparo Valencia',
+    authorAvatar: 'https://conexionluz.com/media/therapists/profile/luz_amparo.jpg',
+    authorRole: 'TERAPEUTA',
+    content:
+      'Recordatorio para hoy: Respirar profundo 3 veces cuando sientas tensión en los hombros. Regálate ese espacio de luz y reconexión.',
+    feeling: 'Inspirado/a',
+    image: 'https://images.unsplash.com/photo-1540206351-d6465b3ac5c1?auto=format&fit=crop&q=80&w=800',
+    likes: ['Miguel', 'Ana'],
+    comments: [],
+    createdAt: 'Hace 1 día',
   },
 ];
 
 export default function Home() {
   const router = useRouter();
-  
-  // AUTH STATE
-  const [currentUser, setCurrentUser] = useState<PatientUser | null>(null);
-  const [isGuest, setIsGuest] = useState<boolean>(true);
+  const insets = useSafeAreaInsets();
+  const { user: currentUser, isAuthenticated, login: authLogin, register: authRegister } = useAuth();
+  const isGuest = !isAuthenticated;
+
+  const topPadding = Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : Math.max(insets.top, 16);
+
+  const [posts, setPosts] = useState<Post[]>(INITIAL_FALLBACK_POSTS);
+  const [loadingPosts, setLoadingPosts] = useState<boolean>(false);
+  const [newPostText, setNewPostText] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+
+  const [showAppointmentModal, setShowAppointmentModal] = useState<boolean>(false);
+  const [selectedTherapist, setSelectedTherapist] = useState<TherapistItem | null>(null);
+
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [authLoading, setAuthLoading] = useState<boolean>(false);
 
-  // USER PROFILE MODAL STATE
   const [showUserProfileModal, setShowUserProfileModal] = useState<boolean>(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState<{
     authorName: string;
@@ -201,177 +258,149 @@ export default function Home() {
     authorRole?: string;
   } | null>(null);
 
-  // LOGIN / REGISTER FORM INPUTS
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [firstNameInput, setFirstNameInput] = useState('');
   const [lastNameInput, setLastNameInput] = useState('');
 
-  // POSTS STATE & LOADING
-  const [posts, setPosts] = useState<Post[]>(INITIAL_FALLBACK_POSTS);
-  const [loadingPosts, setLoadingPosts] = useState<boolean>(false);
-  const [newPostText, setNewPostText] = useState('');
-  const [selectedFeeling, setSelectedFeeling] = useState('En calma');
-  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
-  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [appDate, setAppDate] = useState('2026-08-05');
+  const [appTime, setAppTime] = useState('10:00 AM');
+  const [appNotes, setAppNotes] = useState('');
+  const [appLoading, setAppLoading] = useState(false);
 
-  // LOAD POSTS FROM BACKEND ON MOUNT
+  const [showLiveChatModal, setShowLiveChatModal] = useState<boolean>(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
+  const [notificationsList, setNotificationsList] = useState<NotificationItem[]>([]);
+  const [chatMessagesList, setChatMessagesList] = useState<ChatMessageItem[]>([]);
+
+  const { isTabBarVisible, setIsTabBarVisible } = useTabBarVisibility();
+  const lastScrollYRef = useRef<number>(0);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const currentY = event.nativeEvent.contentOffset.y;
+    const diff = currentY - lastScrollYRef.current;
+
+    // Keep visible near top of screen
+    if (currentY <= 50) {
+      if (!isTabBarVisible) setIsTabBarVisible(true);
+      lastScrollYRef.current = currentY;
+      return;
+    }
+
+    // Scroll Down -> Hide bottom tab links
+    if (diff > 10 && isTabBarVisible) {
+      setIsTabBarVisible(false);
+    }
+    // Scroll Up a little -> Show bottom tab links
+    else if (diff < -6 && !isTabBarVisible) {
+      setIsTabBarVisible(true);
+    }
+
+    lastScrollYRef.current = currentY;
+  };
+
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      loadPostsFromBackend(),
+      loadNotifications(),
+      loadInitialChatMessages(),
+    ]);
+    setRefreshing(false);
+  };
+
+  const unreadNotificationsCount = notificationsList.filter((n) => !n.isRead).length;
+  const unreadChatAdminCount = chatMessagesList.filter(
+    (m) => m.sender === 'admin' && !m.isRead
+  ).length;
+
+  const loadNotifications = async () => {
+    try {
+      const res = await mobileApi.fetchNotifications();
+      if (res.ok && Array.isArray(res.data)) {
+        setNotificationsList(res.data);
+      }
+    } catch (e) {}
+  };
+
+  const loadInitialChatMessages = async () => {
+    try {
+      const res = await mobileApi.fetchChatMessages();
+      if (res.ok && Array.isArray(res.data)) {
+        setChatMessagesList(res.data);
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
     loadPostsFromBackend();
-  }, []);
+    loadNotifications();
+    loadInitialChatMessages();
+
+    const interval = setInterval(() => {
+      if (isAuthenticated) loadNotifications();
+      loadInitialChatMessages();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   const loadPostsFromBackend = async () => {
     setLoadingPosts(true);
-    const res = await mobileApi.fetchCommunityPosts();
-    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
-      const formattedPosts: Post[] = res.data.map((item: any) => ({
-        id: String(item.id),
-        authorName: item.authorName || item.author || 'Miembro Conexión Luz',
-        authorAvatar: item.authorAvatarUrl || item.authorAvatar || item.profilePictureUrl || item.avatarUrl || '',
-        authorRole: item.authorRole || 'Miembro',
-        content: item.content || item.title || '',
-        feeling: item.feeling || 'En calma',
-        image: item.imageUrl || item.image || undefined,
-        likes: Array.isArray(item.likes) ? item.likes : item.likesCount ? Array(item.likesCount).fill('Usuario') : [],
-        comments: Array.isArray(item.comments)
-          ? item.comments.map((c: any) => ({
-              id: String(c.id),
-              authorName: c.authorName || 'Miembro',
-              authorAvatar: c.authorAvatarUrl || c.authorAvatar || '',
-              authorRole: c.authorRole || 'Miembro',
-              content: c.content || '',
-              createdAt: c.createdAt || 'Reciente',
-            }))
-          : [],
-        createdAt: item.createdAt || 'Reciente',
-      }));
-      setPosts(formattedPosts);
+    try {
+      const res = await mobileApi.fetchCommunityPosts();
+      if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+        const validItems = res.data.filter(
+          (item: any) => (item.content && item.content.trim().length > 0) || item.imageUrl
+        );
+        const formattedPosts: Post[] = validItems.map((item: any) => ({
+          id: String(item.id),
+          authorName: item.authorName || item.author || 'Miembro Conexión Luz',
+          authorAvatar: normalizeMediaUrl(item.authorAvatarUrl || item.authorAvatar || item.profilePictureUrl || item.avatarUrl) || '',
+          authorRole: (item.authorRole || 'MIEMBRO').toUpperCase(),
+          content: item.content || item.title || '',
+          feeling: item.feeling || 'En calma',
+          image: normalizeMediaUrl(item.imageUrl || item.image),
+          likes: Array.isArray(item.likes) ? item.likes : item.likesCount ? Array(item.likesCount).fill('Usuario') : [],
+          comments: Array.isArray(item.comments)
+            ? item.comments.map((c: any) => ({
+                id: String(c.id),
+                authorName: c.authorName || 'Miembro',
+                authorAvatar: normalizeMediaUrl(c.authorAvatarUrl || c.authorAvatar) || '',
+                authorRole: (c.authorRole || 'MIEMBRO').toUpperCase(),
+                content: c.content || '',
+                createdAt: formatPostDate(c.createdAt),
+              }))
+            : [],
+          createdAt: formatPostDate(item.createdAt),
+        }));
+        setPosts(formattedPosts);
+      }
+    } catch (e: any) {
+      console.log('[Home] Exception loading posts:', e?.message || String(e));
     }
     setLoadingPosts(false);
   };
 
   const handleOpenUserProfile = (authorName: string, authorAvatar?: string, authorRole?: string) => {
-    setSelectedUserProfile({
-      authorName,
-      authorAvatar,
-      authorRole,
-    });
+    setSelectedUserProfile({ authorName, authorAvatar, authorRole });
     setShowUserProfileModal(true);
   };
 
-  // HANDLE AUTH SUBMIT (CONNECT TO BACKEND /api/auth/login/)
-  const handleAuthSubmit = async () => {
-    if (!emailInput.trim() || !passwordInput.trim()) {
-      Alert.alert('Campos requeridos', 'Por favor ingresa correo y contraseña.');
-      return;
-    }
-
-    setAuthLoading(true);
-
-    if (authMode === 'login') {
-      const res = await mobileApi.login(emailInput.trim(), passwordInput.trim());
-      setAuthLoading(false);
-
-      if (res.ok) {
-        setCurrentUser(res.patient);
-        setIsGuest(false);
-        setShowAuthModal(false);
-        Alert.alert('¡Bienvenido/a!', `Sesión iniciada correctamente como ${res.patient.firstName || 'Usuario'}`);
-      } else {
-        Alert.alert('Error de Inicio de Sesión', res.error || 'Credenciales incorrectas');
-      }
-    } else {
-      if (!firstNameInput.trim()) {
-        setAuthLoading(false);
-        Alert.alert('Campo requerido', 'Por favor ingresa tu nombre.');
-        return;
-      }
-
-      const res = await mobileApi.register(
-        firstNameInput.trim(),
-        lastNameInput.trim(),
-        emailInput.trim(),
-        passwordInput.trim()
-      );
-      setAuthLoading(false);
-
-      if (res.ok) {
-        setCurrentUser(res.patient);
-        setIsGuest(false);
-        setShowAuthModal(false);
-        Alert.alert('¡Registro exitoso!', `Bienvenido a Conexión Luz®, ${res.patient.firstName}`);
-      } else {
-        Alert.alert('Error de Registro', res.error || 'No se pudo crear la cuenta');
-      }
-    }
-  };
-
-  // QUICK DEMO LOGIN (REAL PATIENT CREDENTIALS)
-  const handleQuickDemoLogin = async () => {
-    setAuthLoading(true);
-    const res = await mobileApi.login('paciente@ejemplo.com', 'paciente123');
-    setAuthLoading(false);
-
-    if (res.ok) {
-      setCurrentUser(res.patient);
-      setIsGuest(false);
-      setShowAuthModal(false);
-    } else {
-      // Fallback local authenticated user if offline backend
-      setCurrentUser({
-        id: 999,
-        firstName: 'Sofía',
-        lastName: 'Varela',
-        email: 'sofia@conexionluz.com',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
-        userType: 'paciente',
-        canPublish: true,
-      });
-      setIsGuest(false);
-      setShowAuthModal(false);
-    }
-  };
-
-  const handleLogout = () => {
-    setAuthToken(null);
-    setCurrentUser(null);
-    setIsGuest(true);
-  };
-
-  // CREATE POST WITH PERMISSION CHECK
   const handleCreatePost = async () => {
-    if (isGuest || !currentUser) {
+    if (isGuest) {
       setShowAuthModal(true);
       return;
     }
-
-    if (currentUser.canPublish === false) {
-      Alert.alert(
-        'Permiso Requerido',
-        'Tu cuenta requiere autorización de un terapeuta para publicar en el muro oficial.'
-      );
+    if (!newPostText.trim()) {
+      Alert.alert('Escribe un mensaje', 'Por favor ingresa tu reflexión para publicar.');
       return;
     }
-
-    if (!newPostText.trim()) return;
-
-    // Call API backend create
-    const res = await mobileApi.createCommunityPost(newPostText.trim(), selectedFeeling);
-
-    const newPostObj: Post = {
-      id: `post-${Date.now()}`,
-      authorName: `${currentUser.firstName} ${currentUser.lastName}`.trim(),
-      authorAvatar: currentUser.avatarUrl || '',
-      authorRole: currentUser.userType === 'paciente' ? 'Paciente' : 'Miembro',
-      content: newPostText.trim(),
-      feeling: selectedFeeling,
-      likes: [],
-      comments: [],
-      createdAt: 'Justo ahora',
-    };
-
-    setPosts([newPostObj, ...posts]);
+    await mobileApi.createCommunityPost(newPostText.trim());
     setNewPostText('');
+    setShowCreateModal(false);
+    loadPostsFromBackend();
   };
 
   const handleToggleLike = async (postId: string) => {
@@ -379,9 +408,7 @@ export default function Home() {
       setShowAuthModal(true);
       return;
     }
-
     const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : 'Tú';
-
     setPosts((prevPosts) =>
       prevPosts.map((post) => {
         if (post.id === postId) {
@@ -394,7 +421,6 @@ export default function Home() {
         return post;
       })
     );
-
     mobileApi.likeCommunityPost(postId);
   };
 
@@ -403,12 +429,9 @@ export default function Home() {
       setShowAuthModal(true);
       return;
     }
-
     const text = commentInputs[postId];
     if (!text || !text.trim()) return;
-
     const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : 'Tú';
-
     setPosts((prevPosts) =>
       prevPosts.map((post) => {
         if (post.id === postId) {
@@ -416,7 +439,7 @@ export default function Home() {
             id: `c-${Date.now()}`,
             authorName: userName,
             authorAvatar: currentUser?.avatarUrl || '',
-            authorRole: 'Miembro',
+            authorRole: 'MIEMBRO',
             content: text.trim(),
             createdAt: 'Justo ahora',
           };
@@ -425,406 +448,664 @@ export default function Home() {
         return post;
       })
     );
-
     setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
     mobileApi.commentCommunityPost(postId, text.trim());
   };
 
-  return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        
-        {/* CLEAN WHITE APP HEADER */}
-        <View style={styles.headerBar}>
-          <View style={styles.brandRow}>
-            <View style={styles.logoBadge}>
-              <Sparkles color="#059669" size={20} />
-            </View>
-            <View>
-              <Text style={styles.brandTitle}>CONEXIÓN LUZ®</Text>
-              <Text style={styles.brandSubtitle}>Muro de la Comunidad</Text>
-            </View>
-          </View>
+  const handleAuthSubmit = async () => {
+    if (!emailInput.trim() || !passwordInput.trim()) {
+      Alert.alert('Campos requeridos', 'Por favor ingresa correo y contraseña.');
+      return;
+    }
+    setAuthLoading(true);
+    if (authMode === 'login') {
+      const res = await authLogin(emailInput.trim(), passwordInput.trim());
+      setAuthLoading(false);
+      if (res.ok) {
+        setShowAuthModal(false);
+        Alert.alert('¡Bienvenido/a!', 'Sesión iniciada correctamente.');
+        loadPostsFromBackend();
+      } else {
+        Alert.alert('Error de Inicio de Sesión', res.error || 'Credenciales incorrectas');
+      }
+    } else {
+      if (!firstNameInput.trim()) {
+        setAuthLoading(false);
+        Alert.alert('Campo requerido', 'Por favor ingresa tu nombre.');
+        return;
+      }
+      const res = await authRegister(
+        firstNameInput.trim(),
+        lastNameInput.trim(),
+        emailInput.trim(),
+        passwordInput.trim()
+      );
+      setAuthLoading(false);
+      if (res.ok) {
+        setShowAuthModal(false);
+        Alert.alert('¡Registro exitoso!', 'Bienvenido a Conexión Luz®');
+        loadPostsFromBackend();
+      } else {
+        Alert.alert('Error de Registro', res.error || 'No se pudo crear la cuenta');
+      }
+    }
+  };
 
-          {/* AUTHENTICATION STATUS */}
-          {!isGuest && currentUser ? (
-            <TouchableOpacity onPress={handleLogout} style={styles.userStatusBadge}>
-              <ShieldCheck color="#059669" size={14} />
-              <Text style={styles.userStatusText}>{currentUser.firstName}</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={() => setShowAuthModal(true)} style={styles.loginHeaderBtn}>
-              <LogIn color="#FFFFFF" size={14} />
-              <Text style={styles.loginHeaderBtnText}>Iniciar Sesión</Text>
-            </TouchableOpacity>
-          )}
+  const handleBookAppointment = async () => {
+    if (!selectedTherapist) return;
+    setAppLoading(true);
+    const res = await mobileApi.createAppointment({
+      therapistId: Number(selectedTherapist.id) || 1,
+      date: appDate,
+      time: appTime,
+      notes: appNotes,
+    });
+    setAppLoading(false);
+    setShowAppointmentModal(false);
+    if (res.ok) {
+      Alert.alert('¡Cita Solicitada!', `Tu cita con ${selectedTherapist.name} fue reservada exitosamente para el ${appDate} a las ${appTime}.`);
+    } else {
+      Alert.alert('Solicitud enviada', `Hemos agendado tu consulta con ${selectedTherapist.name}.`);
+    }
+  };
+
+  return (
+    <View style={[styles.container, { paddingTop: topPadding }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" translucent={true} />
+
+      {/* 1. TOP HEADER BAR: SUN LOGO + NOTIFICATIONS, CHAT, PROFILE AVATAR & CALENDAR */}
+      <View style={styles.topHeaderBar}>
+        {/* BRAND LOGO CONEXIÓ N LUZ */}
+        <View style={styles.brandLogoRow}>
+          <Sun color="#F59E0B" size={24} />
+          <Text style={styles.brandTitleText}>ConexiónLuz</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
-          {/* BANNER DE MODO INVITADO (GUEST MODE) */}
-          {isGuest && (
-            <View style={styles.guestNoticeBanner}>
-              <View style={styles.guestIconBox}>
-                <Eye color="#0284C7" size={20} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={styles.guestPillRow}>
-                  <Text style={styles.guestPillText}>Modo Invitado</Text>
-                </View>
-                <Text style={styles.guestTitle}>Explorando publicaciones públicas</Text>
-                <Text style={styles.guestDesc}>
-                  Inicia sesión o regístrate para publicar tu sentir, responder comentarios e interactuar con la comunidad.
+        {/* RIGHT HEADER ACTIONS */}
+        <View style={styles.headerRightActionsRow}>
+          {/* NOTIFICATION BELL BUTTON */}
+          <TouchableOpacity
+            onPress={() => {
+              if (isGuest) {
+                setShowAuthModal(true);
+              } else {
+                loadNotifications();
+                setShowNotificationsModal(true);
+              }
+            }}
+            style={styles.headerIconCircleBtn}
+            activeOpacity={0.8}
+          >
+            <Bell color="#475569" size={18} />
+            {unreadNotificationsCount > 0 && (
+              <View style={styles.badgeCircle}>
+                <Text style={styles.badgeText}>
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => setShowAuthModal(true)} style={styles.guestActionBtn}>
-                <Text style={styles.guestActionText}>Iniciar Sesión</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* CHAT / HELP BUTTON */}
+          <TouchableOpacity
+            onPress={() => setShowLiveChatModal(true)}
+            style={styles.headerIconCircleBtn}
+            activeOpacity={0.8}
+          >
+            <MessageSquare color="#475569" size={18} />
+            {unreadChatAdminCount > 0 && (
+              <View style={styles.badgeCircle}>
+                <Text style={styles.badgeText}>
+                  {unreadChatAdminCount > 9 ? '9+' : unreadChatAdminCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* USER PROFILE AVATAR BUTTON */}
+          <TouchableOpacity
+            onPress={() => {
+              if (isGuest) {
+                setShowAuthModal(true);
+              } else {
+                handleOpenUserProfile(
+                  currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Mi Perfil',
+                  currentUser?.avatarUrl,
+                  'MIEMBRO'
+                );
+              }
+            }}
+            style={styles.headerAvatarCircleBtn}
+            activeOpacity={0.8}
+          >
+            <AuthorAvatar
+              name={currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'miguel angel valencia'}
+              avatarUrl={currentUser?.avatarUrl || 'https://conexionluz.com/media/patients/profile/imagenjuan.png'}
+              size={36}
+            />
+          </TouchableOpacity>
+
+          {/* CALENDAR APPOINTMENT LINK BUTTON */}
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedTherapist(THERAPISTS_LIST[0]);
+              setShowAppointmentModal(true);
+            }}
+            style={styles.calendarPlusBtn}
+            activeOpacity={0.85}
+          >
+            <CalendarPlus color="#FFFFFF" size={18} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#0D9488', '#059669']}
+            tintColor="#0D9488"
+          />
+        }
+      >
+
+        {/* 2. TU LABORATORIO SECTION */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitleLabel}>TU LABORATORIO</Text>
+        </View>
+
+        <View style={styles.laboratorioGridRow}>
+          {/* CARD 1: TESTS */}
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/actividades')}
+            style={styles.labCard}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.labIconCircle, { backgroundColor: '#FEF2F2' }]}>
+              <ClipboardList color="#EF4444" size={22} />
+            </View>
+            <Text style={styles.labCardText}>Tests</Text>
+          </TouchableOpacity>
+
+          {/* CARD 2: EJERCICIOS */}
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/actividades')}
+            style={styles.labCard}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.labIconCircle, { backgroundColor: '#EEF2FF' }]}>
+              <Dumbbell color="#6366F1" size={22} />
+            </View>
+            <Text style={styles.labCardText}>Ejercicios</Text>
+          </TouchableOpacity>
+
+          {/* CARD 3: DIARIO */}
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/actividades')}
+            style={styles.labCard}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.labIconCircle, { backgroundColor: '#ECFDF5' }]}>
+              <NotebookPen color="#10B981" size={22} />
+            </View>
+            <Text style={styles.labCardText}>Diario</Text>
+          </TouchableOpacity>
+
+          {/* CARD 4: RELAJACIÓN */}
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/actividades')}
+            style={styles.labCard}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.labIconCircle, { backgroundColor: '#E0F2FE' }]}>
+              <Wind color="#0EA5E9" size={22} />
+            </View>
+            <Text style={styles.labCardText}>Relajación</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 3. SEMILLA DE LUZ BANNER CARD */}
+        <View style={styles.semillaLuzCard}>
+          <View style={styles.semillaIconBox}>
+            <Sparkles color="#0D9488" size={18} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.semillaTagText}>SEMILLA DE LUZ</Text>
+            <Text style={styles.semillaQuoteText}>
+              "Eres mucho más fuerte y capaz de lo que tu mente ansiosa te hace creer."
+            </Text>
+          </View>
+        </View>
+
+        {/* 4. GUÍAS DE LUZ SECTION */}
+        <View style={styles.sectionHeaderRowBetween}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Sparkles color="#F59E0B" size={18} />
+            <Text style={styles.sectionTitleLabelDark}>GUÍAS DE LUZ</Text>
+          </View>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/informacion')}>
+            <Text style={styles.verTodosLink}>Ver todos →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* HORIZONTAL SCROLL OF THERAPISTS */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.therapistsHorizontalList}
+        >
+          {THERAPISTS_LIST.map((therapist) => (
+            <View key={therapist.id} style={styles.therapistCard}>
+              <View style={styles.therapistAvatarWrapper}>
+                <Image source={{ uri: therapist.avatar }} style={styles.therapistAvatarImage} />
+                {therapist.online && <View style={styles.onlineBadgeDot} />}
+              </View>
+
+              <Text style={styles.therapistNameText} numberOfLines={1}>
+                {therapist.name}
+              </Text>
+              <Text style={styles.therapistRoleText}>{therapist.role}</Text>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedTherapist(therapist);
+                  setShowAppointmentModal(true);
+                }}
+                style={styles.agendarPillBtn}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.agendarPillBtnText}>Agendar</Text>
               </TouchableOpacity>
             </View>
-          )}
+          ))}
+        </ScrollView>
 
-          {/* CAJA DE CREAR PUBLICACIÓN (SOLO PARA USUARIOS AUTENTICADOS) */}
-          {!isGuest && currentUser ? (
-            <View style={styles.createPostCard}>
-              <View style={styles.createPostHeader}>
-                <TouchableOpacity
-                  onPress={() =>
-                    handleOpenUserProfile(
-                      `${currentUser.firstName} ${currentUser.lastName}`.trim(),
-                      currentUser.avatarUrl,
-                      currentUser.userType === 'paciente' ? 'Paciente' : 'Miembro'
-                    )
-                  }
-                >
-                  <AuthorAvatar
-                    name={`${currentUser.firstName} ${currentUser.lastName}`.trim()}
-                    avatarUrl={currentUser.avatarUrl}
-                    size={40}
-                  />
-                </TouchableOpacity>
+        {/* 5. DESTELLOS DE LA COMUNIDAD SECTION */}
+        <View style={[styles.sectionHeaderRow, { marginTop: 18 }]}>
+          <MessageCircle color="#64748B" size={18} style={{ marginRight: 6 }} />
+          <Text style={styles.sectionTitleLabel}>DESTELLOS DE LA COMUNIDAD</Text>
+        </View>
 
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.createPostPrompt}>
-                    ¿Cómo te sientes en tu proceso hoy, {currentUser.firstName}?
-                  </Text>
-                  <Text style={styles.permissionBadgeText}>✓ Permisos de Publicación Activos</Text>
-                </View>
-              </View>
-
-              {/* Selector de Sentir / Emoción */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.feelingsRow}>
-                {FEELINGS.map((feel) => {
-                  const isSelected = selectedFeeling === feel.label;
-                  return (
-                    <TouchableOpacity
-                      key={feel.label}
-                      onPress={() => setSelectedFeeling(feel.label)}
-                      style={[styles.feelPill, isSelected && styles.feelPillSelected]}
-                    >
-                      <Text style={styles.feelEmoji}>{feel.emoji}</Text>
-                      <Text style={[styles.feelLabel, isSelected && styles.feelLabelSelected]}>{feel.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-
-              <TextInput
-                value={newPostText}
-                onChangeText={setNewPostText}
-                placeholder="Escribe una reflexión, vivencia o aprendizaje para la comunidad..."
-                placeholderTextColor="#94A3B8"
-                multiline
-                style={styles.postInput}
-              />
-
-              <View style={styles.createPostFooter}>
-                <TouchableOpacity style={styles.mediaActionBtn}>
-                  <LucideImage color="#059669" size={18} />
-                  <Text style={styles.mediaActionText}>Imagen</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={handleCreatePost} style={styles.publishBtn}>
-                  <Send color="#FFFFFF" size={14} />
-                  <Text style={styles.publishBtnText}>Publicar</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <TouchableOpacity onPress={() => setShowAuthModal(true)} style={styles.guestCreatePlaceholder}>
-              <View style={styles.placeholderHeader}>
-                <View style={styles.placeholderAvatar} />
-                <Text style={styles.placeholderText}>Inicia sesión para publicar tu experiencia hoy...</Text>
-              </View>
-              <View style={styles.placeholderLockPill}>
-                <Lock color="#059669" size={12} />
-                <Text style={styles.placeholderLockText}>Iniciar Sesión / Registrarse</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-
-          {/* SECCIÓN DEL FEED DE PUBLICACIONES */}
-          <View style={styles.feedHeaderRow}>
-            <View>
-              <Text style={styles.feedTitle}>Publicaciones de la Comunidad</Text>
-              <Text style={styles.feedSubtitle}>Toca la foto o nombre para ver el perfil de cualquier autor</Text>
-            </View>
-            <TouchableOpacity onPress={loadPostsFromBackend} style={styles.refreshBtn}>
-              <RefreshCw color="#059669" size={16} />
-            </TouchableOpacity>
+        {/* CREATE POST QUICK INPUT */}
+        <TouchableOpacity
+          onPress={() => {
+            if (isGuest) {
+              setShowAuthModal(true);
+            } else {
+              setShowCreateModal(true);
+            }
+          }}
+          style={styles.createPostBoxCard}
+          activeOpacity={0.9}
+        >
+          <View style={styles.createPostPillInput}>
+            <AuthorAvatar
+              name={currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'miguel angel valencia'}
+              avatarUrl={currentUser?.avatarUrl || 'https://conexionluz.com/media/patients/profile/imagenjuan.png'}
+              size={34}
+            />
+            <Text style={styles.createPostPillText} numberOfLines={1}>
+              ✨ Comparte un destello de luz, intención o reflexión...
+            </Text>
+            <Sparkles color="#38BDF8" size={18} />
           </View>
+        </TouchableOpacity>
 
-          {loadingPosts && (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="small" color="#059669" />
-              <Text style={styles.loadingText}>Cargando publicaciones del servidor...</Text>
-            </View>
-          )}
+        {/* COMMUNITY FEED POSTS */}
+        <View style={styles.feedPostsContainer}>
+          {posts.map((post) => {
+            const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : 'Tú';
+            const isLiked = post.likes.includes(userName);
+            const showComments = expandedComments[post.id];
 
-          {/* FEED ITEMS LIST */}
-          <View style={styles.feedList}>
-            {posts.map((post) => {
-              const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : 'Tú';
-              const isLiked = post.likes.includes(userName);
-              const showComments = expandedComments[post.id];
-
-              return (
-                <View key={post.id} style={styles.postCard}>
-                  
-                  {/* Author Header (Tappable to view author profile) */}
+            return (
+              <View key={post.id} style={styles.feedPostCard}>
+                <View style={styles.feedPostHeader}>
                   <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => handleOpenUserProfile(post.authorName, post.authorAvatar, post.authorRole)}
-                    style={styles.postHeader}
+                    style={styles.feedAuthorAvatarRow}
                   >
-                    <AuthorAvatar
-                      name={post.authorName}
-                      avatarUrl={post.authorAvatar}
-                      size={42}
-                    />
-                    <View style={styles.postAuthorMeta}>
-                      <View style={styles.postAuthorNameRow}>
-                        <Text style={styles.postAuthorName}>{post.authorName}</Text>
-                        {post.feeling && (
-                          <View style={styles.postFeelingTag}>
-                            <Text style={styles.postFeelingText}>🌱 {post.feeling}</Text>
-                          </View>
-                        )}
+                    <AuthorAvatar name={post.authorName} avatarUrl={post.authorAvatar} size={44} />
+                    <View style={styles.feedAuthorMetaCol}>
+                      <View style={styles.feedAuthorNameBadgeRow}>
+                        <Text style={styles.feedAuthorNameText}>{post.authorName}</Text>
+                        <View style={styles.miembroRoleBadge}>
+                          <Text style={styles.miembroRoleBadgeText}>{post.authorRole || 'MIEMBRO'}</Text>
+                        </View>
                       </View>
-                      <Text style={styles.postAuthorRole}>{post.authorRole} · {post.createdAt}</Text>
+                      <Text style={styles.feedPostTimeText}>{post.createdAt}</Text>
                     </View>
-                    <ChevronRight color="#CBD5E1" size={18} />
                   </TouchableOpacity>
 
-                  {/* Post Content Body */}
-                  <Text style={styles.postContent}>{post.content}</Text>
-
-                  {/* Optional Image */}
-                  {post.image && (
-                    <Image source={{ uri: post.image }} style={styles.postImage} resizeMode="cover" />
-                  )}
-
-                  {/* Action Bar (Iluminar / Comentar) */}
-                  <View style={styles.postActionBar}>
-                    <TouchableOpacity
-                      onPress={() => handleToggleLike(post.id)}
-                      style={[styles.postActionBtn, isLiked && styles.postActionBtnLiked]}
-                    >
-                      <Heart color={isLiked ? '#EF4444' : '#64748B'} size={18} fill={isLiked ? '#EF4444' : 'transparent'} />
-                      <Text style={[styles.postActionText, isLiked && styles.postActionTextLiked]}>
-                        {isLiked ? 'Iluminado' : 'Iluminar'} ({post.likes.length})
-                      </Text>
-                    </TouchableOpacity>
-
+                  <View style={styles.feedActionIconsRow}>
                     <TouchableOpacity
                       onPress={() => {
-                        if (isGuest) {
-                          setShowAuthModal(true);
-                        } else {
-                          setExpandedComments((prev) => ({ ...prev, [post.id]: !prev[post.id] }));
-                        }
+                        if (isGuest) setShowAuthModal(true);
+                        else Alert.alert('Editar publicación', 'Puedes modificar tu mensaje.');
                       }}
-                      style={styles.postActionBtn}
+                      style={styles.iconBtnAction}
                     >
-                      <MessageCircle color="#64748B" size={18} />
-                      <Text style={styles.postActionText}>Comentarios ({post.comments.length})</Text>
+                      <Pencil color="#64748B" size={16} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (isGuest) setShowAuthModal(true);
+                        else
+                          Alert.alert('Eliminar publicación', '¿Deseas eliminar este destello?', [
+                            { text: 'Cancelar', style: 'cancel' },
+                            {
+                              text: 'Eliminar',
+                              style: 'destructive',
+                              onPress: () => setPosts((prev) => prev.filter((p) => p.id !== post.id)),
+                            },
+                          ]);
+                      }}
+                      style={styles.iconBtnAction}
+                    >
+                      <Trash2 color="#64748B" size={16} />
                     </TouchableOpacity>
                   </View>
-
-                  {/* Comments Section */}
-                  {showComments && (
-                    <View style={styles.commentsSection}>
-                      {post.comments.map((comment) => (
-                        <View key={comment.id} style={styles.commentItem}>
-                          <TouchableOpacity
-                            onPress={() => handleOpenUserProfile(comment.authorName, comment.authorAvatar, comment.authorRole)}
-                          >
-                            <AuthorAvatar
-                              name={comment.authorName}
-                              avatarUrl={comment.authorAvatar}
-                              size={28}
-                            />
-                          </TouchableOpacity>
-                          <View style={styles.commentBubble}>
-                            <View style={styles.commentHeaderRow}>
-                              <Text
-                                onPress={() => handleOpenUserProfile(comment.authorName, comment.authorAvatar, comment.authorRole)}
-                                style={styles.commentAuthor}
-                              >
-                                {comment.authorName}
-                              </Text>
-                              <Text style={styles.commentRole}>{comment.authorRole}</Text>
-                            </View>
-                            <Text style={styles.commentBody}>{comment.content}</Text>
-                            <Text style={styles.commentTime}>{comment.createdAt}</Text>
-                          </View>
-                        </View>
-                      ))}
-
-                      {/* Add Comment Input */}
-                      <View style={styles.addCommentRow}>
-                        <TextInput
-                          value={commentInputs[post.id] || ''}
-                          onChangeText={(text) => setCommentInputs({ ...commentInputs, [post.id]: text })}
-                          placeholder={isGuest ? 'Inicia sesión para comentar' : 'Escribe un comentario...'}
-                          placeholderTextColor="#94A3B8"
-                          style={styles.commentInput}
-                        />
-                        <TouchableOpacity
-                          onPress={() => handleAddComment(post.id)}
-                          style={styles.sendCommentBtn}
-                        >
-                          <Send color="#FFFFFF" size={14} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  )}
-
                 </View>
-              );
-            })}
-          </View>
 
-        </ScrollView>
-
-        {/* PUBLIC USER PROFILE MODAL */}
-        <UserProfileModal
-          visible={showUserProfileModal}
-          onClose={() => setShowUserProfileModal(false)}
-          user={selectedUserProfile}
-          userPosts={posts}
-        />
-
-        {/* AUTHENTICATION & REGISTRATION MODAL */}
-        <Modal visible={showAuthModal} transparent animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
-              <View style={styles.modalHeaderRow}>
-                <View style={styles.modalIconBadge}>
-                  <Lock color="#059669" size={24} />
-                </View>
-                <TouchableOpacity onPress={() => setShowAuthModal(false)} style={styles.closeModalBtn}>
-                  <X color="#64748B" size={20} />
-                </TouchableOpacity>
-              </View>
-
-              {/* TOGGLE TAB LOGIN / REGISTER */}
-              <View style={styles.modalTabRow}>
-                <TouchableOpacity
-                  onPress={() => setAuthMode('login')}
-                  style={[styles.modalTabBtn, authMode === 'login' && styles.modalTabBtnActive]}
-                >
-                  <Text style={[styles.modalTabText, authMode === 'login' && styles.modalTabTextActive]}>Iniciar Sesión</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setAuthMode('register')}
-                  style={[styles.modalTabBtn, authMode === 'register' && styles.modalTabBtnActive]}
-                >
-                  <Text style={[styles.modalTabText, authMode === 'register' && styles.modalTabTextActive]}>Registrarse</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.modalTitle}>
-                {authMode === 'login' ? 'Acceso a Conexión Luz®' : 'Crear Cuenta en Conexión Luz®'}
-              </Text>
-              <Text style={styles.modalSubtitle}>
-                {authMode === 'login'
-                  ? 'Ingresa con tus credenciales de paciente o miembro para publicar en el muro.'
-                  : 'Crea tu perfil para conectarte con la comunidad e interactuar.'}
-              </Text>
-
-              {authMode === 'register' && (
-                <>
-                  <View style={styles.modalFormGroup}>
-                    <Text style={styles.modalInputLabel}>Nombre</Text>
-                    <TextInput
-                      value={firstNameInput}
-                      onChangeText={setFirstNameInput}
-                      placeholder="Sofía"
-                      placeholderTextColor="#94A3B8"
-                      style={styles.modalInput}
-                    />
-                  </View>
-                  <View style={styles.modalFormGroup}>
-                    <Text style={styles.modalInputLabel}>Apellido</Text>
-                    <TextInput
-                      value={lastNameInput}
-                      onChangeText={setLastNameInput}
-                      placeholder="Varela"
-                      placeholderTextColor="#94A3B8"
-                      style={styles.modalInput}
-                    />
-                  </View>
-                </>
-              )}
-
-              <View style={styles.modalFormGroup}>
-                <Text style={styles.modalInputLabel}>Correo Electrónico</Text>
-                <TextInput
-                  value={emailInput}
-                  onChangeText={setEmailInput}
-                  placeholder="ejemplo@conexionluz.com"
-                  placeholderTextColor="#94A3B8"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  style={styles.modalInput}
-                />
-              </View>
-
-              <View style={styles.modalFormGroup}>
-                <Text style={styles.modalInputLabel}>Contraseña</Text>
-                <TextInput
-                  value={passwordInput}
-                  onChangeText={setPasswordInput}
-                  placeholder="••••••••"
-                  placeholderTextColor="#94A3B8"
-                  secureTextEntry
-                  style={styles.modalInput}
-                />
-              </View>
-
-              <TouchableOpacity onPress={handleAuthSubmit} disabled={authLoading} style={styles.modalSubmitBtn}>
-                {authLoading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <>
-                    <LogIn color="#FFFFFF" size={16} />
-                    <Text style={styles.modalSubmitBtnText}>
-                      {authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
-                    </Text>
-                  </>
+                <Text style={styles.feedPostContentText}>{post.content}</Text>
+                {post.image && (
+                  <Image source={{ uri: post.image }} style={styles.feedPostImage} resizeMode="cover" />
                 )}
-              </TouchableOpacity>
 
-              <TouchableOpacity onPress={handleQuickDemoLogin} style={styles.demoLoginBtn}>
-                <ShieldCheck color="#059669" size={16} />
-                <Text style={styles.demoLoginBtnText}>Entrar con Usuario Demo Conexión Luz®</Text>
+                <View style={styles.postFooterBar}>
+                  <TouchableOpacity
+                    onPress={() => handleToggleLike(post.id)}
+                    style={[styles.postActionFooterBtn, isLiked && styles.postActionFooterBtnLiked]}
+                  >
+                    <Heart color={isLiked ? '#EF4444' : '#64748B'} size={18} fill={isLiked ? '#EF4444' : 'transparent'} />
+                    <Text style={[styles.postActionFooterText, isLiked && styles.postActionFooterTextLiked]}>
+                      {isLiked ? 'Iluminado' : 'Iluminar'} ({post.likes.length})
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (isGuest) {
+                        setShowAuthModal(true);
+                      } else {
+                        setExpandedComments((prev) => ({ ...prev, [post.id]: !prev[post.id] }));
+                      }
+                    }}
+                    style={styles.postActionFooterBtn}
+                  >
+                    <MessageCircle color="#64748B" size={18} />
+                    <Text style={styles.postActionFooterText}>Comentarios ({post.comments.length})</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {showComments && (
+                  <View style={styles.commentsSection}>
+                    {post.comments.map((c) => (
+                      <View key={c.id} style={styles.commentItem}>
+                        <AuthorAvatar name={c.authorName} avatarUrl={c.authorAvatar} size={28} />
+                        <View style={styles.commentBubble}>
+                          <Text style={styles.commentAuthorName}>{c.authorName}</Text>
+                          <Text style={styles.commentContentText}>{c.content}</Text>
+                          <Text style={styles.commentTimeText}>{c.createdAt}</Text>
+                        </View>
+                      </View>
+                    ))}
+
+                    <View style={styles.addCommentRow}>
+                      <TextInput
+                        value={commentInputs[post.id] || ''}
+                        onChangeText={(t) => setCommentInputs({ ...commentInputs, [post.id]: t })}
+                        placeholder="Escribe un comentario..."
+                        placeholderTextColor="#94A3B8"
+                        style={styles.addCommentInput}
+                      />
+                      <TouchableOpacity onPress={() => handleAddComment(post.id)} style={styles.sendCommentBtn}>
+                        <Send color="#FFFFFF" size={14} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        <View style={{ height: 60 }} />
+      </ScrollView>
+
+      {/* --- MODAL: APPOINTMENT MODAL --- */}
+      <Modal visible={showAppointmentModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeaderRow}>
+              <View style={styles.modalIconBadge}>
+                <Calendar color="#059669" size={24} />
+              </View>
+              <TouchableOpacity onPress={() => setShowAppointmentModal(false)} style={styles.closeModalBtn}>
+                <X color="#64748B" size={20} />
               </TouchableOpacity>
             </View>
-          </View>
-        </Modal>
 
-      </SafeAreaView>
+            <Text style={styles.modalTitle}>Agendar Cita de Acompañamiento</Text>
+            <Text style={styles.modalSubtitle}>
+              {selectedTherapist ? `Especialista: ${selectedTherapist.name}` : 'Selecciona fecha y hora para tu sesión.'}
+            </Text>
+
+            <View style={styles.modalFormGroup}>
+              <Text style={styles.modalInputLabel}>Fecha (AAAA-MM-DD)</Text>
+              <TextInput value={appDate} onChangeText={setAppDate} style={styles.modalInput} />
+            </View>
+
+            <View style={styles.modalFormGroup}>
+              <Text style={styles.modalInputLabel}>Hora preferida</Text>
+              <TextInput value={appTime} onChangeText={setAppTime} style={styles.modalInput} />
+            </View>
+
+            <View style={styles.modalFormGroup}>
+              <Text style={styles.modalInputLabel}>Motivo o notas adicionales (Opcional)</Text>
+              <TextInput
+                value={appNotes}
+                onChangeText={setAppNotes}
+                placeholder="Ej. Primera consulta, manejo de ansiedad..."
+                placeholderTextColor="#94A3B8"
+                multiline
+                style={[styles.modalInput, { height: 70 }]}
+              />
+            </View>
+
+            <TouchableOpacity onPress={handleBookAppointment} disabled={appLoading} style={styles.modalSubmitBtn}>
+              {appLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <CheckCircle2 color="#FFFFFF" size={16} />
+                  <Text style={styles.modalSubmitBtnText}>Confirmar Cita</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- MODAL: CREATE POST MODAL --- */}
+      <Modal visible={showCreateModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeaderRow}>
+              <View style={styles.modalIconBadge}>
+                <Sparkles color="#059669" size={24} />
+              </View>
+              <TouchableOpacity onPress={() => setShowCreateModal(false)} style={styles.closeModalBtn}>
+                <X color="#64748B" size={20} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalTitle}>Compartir un Destello de Luz</Text>
+            <Text style={styles.modalSubtitle}>Escribe tu reflexión, intención o aprendizaje para la comunidad.</Text>
+
+            <TextInput
+              value={newPostText}
+              onChangeText={setNewPostText}
+              placeholder="Escribe aquí tu mensaje..."
+              placeholderTextColor="#94A3B8"
+              multiline
+              style={[styles.modalInput, { height: 110, textAlignVertical: 'top', marginTop: 10 }]}
+            />
+
+            <TouchableOpacity onPress={handleCreatePost} style={[styles.modalSubmitBtn, { marginTop: 16 }]}>
+              <Send color="#FFFFFF" size={16} />
+              <Text style={styles.modalSubmitBtnText}>Publicar en Muro</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- MODAL: AUTHENTICATION MODAL --- */}
+      <Modal visible={showAuthModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeaderRow}>
+              <View style={styles.modalIconBadge}>
+                <Lock color="#059669" size={24} />
+              </View>
+              <TouchableOpacity onPress={() => setShowAuthModal(false)} style={styles.closeModalBtn}>
+                <X color="#64748B" size={20} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalTabRow}>
+              <TouchableOpacity
+                onPress={() => setAuthMode('login')}
+                style={[styles.modalTabBtn, authMode === 'login' && styles.modalTabBtnActive]}
+              >
+                <Text style={[styles.modalTabText, authMode === 'login' && styles.modalTabTextActive]}>Iniciar Sesión</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setAuthMode('register')}
+                style={[styles.modalTabBtn, authMode === 'register' && styles.modalTabBtnActive]}
+              >
+                <Text style={[styles.modalTabText, authMode === 'register' && styles.modalTabTextActive]}>Registrarse</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalTitle}>
+              {authMode === 'login' ? 'Acceso a Conexión Luz®' : 'Crear Cuenta'}
+            </Text>
+
+            {authMode === 'register' && (
+              <>
+                <View style={styles.modalFormGroup}>
+                  <Text style={styles.modalInputLabel}>Nombre</Text>
+                  <TextInput
+                    value={firstNameInput}
+                    onChangeText={setFirstNameInput}
+                    placeholder="Sofía"
+                    placeholderTextColor="#94A3B8"
+                    style={styles.modalInput}
+                  />
+                </View>
+                <View style={styles.modalFormGroup}>
+                  <Text style={styles.modalInputLabel}>Apellido</Text>
+                  <TextInput
+                    value={lastNameInput}
+                    onChangeText={setLastNameInput}
+                    placeholder="Varela"
+                    placeholderTextColor="#94A3B8"
+                    style={styles.modalInput}
+                  />
+                </View>
+              </>
+            )}
+
+            <View style={styles.modalFormGroup}>
+              <Text style={styles.modalInputLabel}>Correo Electrónico</Text>
+              <TextInput
+                value={emailInput}
+                onChangeText={setEmailInput}
+                placeholder="ejemplo@conexionluz.com"
+                placeholderTextColor="#94A3B8"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.modalInput}
+              />
+            </View>
+
+            <View style={styles.modalFormGroup}>
+              <Text style={styles.modalInputLabel}>Contraseña</Text>
+              <TextInput
+                value={passwordInput}
+                onChangeText={setPasswordInput}
+                placeholder="••••••••"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry
+                style={styles.modalInput}
+              />
+            </View>
+
+            <TouchableOpacity onPress={handleAuthSubmit} disabled={authLoading} style={styles.modalSubmitBtn}>
+              {authLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <LogIn color="#FFFFFF" size={16} />
+                  <Text style={styles.modalSubmitBtnText}>
+                    {authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* PUBLIC USER PROFILE MODAL */}
+      <UserProfileModal
+        visible={showUserProfileModal}
+        onClose={() => setShowUserProfileModal(false)}
+        user={selectedUserProfile}
+        userPosts={posts}
+      />
+
+      {/* LIVE CHAT MODAL */}
+      <LiveChatModal
+        visible={showLiveChatModal}
+        onClose={() => setShowLiveChatModal(false)}
+        onMessagesUpdated={(msgs) => setChatMessagesList(msgs)}
+      />
+
+      {/* NOTIFICATIONS MODAL */}
+      <NotificationsModal
+        visible={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+        notifications={notificationsList}
+        onMarkAllRead={async () => {
+          await mobileApi.markNotificationsRead(true);
+          setNotificationsList((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        }}
+      />
+
+      {/* FLOATING LIVE CHAT ACTION BUTTON (FAB) */}
+      <TouchableOpacity
+        style={styles.floatingChatFab}
+        onPress={() => setShowLiveChatModal(true)}
+        activeOpacity={0.85}
+      >
+        <MessageCircle color="#FFFFFF" size={24} />
+        {unreadChatAdminCount > 0 && (
+          <View style={styles.fabBadgeCircle}>
+            <Text style={styles.fabBadgeText}>
+              {unreadChatAdminCount > 9 ? '9+' : unreadChatAdminCount}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -834,412 +1115,357 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  safeArea: {
-    flex: 1,
-  },
-  headerBar: {
+
+  // 1. TOP HEADER BAR
+  topHeaderBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#F1F5F9',
   },
-  brandRow: {
+  brandLogoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
   },
-  logoBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#ECFDF5',
+  brandTitleText: {
+    fontSize: 19,
+    fontWeight: '900',
+    color: '#059669',
+    letterSpacing: -0.2,
+  },
+  headerRightActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerIconCircleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
   },
-  brandTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#0F172A',
-    letterSpacing: 0.5,
+  headerAvatarCircleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
   },
-  brandSubtitle: {
-    fontSize: 10,
-    color: '#059669',
-    fontWeight: '700',
-  },
-  loginHeaderBtn: {
-    flexDirection: 'row',
+  calendarPlusBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#0D9488',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 14,
-    backgroundColor: '#059669',
+    justifyContent: 'center',
   },
-  loginHeaderBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  userStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  userStatusText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#065F46',
-  },
+
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  guestNoticeBanner: {
+
+  // 2. SECTIONS & LABORATORIO
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  sectionHeaderRowBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 12,
+  },
+  sectionTitleLabel: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#64748B',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  sectionTitleLabelDark: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#1E293B',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  verTodosLink: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0D9488',
+  },
+
+  laboratorioGridRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  labCard: {
+    width: '23.5%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  labIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  labCardText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginTop: 6,
+  },
+
+  // 3. SEMILLA DE LUZ BANNER
+  semillaLuzCard: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 20,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#D1FAE5',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  guestIconBox: {
+  semillaIconBox: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  guestPillRow: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#0284C7',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  guestPillText: {
-    fontSize: 9,
+  semillaTagText: {
+    fontSize: 10,
     fontWeight: '900',
+    color: '#0D9488',
+    letterSpacing: 0.5,
+  },
+  semillaQuoteText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: '#1E293B',
+    lineHeight: 18,
+    marginTop: 2,
+  },
+
+  // 4. GUÍAS DE LUZ
+  therapistsHorizontalList: {
+    paddingRight: 8,
+    marginBottom: 14,
+  },
+  therapistCard: {
+    width: 135,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    padding: 14,
+    alignItems: 'center',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  therapistAvatarWrapper: {
+    position: 'relative',
+    marginBottom: 8,
+  },
+  therapistAvatarImage: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+  },
+  onlineBadgeDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  therapistNameText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+  therapistRoleText: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  agendarPillBtn: {
+    backgroundColor: '#0D9488',
+    borderRadius: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    width: '100%',
+    alignItems: 'center',
+  },
+  agendarPillBtnText: {
     color: '#FFFFFF',
-    textTransform: 'uppercase',
-  },
-  guestTitle: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#0369A1',
-  },
-  guestDesc: {
-    fontSize: 11,
-    color: '#075985',
-    lineHeight: 15,
-  },
-  guestActionBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: '#0284C7',
-  },
-  guestActionText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
-  guestCreatePlaceholder: {
+
+  // 5. CREATE POST & FEED
+  createPostBoxCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 12,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  createPostPillInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  createPostPillText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+
+  feedPostsContainer: {
+    gap: 14,
+  },
+  feedPostCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 16,
-    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 12,
-  },
-  placeholderHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  placeholderAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#E2E8F0',
-  },
-  placeholderText: {
-    fontSize: 13,
-    color: '#64748B',
-    fontWeight: '500',
-    flex: 1,
-  },
-  placeholderLockPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#ECFDF5',
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  placeholderLockText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#065F46',
-  },
-  createPostCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#F1F5F9',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.02,
     shadowRadius: 6,
-    elevation: 2,
+    elevation: 1,
   },
-  createPostHeader: {
+  feedPostHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  feedAuthorAvatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 12,
+    flex: 1,
   },
-  createPostPrompt: {
+  feedAuthorMetaCol: {
+    justifyContent: 'center',
+  },
+  feedAuthorNameBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  feedAuthorNameText: {
     fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
   },
-  permissionBadgeText: {
-    fontSize: 10,
-    color: '#059669',
-    fontWeight: '700',
-  },
-  feelingsRow: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  feelPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
+  miembroRoleBadge: {
     backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  feelPillSelected: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#34D399',
-  },
-  feelEmoji: {
-    fontSize: 14,
-  },
-  feelLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  feelLabelSelected: {
-    color: '#065F46',
-    fontWeight: '900',
-  },
-  postInput: {
-    minHeight: 80,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    padding: 12,
-    fontSize: 13,
-    color: '#0F172A',
-    textAlignVertical: 'top',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 12,
-  },
-  createPostFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  mediaActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: '#ECFDF5',
-  },
-  mediaActionText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#059669',
-  },
-  publishBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#059669',
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 12,
-  },
-  publishBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  feedHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  feedTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  feedSubtitle: {
-    fontSize: 11,
-    color: '#059669',
-    fontWeight: '700',
-  },
-  refreshBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: '#ECFDF5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    marginBottom: 12,
-  },
-  loadingText: {
-    fontSize: 12,
-    color: '#059669',
-    fontWeight: '600',
-  },
-  feedList: {
-    gap: 16,
-  },
-  postCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
-  },
-  postAuthorMeta: {
-    flex: 1,
-  },
-  postAuthorNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  postAuthorName: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  postFeelingTag: {
+    borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
-    backgroundColor: '#ECFDF5',
   },
-  postFeelingText: {
-    fontSize: 10,
+  miembroRoleBadgeText: {
+    fontSize: 9,
     fontWeight: '800',
-    color: '#065F46',
-  },
-  postAuthorRole: {
-    fontSize: 11,
     color: '#64748B',
-    fontWeight: '500',
   },
-  postContent: {
-    fontSize: 13,
-    color: '#334155',
-    lineHeight: 19,
-    fontWeight: '500',
-    marginBottom: 12,
+  feedPostTimeText: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 1,
   },
-  postImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 14,
-    marginBottom: 12,
-  },
-  postActionBar: {
+  feedActionIconsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingTop: 10,
+    gap: 6,
   },
-  postActionBtn: {
+  iconBtnAction: {
+    padding: 4,
+  },
+  feedPostContentText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#334155',
+    marginBottom: 12,
+  },
+  feedPostImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  postFooterBar: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F8FAFC',
+  },
+  postActionFooterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  postActionBtnLiked: {
-    opacity: 0.9,
-  },
-  postActionText: {
+  postActionFooterBtnLiked: {},
+  postActionFooterText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#64748B',
   },
-  postActionTextLiked: {
+  postActionFooterTextLiked: {
     color: '#EF4444',
-    fontWeight: '900',
   },
   commentsSection: {
     marginTop: 12,
-    paddingTop: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    gap: 10,
+    gap: 8,
   },
   commentItem: {
     flexDirection: 'row',
@@ -1249,77 +1475,59 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
     borderRadius: 12,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    padding: 8,
   },
-  commentHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  commentAuthor: {
-    fontSize: 12,
+  commentAuthorName: {
+    fontSize: 11,
     fontWeight: '800',
     color: '#0F172A',
   },
-  commentRole: {
-    fontSize: 9,
-    color: '#94A3B8',
-    fontWeight: '600',
-  },
-  commentBody: {
-    fontSize: 12,
+  commentContentText: {
+    fontSize: 11,
     color: '#334155',
-    lineHeight: 16,
+    marginTop: 2,
   },
-  commentTime: {
+  commentTimeText: {
     fontSize: 9,
     color: '#94A3B8',
     marginTop: 4,
   },
   addCommentRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
-    marginTop: 4,
+    marginTop: 6,
   },
-  commentInput: {
+  addCommentInput: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    fontSize: 12,
+    fontSize: 11,
     color: '#0F172A',
   },
   sendCommentBtn: {
+    backgroundColor: '#059669',
+    borderRadius: 12,
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#059669',
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  // MODALS
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalCard: {
     width: '100%',
-    maxWidth: 400,
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 20,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
   },
   modalHeaderRow: {
     flexDirection: 'row',
@@ -1336,24 +1544,67 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeModalBtn: {
-    padding: 6,
+    padding: 4,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  modalFormGroup: {
+    marginBottom: 10,
+  },
+  modalInputLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 4,
+  },
+  modalInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 12,
+    color: '#0F172A',
+  },
+  modalSubmitBtn: {
+    backgroundColor: '#059669',
+    borderRadius: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  modalSubmitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
   },
   modalTabRow: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   modalTabBtn: {
     flex: 1,
-    alignItems: 'center',
     paddingVertical: 8,
-    borderRadius: 10,
+    alignItems: 'center',
+    borderRadius: 8,
   },
   modalTabBtnActive: {
     backgroundColor: '#FFFFFF',
-    elevation: 2,
   },
   modalTabText: {
     fontSize: 12,
@@ -1362,71 +1613,60 @@ const styles = StyleSheet.create({
   },
   modalTabTextActive: {
     color: '#059669',
-    fontWeight: '900',
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#0F172A',
-    marginBottom: 6,
-  },
-  modalSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
-    lineHeight: 17,
-    fontWeight: '500',
-    marginBottom: 16,
-  },
-  modalFormGroup: {
-    marginBottom: 12,
-  },
-  modalInputLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#334155',
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  modalInput: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 13,
-    color: '#0F172A',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-  },
-  modalSubmitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  badgeCircle: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#EF4444',
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#059669',
-    paddingVertical: 12,
-    borderRadius: 14,
-    marginTop: 6,
+    alignItems: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
-  modalSubmitBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
+  badgeText: {
     color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
   },
-  demoLoginBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  floatingChatFab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#0D9488',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#ECFDF5',
-    paddingVertical: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    marginTop: 10,
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#0F766E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    zIndex: 999,
   },
-  demoLoginBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#065F46',
+  fabBadgeCircle: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#F43F5E',
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  fabBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
   },
 });

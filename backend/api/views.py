@@ -69,7 +69,7 @@ def _is_valid_username(value: str) -> bool:
     for ch in value:
         if ch.isalnum():
             continue
-        if ch in ("_", ".", "-"):
+        if ch in ("_", ".", "-", "@"):
             continue
         return False
     return True
@@ -2456,21 +2456,26 @@ def patient_detail(request: HttpRequest, patient_id: int) -> JsonResponse:
 @require_http_methods(["POST"])
 def patient_login(request: HttpRequest) -> JsonResponse:
     body = _parse_json_body(request)
-    username = _normalize_username(body.get("username", ""))
+    raw_username = body.get("username", "") or body.get("email", "")
+    username = _normalize_username(raw_username)
     password = str(body.get("password", "")).strip()
     if not username or not password:
         return _json_error("username and password are required")
 
     try:
-        patient = Patient.objects.get(username__iexact=username)
-    except Patient.DoesNotExist:
-        return _json_error("invalid credentials", status=401)
+        patient = Patient.objects.filter(
+            Q(username__iexact=username) | Q(email__iexact=username)
+        ).first()
+        if not patient:
+            return _json_error("Credenciales de inicio de sesión inválidas.", status=401)
+    except Exception:
+        return _json_error("Credenciales de inicio de sesión inválidas.", status=401)
 
     if not patient.is_active:
-        return _json_error("inactive account", status=403)
+        return _json_error("Cuenta inactiva. Contacta al administrador.", status=403)
 
     if not patient.password_hash or not check_password(password, patient.password_hash):
-        return _json_error("invalid credentials", status=401)
+        return _json_error("Credenciales de inicio de sesión inválidas.", status=401)
 
     token = _issue_patient_token(patient.id)
     return JsonResponse({"ok": True, "data": {"token": token, "patient": _patient_portal_to_dict(patient, request)}})
@@ -2841,19 +2846,21 @@ def portal_daily_checkin(request: HttpRequest) -> JsonResponse:
 @require_http_methods(["POST"])
 def patient_register(request: HttpRequest) -> JsonResponse:
     body = _parse_json_body(request)
-    username = _normalize_username(body.get("username", ""))
+    email = str(body.get("email", "")).strip()
+    username = _normalize_username(body.get("username", "") or email)
     password = str(body.get("password", "")).strip()
     first_name = str(body.get("firstName", "")).strip()
 
     if not first_name:
         return _json_error("firstName is required")
+    if not username:
+        username = _normalize_username(email)
     if not _is_valid_username(username):
-        return _json_error("invalid username")
-    if len(password) < 8:
-        return _json_error("password must be at least 8 characters")
+        return _json_error("Nombre de usuario o correo no válido")
+    if len(password) < 6:
+        return _json_error("La contraseña debe tener al menos 6 caracteres")
 
     last_name = str(body.get("lastName", "")).strip()
-    email = str(body.get("email", "")).strip()
     phone = str(body.get("phone", "")).strip()
     city = str(body.get("city", "")).strip()
 
@@ -2861,7 +2868,7 @@ def patient_register(request: HttpRequest) -> JsonResponse:
         patient = Patient.objects.create(
             first_name=first_name,
             last_name=last_name,
-            email=email,
+            email=email or username,
             phone=phone,
             city=city,
             username=username,
@@ -2870,9 +2877,10 @@ def patient_register(request: HttpRequest) -> JsonResponse:
             portal_welcome_message="Bienvenido(a) a tu espacio personal.",
             portal_accent_color="#22c55e",
             is_active=True,
+            can_publish=True,
         )
     except IntegrityError:
-        return _json_error("username already exists")
+        return _json_error("El nombre de usuario o correo ya se encuentra registrado.")
 
     token = _issue_patient_token(patient.id)
     return JsonResponse({"ok": True, "data": {"token": token, "patient": _patient_portal_to_dict(patient, request)}}, status=201)
@@ -4346,16 +4354,23 @@ def _comment_to_dict(c: CommunityPostComment) -> dict:
     }
 
 
-def _post_to_dict(post: CommunityPost, viewer_patient_id: Optional[int] = None) -> dict:
+def _post_to_dict(post: CommunityPost, viewer_patient_id: Optional[int] = None, request: Optional[HttpRequest] = None) -> dict:
     comments = list(post.post_comments.filter(is_active=True).order_by("created_at"))
     likes = post.like_patient_ids if isinstance(post.like_patient_ids, list) else []
 
     avatar = post.author_avatar_url or ""
     if not avatar and post.patient:
         if post.patient.profile_picture_file:
-            avatar = post.patient.profile_picture_file.url
+            raw_url = post.patient.profile_picture_file.url
+            avatar = request.build_absolute_uri(raw_url) if request is not None else raw_url
         elif post.patient.profile_picture_url:
             avatar = post.patient.profile_picture_url
+    elif avatar and avatar.startswith("/") and request is not None:
+        avatar = request.build_absolute_uri(avatar)
+
+    img_url = post.image_url or ""
+    if img_url and img_url.startswith("/") and request is not None:
+        img_url = request.build_absolute_uri(img_url)
 
     return {
         "id": post.id,
@@ -4365,7 +4380,7 @@ def _post_to_dict(post: CommunityPost, viewer_patient_id: Optional[int] = None) 
         "authorAvatar": avatar,
         "authorRole": post.author_role,
         "content": post.content,
-        "imageUrl": post.image_url,
+        "imageUrl": img_url,
         "feeling": post.feeling,
         "likesCount": len(likes),
         "likedByMe": viewer_patient_id is not None and viewer_patient_id in likes,
@@ -4383,7 +4398,7 @@ def _post_to_dict(post: CommunityPost, viewer_patient_id: Optional[int] = None) 
 def public_community_posts(request: HttpRequest) -> JsonResponse:
     """Public read-only feed — no auth required."""
     posts = CommunityPost.objects.filter(is_active=True, is_approved=True).order_by("-created_at")[:50]
-    return JsonResponse({"ok": True, "data": [_post_to_dict(p) for p in posts]})
+    return JsonResponse({"ok": True, "data": [_post_to_dict(p, request=request) for p in posts]})
 
 
 @csrf_exempt
@@ -4395,13 +4410,13 @@ def portal_community_posts(request: HttpRequest) -> JsonResponse:
     if request.method == "GET":
         if patient is None:
             posts = CommunityPost.objects.filter(is_active=True, is_approved=True).order_by("-created_at")[:50]
-            return JsonResponse({"ok": True, "data": [_post_to_dict(p) for p in posts]})
+            return JsonResponse({"ok": True, "data": [_post_to_dict(p, request=request) for p in posts]})
 
         posts = CommunityPost.objects.filter(
             Q(is_active=True, is_approved=True) | Q(is_active=True, patient_id=patient.id)
         ).order_by("-created_at")[:50]
         pid = patient.id if patient else None
-        return JsonResponse({"ok": True, "data": [_post_to_dict(p, pid) for p in posts]})
+        return JsonResponse({"ok": True, "data": [_post_to_dict(p, pid, request=request) for p in posts]})
 
     # POST: create
     if patient is None:
@@ -4446,6 +4461,8 @@ def portal_community_posts(request: HttpRequest) -> JsonResponse:
         content=content,
         image_url=image_url,
         feeling=str(body.get("feeling", "")).strip(),
+        is_approved=True,
+        is_active=True,
     )
     return JsonResponse({"ok": True, "data": _post_to_dict(post, patient.id)}, status=201)
 

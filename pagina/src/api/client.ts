@@ -7,10 +7,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function getBaseUrl(): string {
   // In development the Vite dev-server proxy forwards /api/* to Django,
   // so we use an empty base (same origin). In production the full URL
-  // must be set via the VITE_API_URL environment variable.
-  if (import.meta.env.DEV) return ''
+  // defaults to https://conexionluz.com or VITE_API_URL environment variable.
   const value = import.meta.env.VITE_API_URL
-  return (value && value.trim()) || ''
+  if (value && value.trim()) return value.trim()
+  if (import.meta.env.DEV) return ''
+  return 'https://conexionluz.com'
 }
 
 function getToken(): string | null {

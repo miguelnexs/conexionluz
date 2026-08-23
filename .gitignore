@@ -1,26 +1,18 @@
-# Media
+# Media & Heavy Files
 *.mp4
 *.flv
 *.mov
 *.avi
+*.mkv
+*.webm
 *.mp3
 *.wav
-
-# Images
-*.jpg
-*.jpeg
-*.png
-*.webp
-*.gif
-*.svg
-*.ico
-
-# Documents
 *.pdf
 
-# Other
+# Dependencies & Builds
 node_modules/
 dist/
+dist-web/
 build/
 .npm/
 __pycache__/
@@ -34,17 +26,23 @@ db.sqlite3
 .idea/
 .DS_Store
 Thumbs.db
+
+# Backend Media
+backend/media/
+media/
+
+# Environment variables
 .env
-.env.localb 
-.env.development.local
-.env.test.local
-.env.production.local
-certbot/
-.expo/
-.expo-shared/
+.env.*
 
-# Allow images in source assets and public folders
-!**/assets/**
-!**/public/**
-
-
+# UI images in assets/public
+!**/assets/**/*.png
+!**/assets/**/*.jpg
+!**/assets/**/*.jpeg
+!**/assets/**/*.webp
+!**/assets/**/*.svg
+!**/public/**/*.png
+!**/public/**/*.jpg
+!**/public/**/*.jpeg
+!**/public/**/*.webp
+!**/public/**/*.svg

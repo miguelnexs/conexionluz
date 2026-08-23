@@ -37,17 +37,6 @@ const SIDEBAR_W = 248;
 
 const navSections = [
   {
-    id: 'explorar',
-    title: 'Explorar',
-    icon: Sparkles,
-    color: '#6366f1',
-    items: [
-      { name: 'Inicio', href: '/', icon: Home, desc: 'Página principal' },
-      { name: 'Servicios', href: '/servicios', icon: Sparkles, desc: 'Nuestros servicios' },
-      { name: 'Terapeutas', href: '/terapeutas', icon: Users, desc: 'Conoce al equipo' },
-    ],
-  },
-  {
     id: 'comunidad',
     title: 'Comunidad',
     icon: Users,
@@ -90,6 +79,8 @@ const navSections = [
     icon: Info,
     color: '#0ea5e9',
     items: [
+      { name: 'Servicios', href: '/servicios', icon: Sparkles, desc: 'Nuestros servicios' },
+      { name: 'Terapeutas', href: '/terapeutas', icon: Users, desc: 'Conoce al equipo' },
       { name: 'Quiénes somos', href: '/quienes-somos', icon: Building2, desc: 'Nuestra misión y equipo' },
       { name: 'Blog & Artículos', href: '/blog', icon: Newspaper, desc: 'Contenido sobre bienestar' },
       { name: 'Preguntas Frecuentes', href: '/faq', icon: HelpCircle, desc: 'Resolvemos tus dudas' },

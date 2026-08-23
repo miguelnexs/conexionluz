@@ -117,7 +117,7 @@ class Patient(TimestampedModel):
     intake_submitted_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     user_type = models.CharField(max_length=50, default="miembro")
-    can_publish = models.BooleanField(default=False)
+    can_publish = models.BooleanField(default=True)
     
     profile_picture_file = models.ImageField(upload_to="patients/profile/", null=True, blank=True)
     profile_picture_url = models.CharField(max_length=500, blank=True)

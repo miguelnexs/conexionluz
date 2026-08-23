@@ -63,154 +63,26 @@ const FEELINGS_LIST = [
   { emoji: '💤', label: 'Cansado/a', color: 'bg-slate-50 text-slate-700 border-slate-100 shadow-[0_0_15px_-3px_rgba(71,85,105,0.12)] hover:border-slate-300' },
 ];
 
-const INITIAL_MOCK_POSTS: Post[] = [
-  {
-    id: 'post-1',
-    authorName: 'Dra. Elena Rossi',
-    authorAvatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300',
-    authorRole: 'Psicóloga Clínica',
-    content: 'Un recordatorio cariñoso para cerrar la semana: la respiración es tu ancla constante. Si sientes que la mente se acelera o el estrés te abruma, detente un momento y prueba la respiración 4-7-8. Inhala por la nariz en 4 segundos, retén el aire durante 7 segundos y exhala lentamente por la boca en 8 segundos. Hacer esto 4 veces le indica a tu sistema nervioso que está a salvo. ¿Quién se une a respirar hondo hoy? 🌿🧘‍♂️',
-    feeling: 'En calma',
-    image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800',
-    likes: ['Elena Rossi', 'Marcos Gómez', 'Sofía Varela'],
-    comments: [
-      {
-        id: 'comment-1-1',
-        authorName: 'Carlos Mendoza',
-        authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300',
-        authorRole: 'Miembro',
-        content: 'Lo acabo de hacer justo antes de abrir esta publicación. ¡Qué diferencia hace! Gracias por recordárnoslo, Dra. Elena. 🙌',
-        createdAt: 'Hace 2 horas'
-      },
-      {
-        id: 'comment-1-2',
-        authorName: 'Lic. Marcos Gómez',
-        authorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300',
-        authorRole: 'Terapeuta de Conciencia',
-        content: 'Totalmente de acuerdo. En mi consulta siempre sugiero esta técnica antes de comenzar a trabajar en las sesiones más complejas.',
-        createdAt: 'Hace 1 hora'
-      }
-    ],
-    createdAt: 'Hace 3 horas',
-    isSystemPost: true
-  },
-  {
-    id: 'post-2',
-    authorName: 'Carlos Mendoza',
-    authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300',
-    authorRole: 'Miembro',
-    content: 'Lrevó 10 días seguidos registrando mi sentir en el Diario Emocional de la sección Actividades. Al principio me costaba ser constante, pero ver el gráfico de mi progreso emocional me ha abierto los ojos. He aprendido a notar que mis picos de ansiedad suelen relacionarse con la falta de sueño de la noche anterior. ¡Si no han empezado su diario, les aconsejo darle una oportunidad! 📓✨',
-    feeling: 'Inspirado/a',
-    likes: ['Clara Méndez', 'Diego Cruz'],
-    comments: [
-      {
-        id: 'comment-2-1',
-        authorName: 'Dra. Clara Méndez',
-        authorAvatar: 'https://images.unsplash.com/photo-1594824813573-246434de83fb?auto=format&fit=crop&q=80&w=300',
-        authorRole: 'Psiquiatra',
-        content: '¡Excelente observación, Carlos! El sueño es el pilar invisible de la estabilidad mental. Identificar esos disparadores es la mitad del camino.',
-        createdAt: 'Hace 4 horas'
-      }
-    ],
-    createdAt: 'Hace 5 horas',
-    isSystemPost: true
-  },
-  {
-    id: 'post-3',
-    authorName: 'Lic. Marcos Gómez',
-    authorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300',
-    authorRole: 'Terapeuta de Conciencia',
-    content: 'El cansancio mental acumulado no se quita únicamente durmiendo. Hay diferentes tipos de descanso que necesitamos: descanso social (estar con personas nutritivas), descanso sensorial (desconexión total de pantallas) y descanso creativo (disfrutar del arte o la naturaleza sin objetivos de productividad). Hoy, regálate al menos un espacio de 10 minutos de desconexión. Tu cuerpo y mente te lo agradecerán. 🔋🌱',
-    feeling: 'En calma',
-    image: 'https://images.unsplash.com/photo-1540206351-d6465b3ac5c1?auto=format&fit=crop&q=80&w=800',
-    likes: ['Elena Rossi', 'Patricia Rojas', 'Laura Peña', 'Andrés Silva'],
-    comments: [
-      {
-        id: 'comment-3-1',
-        authorName: 'Laura Peña',
-        authorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
-        authorRole: 'Miembro',
-        content: 'Wow, nunca lo había pensado de esa manera. Definitivamente hoy necesito descanso sensorial, mis ojos y mi mente están agotados de las videollamadas.',
-        createdAt: 'Hace 6 horas'
-      }
-    ],
-    createdAt: 'Hace 7 horas',
-    isSystemPost: true
-  },
-  {
-    id: 'post-4',
-    authorName: 'Dra. Clara Méndez',
-    authorAvatar: 'https://images.unsplash.com/photo-1594824813573-246434de83fb?auto=format&fit=crop&q=80&w=300',
-    authorRole: 'Psiquiatra',
-    content: '¿Sabías que una mala calidad del sueño duplica la probabilidad de sufrir ansiedad severa al día siguiente? La luz azul de las pantallas antes de acostarse inhibe la melatonina, manteniendo tu cerebro en estado de alerta constante. Mi recomendación práctica de hoy: apaga tu celular 1 hora antes de dormir y reemplázalo por un libro físico o música ambiental. 🌙💤',
-    feeling: 'Inspirado/a',
-    likes: ['Marcos Gómez', 'Sofía Varela', 'Diego Cruz', 'Elena Rossi', 'Andrés Silva'],
-    comments: [
-      {
-        id: 'comment-4-1',
-        authorName: 'Diego Cruz',
-        authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
-        authorRole: 'Miembro',
-        content: 'Acepto el reto hoy, Dra. Clara. Dejaré el celular fuera de la habitación esta noche.',
-        createdAt: 'Hace 8 horas'
-      }
-    ],
-    createdAt: 'Hace 9 horas',
-    isSystemPost: true
-  },
-  {
-    id: 'post-5',
-    authorName: 'Sofía Varela',
-    authorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
-    authorRole: 'Miembro de la Comunidad',
-    content: 'Hoy completé el test de bienestar psicológico en la sección Actividades. Me arrojó un nivel de estrés elevado, lo que me asustó al principio, pero me motivó a dar el paso y agendar mi primera sesión de terapia a través del portal de Conexión Luz. Me siento aliviada por haber decidido pedir ayuda en lugar de seguir cargando con todo yo sola. 🌱🌻',
-    feeling: 'Con energía',
-    likes: ['Elena Rossi', 'Patricia Rojas', 'Clara Méndez'],
-    comments: [],
-    createdAt: 'Hace 1 día',
-    isSystemPost: true
-  },
-  {
-    id: 'post-6',
-    authorName: 'Lic. Patricia Rojas',
-    authorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
-    authorRole: 'Psicoterapeuta Familiar',
-    content: 'Aceptar nuestra realidad actual y nuestras emociones incómodas no significa resignación; significa quitarnos la venda de la negación para poder empezar a sanar desde un lugar de amor propio, honestidad y compasión. Date permiso de sentir enojo, tristeza o cansancio hoy. Es parte del proceso. ❤️✨',
-    feeling: 'Inspirado/a',
-    likes: ['Laura Peña', 'Carlos Mendoza', 'Elena Rossi'],
-    comments: [
-      {
-        id: 'comment-6-1',
-        authorName: 'Andrés Silva',
-        authorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
-        authorRole: 'Miembro',
-        content: 'Hermoso mensaje. A veces nos juzgamos muy duro por no estar siempre felices.',
-        createdAt: 'Hace 1 día'
-      }
-    ],
-    createdAt: 'Hace 1 día',
-    isSystemPost: true
-  }
-];
+const INITIAL_MOCK_POSTS: Post[] = [];
 
 const SUGGESTED_THERAPISTS = [
   {
-    name: 'Dra. Elena Rossi',
-    role: 'Psicóloga Clínica',
-    avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=150',
-    tags: ['Ansiedad', 'Estrés']
+    name: 'Dr. Carlos Mendoza',
+    role: 'Psicólogo Clínico',
+    avatar: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=150',
+    tags: ['Ansiedad', 'Depresión']
   },
   {
-    name: 'Lic. Marcos Gómez',
+    name: 'Dra. Laura Restrepo',
     role: 'Terapeuta de Conciencia',
-    avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=150',
-    tags: ['Mindfulness', 'Burnout']
+    avatar: 'https://images.unsplash.com/photo-1594824813573-246434de83fb?auto=format&fit=crop&q=80&w=150',
+    tags: ['Reiki', 'Meditación']
   },
   {
-    name: 'Lic. Patricia Rojas',
-    role: 'Psicoterapeuta Familiar',
+    name: 'Dra. Andrea Gomez',
+    role: 'Psicóloga Gestalt',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150',
-    tags: ['Relaciones', 'Duelo']
+    tags: ['Gestalt', 'Duelo']
   }
 ];
 
