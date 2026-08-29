@@ -22,7 +22,7 @@ import Svg, { Path } from 'react-native-svg';
 WebBrowser.maybeCompleteAuthSession();
 
 // Google OAuth Client ID — debe coincidir con el configurado en SiteSettings del backend
-const GOOGLE_CLIENT_ID = '14270208474-4jvb7iudr50qn5jp638qei5ltiibsno4.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '14270208474-n2rcnds6ksetn9m2vt0llm2fecijbnko.apps.googleusercontent.com';
 
 const GoogleIcon = () => (
   <Svg width="20" height="20" viewBox="0 0 24 24">
