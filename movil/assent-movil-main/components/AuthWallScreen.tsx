@@ -101,13 +101,13 @@ export function AuthWallScreen() {
   async function handleGooglePress() {
     setGoogleLoading(true);
     try {
-      // Usamos la URI web registrada en Google Cloud Console (https://conexionluz.com/login)
-      // para evitar el Error 400: invalid_request que Google muestra con esquemas no web
-      const redirectUri = Platform.OS === 'web' 
-        ? (typeof window !== 'undefined' ? window.location.origin + '/login' : 'https://conexionluz.com/login')
-        : 'https://conexionluz.com/login';
+      // Generar la URI de redirección dinámica de Expo (https://auth.expo.io/@miguelnexs/assent-dashboard en Expo Go)
+      // Esta URI es la que cierra el navegador y devuelve el control a la App móvil
+      const redirectUri = AuthSession.makeRedirectUri({
+        scheme: 'conexionluz',
+      });
 
-      console.log('[GoogleAuth] Usando Redirect URI registrada:', redirectUri);
+      console.log('[GoogleAuth] Redirect URI para la App Móvil:', redirectUri);
 
       const nonce = Math.random().toString(36).substring(2);
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -120,7 +120,7 @@ export function AuthWallScreen() {
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
 
       if (result.type === 'success' && result.url) {
-        console.log('[GoogleAuth] WebBrowser retornó URL:', result.url);
+        console.log('[GoogleAuth] WebBrowser retornó URL a la App:', result.url);
         const match = result.url.match(/id_token=([^&]+)/) || result.url.match(/access_token=([^&]+)/);
         const token = match ? match[1] : null;
 
