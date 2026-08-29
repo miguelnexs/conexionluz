@@ -93,13 +93,14 @@ export function AuthWallScreen() {
   async function handleGooglePress() {
     setGoogleLoading(true);
     try {
-      const redirectUri = AuthSession.makeRedirectUri({
-        scheme: 'conexionluz',
-      });
+      // Usamos la URI web registrada en Google Cloud Console (https://conexionluz.com/login)
+      // para evitar el Error 400: invalid_request que Google muestra con esquemas no web
+      const redirectUri = Platform.OS === 'web' 
+        ? (typeof window !== 'undefined' ? window.location.origin + '/login' : 'https://conexionluz.com/login')
+        : 'https://conexionluz.com/login';
 
-      console.log('[GoogleAuth] Redirect URI generada:', redirectUri);
+      console.log('[GoogleAuth] Usando Redirect URI registrada:', redirectUri);
 
-      // Flujo directo con response_type=id_token (esperado por el backend Django)
       const nonce = Math.random().toString(36).substring(2);
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
@@ -111,25 +112,13 @@ export function AuthWallScreen() {
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
 
       if (result.type === 'success' && result.url) {
-        console.log('[GoogleAuth] WebBrowser retorno URL:', result.url);
-        const match = result.url.match(/id_token=([^&]+)/);
-        const idToken = match ? match[1] : null;
+        console.log('[GoogleAuth] WebBrowser retornó URL:', result.url);
+        const match = result.url.match(/id_token=([^&]+)/) || result.url.match(/access_token=([^&]+)/);
+        const token = match ? match[1] : null;
 
-        if (idToken) {
-          await handleGoogleCredential(idToken);
+        if (token) {
+          await handleGoogleCredential(token);
           return;
-        }
-      }
-
-      // Fallback a promptAsync si la sesión del navegador no extrajo el idToken
-      if (promptAsync) {
-        const res = await promptAsync();
-        if (res.type === 'success') {
-          const token = res.params?.id_token || res.authentication?.idToken || res.authentication?.accessToken;
-          if (token) {
-            await handleGoogleCredential(token);
-            return;
-          }
         }
       }
 
