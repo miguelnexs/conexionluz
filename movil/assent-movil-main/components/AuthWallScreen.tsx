@@ -92,7 +92,53 @@ export function AuthWallScreen() {
 
   async function handleGooglePress() {
     setGoogleLoading(true);
-    await promptAsync();
+    try {
+      const redirectUri = AuthSession.makeRedirectUri({
+        scheme: 'conexionluz',
+      });
+
+      console.log('[GoogleAuth] Redirect URI generada:', redirectUri);
+
+      // Flujo directo con response_type=id_token (esperado por el backend Django)
+      const nonce = Math.random().toString(36).substring(2);
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&response_type=id_token` +
+        `&scope=${encodeURIComponent('openid profile email')}` +
+        `&nonce=${nonce}`;
+
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+
+      if (result.type === 'success' && result.url) {
+        console.log('[GoogleAuth] WebBrowser retorno URL:', result.url);
+        const match = result.url.match(/id_token=([^&]+)/);
+        const idToken = match ? match[1] : null;
+
+        if (idToken) {
+          await handleGoogleCredential(idToken);
+          return;
+        }
+      }
+
+      // Fallback a promptAsync si la sesión del navegador no extrajo el idToken
+      if (promptAsync) {
+        const res = await promptAsync();
+        if (res.type === 'success') {
+          const token = res.params?.id_token || res.authentication?.idToken || res.authentication?.accessToken;
+          if (token) {
+            await handleGoogleCredential(token);
+            return;
+          }
+        }
+      }
+
+      setGoogleLoading(false);
+    } catch (err: any) {
+      console.error('[GoogleAuth] Error:', err);
+      Alert.alert('Error', err?.message || 'No se pudo abrir el inicio de sesión de Google.');
+      setGoogleLoading(false);
+    }
   }
 
   const handleSubmit = async () => {
