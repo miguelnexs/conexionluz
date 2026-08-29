@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sun, Mail, Lock, User, LogIn, ShieldCheck } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
+import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
@@ -37,6 +38,7 @@ export function AuthWallScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : Math.max(insets.top, 16);
   const { login, register, loginWithGoogle } = useAuth();
+  const router = useRouter();
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(false);
@@ -80,7 +82,13 @@ export function AuthWallScreen() {
   async function handleGoogleCredential(token: string) {
     try {
       const res = await loginWithGoogle(token);
-      if (!res.ok) {
+      if (res.ok) {
+        try {
+          router.replace('/(tabs)/profile');
+        } catch (e) {
+          // Ignorar si ya esta montado
+        }
+      } else {
         Alert.alert('Error', res.error || 'No se pudo iniciar sesión con Google.');
       }
     } catch (err: any) {
