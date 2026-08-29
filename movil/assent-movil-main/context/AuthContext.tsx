@@ -43,7 +43,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  loginWithGoogle: (email?: string, name?: string, avatarUrl?: string) => Promise<{ ok: boolean; error?: string }>;
+  loginWithGoogle: (credentialToken: string) => Promise<{ ok: boolean; error?: string }>;
   register: (firstName: string, lastName: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -116,27 +116,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { ok: true };
   };
 
-  const loginWithGoogle = async (
-    email: string = 'miguel.valencia@gmail.com',
-    name: string = 'Miguel Ángel Valencia',
-    avatarUrl: string = 'https://conexionluz.com/media/patients/profile/imagenjuan.png'
-  ) => {
+  const loginWithGoogle = async (credentialToken: string) => {
     setIsLoading(true);
-    const nameParts = name.trim().split(' ');
-    const firstName = nameParts[0] || 'Usuario';
-    const lastName = nameParts.slice(1).join(' ') || 'Google';
-
-    const googleUser: PatientUser = {
-      id: Date.now(),
-      firstName,
-      lastName,
-      email,
-      avatarUrl,
-    };
-    setAuthToken(`google-oauth-token-${Date.now()}`);
-    setUser(googleUser);
-    setIsLoading(false);
-    return { ok: true };
+    try {
+      const res = await mobileApi.googleLogin(credentialToken);
+      if (res.ok && res.patient) {
+        setUser(res.patient);
+        return { ok: true };
+      }
+      return { ok: false, error: res.error || 'Error al iniciar sesión con Google' };
+    } catch (err: any) {
+      return { ok: false, error: err?.message || 'Error inesperado con Google' };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (firstName: string, lastName: string, email: string, password: string) => {
