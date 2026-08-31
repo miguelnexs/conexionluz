@@ -1,105 +1,136 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
-  Image,
-  Modal,
-  ActivityIndicator,
   StatusBar,
   Platform,
-  Alert,
   NativeSyntheticEvent,
   NativeScrollEvent,
   RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import {
   Users,
   Video,
-  MessageCircle,
   BookOpen,
   MessageSquareText,
   Star,
   Sparkles,
-  ChevronRight,
-  X,
-  Send,
-  Heart,
-  Calendar,
   CheckCircle2,
+  Radio,
+  ArrowRight,
 } from 'lucide-react-native';
-import { mobileApi, normalizeMediaUrl } from '../../api/client';
-import { useAuth } from '../../context/AuthContext';
 import { useTabBarVisibility } from '../../context/TabBarVisibilityContext';
+import { LumiHeaderBadge } from '../../components/LumiHeaderBadge';
+import { LumiWalletModal } from '../../components/LumiWalletModal';
 
-interface SubLinkItem {
+interface SubjectItem {
   id: string;
-  name: string;
-  desc: string;
+  title: string;
+  subtitle: string;
+  badge: string;
   icon: any;
   color: string;
   bgColor: string;
-  badge: string;
+  borderColor: string;
+  accentBg: string;
+  highlights: string[];
+  actionText: string;
 }
 
-const COMUNIDAD_SUBLINKS: SubLinkItem[] = [
+const ASIGNATURAS_COMUNIDAD: SubjectItem[] = [
   {
-    id: 'cursos',
-    name: 'Cursos en Línea',
-    desc: 'Programas de autoconocimiento, gestión emocional y salud mental a tu ritmo.',
-    icon: Video,
-    color: '#6366F1',
-    bgColor: '#EEF2FF',
-    badge: 'Educación',
+    id: 'guias-de-luz',
+    title: 'Guías de Luz & Terapeutas',
+    subtitle: 'Conoce los perfiles de nuestros psicólogos y terapeutas, mira sus aportes o agenda tu cita.',
+    badge: 'EQUIPO CLÍNICO',
+    icon: Sparkles,
+    color: '#059669',
+    bgColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    accentBg: '#059669',
+    highlights: ['Perfiles verificados', 'Publicaciones & Consejos', 'Agendamiento directo'],
+    actionText: 'Conocer Terapeutas',
   },
   {
     id: 'conversatorios',
-    name: 'Conversatorios en Vivo',
-    desc: 'Espacios grupales de diálogo dirigidos por terapeutas sobre temas de bienestar.',
-    icon: MessageCircle,
-    color: '#0EA5E9',
-    bgColor: '#E0F2FE',
-    badge: 'En Vivo',
+    title: 'Conversatorios en Vivo',
+    subtitle: 'Encuentros grupales con terapeutas en tiempo real para dialogar y sanar.',
+    badge: 'EN DIRECTO',
+    icon: Radio,
+    color: '#0284C7',
+    bgColor: '#F0F9FF',
+    borderColor: '#BAE6FD',
+    accentBg: '#0284C7',
+    highlights: ['Preguntas en vivo', 'Terapeutas expertos', 'Grabaciones'],
+    actionText: 'Entrar a Conversatorios',
+  },
+  {
+    id: 'cursos',
+    title: 'Cursos & Talleres Cuánticos',
+    subtitle: 'Programas de hipnosis, reprogramación subconsciente y transformación interior.',
+    badge: 'FORMACIÓN',
+    icon: Video,
+    color: '#059669',
+    bgColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    accentBg: '#059669',
+    highlights: ['Clases en video', 'Ejercicios prácticos', 'A tu propio ritmo'],
+    actionText: 'Explorar Cursos',
   },
   {
     id: 'historias',
-    name: 'Historias de Sanación',
-    desc: 'Relatos inspiradores de superación, resiliencia y aprendizaje en comunidad.',
+    title: 'Historias de Sanación',
+    subtitle: 'Relatos conmovedores de resiliencia y superación compartidos por miembros.',
+    badge: 'INSPIRACIÓN',
     icon: BookOpen,
-    color: '#8B5CF6',
+    color: '#7C3AED',
     bgColor: '#F5F3FF',
-    badge: 'Inspiración',
+    borderColor: '#DDD6FE',
+    accentBg: '#7C3AED',
+    highlights: ['Casos reales', 'Crecimiento personal', 'Comentarios compasivos'],
+    actionText: 'Leer Historias',
   },
   {
     id: 'foro',
-    name: 'Foro de Discusión',
-    desc: 'Pregunta, comparte vivencias y recibe respuestas respetuosas de miembros.',
+    title: 'Foro de la Tribu',
+    subtitle: 'Pregunta, comparte tus vivencias y recibe respuestas respetuosas y amorosas.',
+    badge: 'DIÁLOGO ABIERTO',
     icon: MessageSquareText,
-    color: '#EC4899',
+    color: '#DB2777',
     bgColor: '#FDF2F8',
-    badge: 'Comunidad',
+    borderColor: '#FBCFE8',
+    accentBg: '#DB2777',
+    highlights: ['Sin juicios', 'Moderación activa', 'Hilos temáticos'],
+    actionText: 'Participar en el Foro',
   },
   {
     id: 'testimonios',
-    name: 'Testimonios',
-    desc: 'Voces reales de personas que han transformado su vida con Conexión Luz®.',
+    title: 'Testimonios de Pacientes',
+    subtitle: 'Voces reales y transformaciones de personas que sanaron con Conexión Luz®.',
+    badge: 'VOCES REALES',
     icon: Star,
-    color: '#F59E0B',
-    bgColor: '#FEF3C7',
-    badge: 'Voces',
+    color: '#D97706',
+    bgColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    accentBg: '#D97706',
+    highlights: ['Resultados reales', 'Audios y videos', 'Pacientes verificados'],
+    actionText: 'Ver Testimonios',
   },
 ];
 
 export default function Comunidad() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : Math.max(insets.top, 16);
-  const { user: currentUser } = useAuth();
+  const router = useRouter();
   const { isTabBarVisible, setIsTabBarVisible } = useTabBarVisibility();
   const lastScrollYRef = useRef<number>(0);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [showLumiWalletModal, setShowLumiWalletModal] = useState<boolean>(false);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const currentY = event.nativeEvent.contentOffset.y;
@@ -120,65 +151,55 @@ export default function Comunidad() {
     lastScrollYRef.current = currentY;
   };
 
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const handleOpenSubject = (subject: SubjectItem) => {
+    if (subject.id === 'guias-de-luz') {
+      router.push('/guias-de-luz' as any);
+    } else if (subject.id === 'conversatorios') {
+      router.push('/conversatorios' as any);
+    } else if (subject.id === 'cursos') {
+      router.push('/cursos' as any);
+    } else if (subject.id === 'historias') {
+      router.push('/historias' as any);
+    } else if (subject.id === 'foro') {
+      router.push('/foro' as any);
+    } else if (subject.id === 'testimonios') {
+      router.push('/testimonios' as any);
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    if (activeSubLink) {
-      await handleOpenSubLink(activeSubLink);
-    }
-    setRefreshing(false);
-  };
-
-  const [activeSubLink, setActiveSubLink] = useState<SubLinkItem | null>(null);
-  const [modalData, setModalData] = useState<any[]>([]);
-  const [modalLoading, setModalLoading] = useState<boolean>(false);
-
-  // Load backend content for sublinks
-  const handleOpenSubLink = async (sublink: SubLinkItem) => {
-    setActiveSubLink(sublink);
-    setModalLoading(true);
-    setModalData([]);
-
-    try {
-      if (sublink.id === 'cursos') {
-        const res = await mobileApi.fetchPublicCourses();
-        if (res.ok && Array.isArray(res.data)) setModalData(res.data);
-      } else if (sublink.id === 'conversatorios') {
-        const res = await mobileApi.fetchPublicTalks();
-        if (res.ok && Array.isArray(res.data)) setModalData(res.data);
-      } else if (sublink.id === 'historias') {
-        const res = await mobileApi.fetchStories();
-        if (res.ok && Array.isArray(res.data)) setModalData(res.data);
-      } else if (sublink.id === 'foro') {
-        const res = await mobileApi.fetchForumTopics();
-        if (res.ok && Array.isArray(res.data)) setModalData(res.data);
-      } else if (sublink.id === 'testimonios') {
-        const res = await mobileApi.fetchTestimonials();
-        if (res.ok && Array.isArray(res.data)) setModalData(res.data);
-      }
-    } catch (e) {
-      console.log('Error loading sublink:', e);
-    }
-    setModalLoading(false);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 400);
   };
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" translucent={true} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={true} />
 
-      {/* HEADER BAR WITH LOGO */}
+      {/* HEADER BAR */}
       <View style={styles.headerBar}>
-        <View style={styles.brandLogoRow}>
-          <View style={styles.logoBadgeIcon}>
+        <View style={styles.headerBrand}>
+          <View style={styles.logoBadge}>
             <Users color="#059669" size={20} />
           </View>
           <View>
-            <Text style={styles.brandTitleText}>COMUNIDAD</Text>
-            <Text style={styles.brandSubtitleText}>Subenlaces & Espacios de Conexión</Text>
+            <Text style={styles.headerTitle}>COMUNIDAD DE LUZ</Text>
+            <Text style={styles.headerSubtitle}>Elige tu asignatura y explora</Text>
           </View>
         </View>
+        <View style={styles.headerPill}>
+          <Sparkles color="#059669" size={13} />
+          <Text style={styles.headerPillText}>Espacio Seguro</Text>
+        </View>
       </View>
+
+      {/* FIXED LUMIS BANNER */}
+      <LumiHeaderBadge
+        variant="banner"
+        onPress={() => router.push('/comprar-lumis' as any)}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -194,37 +215,70 @@ export default function Comunidad() {
           />
         }
       >
-        <Text style={styles.sectionHeading}>Secciones de Comunidad</Text>
-        <Text style={styles.sectionSubheading}>Selecciona cualquier enlace para explorar los contenidos oficiales.</Text>
+        {/* BANNER COMPACTO Y VISUAL */}
+        <View style={styles.introBanner}>
+          <View style={styles.introLeft}>
+            <Text style={styles.introTag}>SANTUARIO COLECTIVO</Text>
+            <Text style={styles.introTitle}>Aprende, Dialoga y Sana</Text>
+            <Text style={styles.introDesc}>
+              Selecciona una asignatura para acceder a sus clases, encuentros y testimonios.
+            </Text>
+          </View>
+          <View style={styles.introIconBubble}>
+            <Sparkles color="#FFFFFF" size={22} />
+          </View>
+        </View>
 
-        {/* SUBLINKS LIST */}
-        <View style={styles.sublinksList}>
-          {COMUNIDAD_SUBLINKS.map((item) => {
-            const IconComp = item.icon;
+        {/* LISTA DE CUADROS POR ASIGNATURA */}
+        <View style={styles.subjectsContainer}>
+          {ASIGNATURAS_COMUNIDAD.map((subject) => {
+            const IconComp = subject.icon;
             return (
               <TouchableOpacity
-                key={item.id}
-                onPress={() => handleOpenSubLink(item)}
-                style={styles.sublinkCard}
-                activeOpacity={0.8}
+                key={subject.id}
+                onPress={() => handleOpenSubject(subject)}
+                style={[
+                  styles.subjectBox,
+                  { backgroundColor: subject.bgColor, borderColor: subject.borderColor },
+                ]}
+                activeOpacity={0.88}
               >
-                <View style={[styles.sublinkIconBox, { backgroundColor: item.bgColor }]}>
-                  <IconComp color={item.color} size={22} />
-                </View>
-
-                <View style={{ flex: 1 }}>
-                  <View style={styles.sublinkTitleRow}>
-                    <Text style={styles.sublinkNameText}>{item.name}</Text>
-                    <View style={[styles.badgePill, { backgroundColor: item.bgColor }]}>
-                      <Text style={[styles.badgeText, { color: item.color }]}>{item.badge}</Text>
-                    </View>
+                {/* TOP ROW: ICON + BADGE */}
+                <View style={styles.subjectTopRow}>
+                  <View style={[styles.subjectIconWrapper, { backgroundColor: subject.accentBg }]}>
+                    <IconComp color="#FFFFFF" size={20} />
                   </View>
-                  <Text style={styles.sublinkDescText} numberOfLines={2}>
-                    {item.desc}
-                  </Text>
+                  <View
+                    style={[
+                      styles.subjectBadge,
+                      { borderColor: subject.borderColor, backgroundColor: '#FFFFFF' },
+                    ]}
+                  >
+                    <Text style={[styles.subjectBadgeText, { color: subject.color }]}>
+                      {subject.badge}
+                    </Text>
+                  </View>
                 </View>
 
-                <ChevronRight color="#CBD5E1" size={18} />
+                {/* TITLE & DESCRIPTION */}
+                <Text style={styles.subjectTitle}>{subject.title}</Text>
+                <Text style={styles.subjectSubtitle}>{subject.subtitle}</Text>
+
+                {/* HIGHLIGHT PILLS */}
+                <View style={styles.highlightsRow}>
+                  {subject.highlights.map((item, idx) => (
+                    <View key={idx} style={styles.highlightChip}>
+                      <CheckCircle2 color={subject.color} size={11} />
+                      <Text style={styles.highlightChipText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* ACTION CTA BUTTON */}
+                <View style={[styles.subjectActionBtn, { backgroundColor: subject.accentBg }]}>
+                  <Text style={styles.subjectActionBtnText}>{subject.actionText}</Text>
+                  <ArrowRight color="#FFFFFF" size={15} />
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -232,53 +286,6 @@ export default function Comunidad() {
 
         <View style={{ height: 60 }} />
       </ScrollView>
-
-      {/* DETAILED SUBLINK MODAL SHEET */}
-      <Modal visible={!!activeSubLink} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeaderRow}>
-              {activeSubLink && (
-                <View style={[styles.sublinkIconBox, { backgroundColor: activeSubLink.bgColor }]}>
-                  {React.createElement(activeSubLink.icon, { color: activeSubLink.color, size: 22 })}
-                </View>
-              )}
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.modalTitle}>{activeSubLink?.name}</Text>
-                <Text style={styles.modalSubtitle}>{activeSubLink?.desc}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setActiveSubLink(null)} style={styles.closeModalBtn}>
-                <X color="#64748B" size={20} />
-              </TouchableOpacity>
-            </View>
-
-            {modalLoading ? (
-              <ActivityIndicator size="small" color="#059669" style={{ marginVertical: 30 }} />
-            ) : (
-              <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
-                {modalData.length === 0 ? (
-                  <View style={styles.emptyBox}>
-                    <Sparkles color="#059669" size={24} />
-                    <Text style={styles.emptyText}>Contenidos actualizados constantemente en la plataforma.</Text>
-                  </View>
-                ) : (
-                  modalData.map((dataItem: any, idx: number) => (
-                    <View key={dataItem.id || idx} style={styles.detailItemCard}>
-                      <Text style={styles.detailItemTitle}>
-                        {dataItem.title || dataItem.name || dataItem.authorName || 'Publicación en Comunidad'}
-                      </Text>
-                      <Text style={styles.detailItemDesc} numberOfLines={3}>
-                        {dataItem.description || dataItem.content || dataItem.comment || 'Contenido disponible en Conexión Luz®.'}
-                      </Text>
-                    </View>
-                  ))
-                )}
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
-
     </View>
   );
 }
@@ -293,17 +300,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#F8FAFC',
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E2E8F0',
   },
-  brandLogoRow: {
+  headerBrand: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  logoBadgeIcon: {
+  logoBadge: {
     width: 38,
     height: 38,
     borderRadius: 12,
@@ -313,141 +320,171 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#A7F3D0',
   },
-  brandTitleText: {
-    fontSize: 17,
+  headerTitle: {
+    fontSize: 16,
     fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
-  brandSubtitleText: {
-    fontSize: 10,
+  headerSubtitle: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#059669',
-    marginTop: -2,
+  },
+  headerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  headerPillText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#047857',
   },
   scrollContent: {
     padding: 16,
-  },
-  sectionHeading: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#1E293B',
-  },
-  sectionSubheading: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-    marginBottom: 16,
-  },
-  sublinksList: {
-    gap: 12,
-  },
-  sublinkCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  sublinkIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sublinkTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 2,
-  },
-  sublinkNameText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  badgePill: {
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  sublinkDescText: {
-    fontSize: 11,
-    color: '#64748B',
-    lineHeight: 16,
+    gap: 14,
   },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalCard: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
-  },
-  modalHeaderRow: {
+  // INTRO BANNER
+  introBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    backgroundColor: '#064E3B',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  closeModalBtn: {
-    padding: 4,
+  introLeft: {
+    flex: 1,
+    paddingRight: 10,
   },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
+  introTag: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: '#A7F3D0',
+    letterSpacing: 0.6,
+    marginBottom: 2,
   },
-  modalSubtitle: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 2,
+  introTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
-  emptyBox: {
+  introDesc: {
+    fontSize: 11.5,
+    color: '#D1FAE5',
+    lineHeight: 16,
+  },
+  introIconBubble: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#059669',
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center',
   },
-  emptyText: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
-    marginTop: 8,
+
+  // SUBJECTS GRID / BOXES
+  subjectsContainer: {
+    gap: 14,
   },
-  detailItemCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 8,
+  subjectBox: {
+    borderRadius: 22,
+    padding: 16,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  subjectTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  subjectIconWrapper: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  subjectBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
   },
-  detailItemTitle: {
+  subjectBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+  },
+  subjectTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  subjectSubtitle: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#475569',
+    marginBottom: 12,
+  },
+  highlightsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 14,
+  },
+  highlightChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  highlightChipText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  subjectActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: 12,
+  },
+  subjectActionBtnText: {
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
-    color: '#0F172A',
-  },
-  detailItemDesc: {
-    fontSize: 11,
-    color: '#475569',
-    marginTop: 4,
   },
 });

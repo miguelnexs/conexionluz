@@ -6,9 +6,9 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   X,
   Bell,
@@ -17,14 +17,20 @@ import {
   Calendar,
   MessageCircle,
   CheckCheck,
+  Share2,
+  Sparkles,
+  ArrowRight,
+  Bookmark,
 } from 'lucide-react-native';
-import { NotificationItem } from '../api/client';
+import { useRouter } from 'expo-router';
+import { NotificationItem, mobileApi } from '../api/client';
 
 interface NotificationsModalProps {
   visible: boolean;
   onClose: () => void;
   notifications: NotificationItem[];
   onMarkAllRead: () => void;
+  onNotificationRead?: (id: number) => void;
 }
 
 export const NotificationsModal: React.FC<NotificationsModalProps> = ({
@@ -32,7 +38,9 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   onClose,
   notifications,
   onMarkAllRead,
+  onNotificationRead,
 }) => {
+  const router = useRouter();
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const formatTimeAgo = (dateStr?: string) => {
@@ -54,18 +62,67 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     }
   };
 
-  const renderIcon = (type?: string) => {
+  const renderIconConfig = (type?: string) => {
     const t = (type || '').toLowerCase();
     if (t.includes('like')) {
-      return <Heart color="#EC4899" size={18} />;
+      return {
+        icon: <Heart color="#EC4899" size={17} fill="#EC4899" />,
+        bg: '#FDF2F8',
+        borderColor: '#FBCFE8',
+      };
+    }
+    if (t.includes('share') || t.includes('shared')) {
+      return {
+        icon: <Share2 color="#6366F1" size={17} />,
+        bg: '#EEF2FF',
+        borderColor: '#C7D2FE',
+      };
     }
     if (t.includes('follower')) {
-      return <UserPlus color="#3B82F6" size={18} />;
+      return {
+        icon: <UserPlus color="#3B82F6" size={17} />,
+        bg: '#EFF6FF',
+        borderColor: '#BFDBFE',
+      };
     }
     if (t.includes('talk') || t.includes('event')) {
-      return <Calendar color="#8B5CF6" size={18} />;
+      return {
+        icon: <Calendar color="#8B5CF6" size={17} />,
+        bg: '#F5F3FF',
+        borderColor: '#DDD6FE',
+      };
     }
-    return <MessageCircle color="#0D9488" size={18} />;
+    return {
+      icon: <MessageCircle color="#0D9488" size={17} fill="#CCFBF1" />,
+      bg: '#F0FDFA',
+      borderColor: '#99F6E4',
+    };
+  };
+
+  const handleNotificationPress = async (notif: NotificationItem) => {
+    try {
+      if (!notif.isRead) {
+        mobileApi.markNotificationsRead(false, [notif.id]);
+        if (onNotificationRead) onNotificationRead(notif.id);
+      }
+    } catch (e) {}
+
+    onClose();
+
+    const url = notif.targetUrl || '';
+    if (url.includes('comunidad') || url.includes('post=')) {
+      router.push('/(tabs)/comunidad' as any);
+    } else if (url.includes('historias')) {
+      router.push('/historias' as any);
+    } else if (url.includes('foro')) {
+      router.push('/foro' as any);
+    } else if (url.includes('testimonios')) {
+      router.push('/testimonios' as any);
+    } else if (url.includes('cursos')) {
+      router.push('/cursos' as any);
+    } else if (url.includes('conversatorios') || url.includes('talk')) {
+      router.push('/conversatorios' as any);
+    }
   };
 
   return (
@@ -88,8 +145,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
               <Text style={styles.headerTitle}>Notificaciones</Text>
               <Text style={styles.headerSubtitle}>
                 {unreadCount > 0
-                  ? `${unreadCount} sin leer`
-                  : 'Al día'}
+                  ? `${unreadCount} nuevas sin leer`
+                  : 'Todo al día ✨'}
               </Text>
             </View>
           </View>
@@ -102,7 +159,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 activeOpacity={0.7}
               >
                 <CheckCheck color="#0D9488" size={14} />
-                <Text style={styles.markReadText}>Leídas</Text>
+                <Text style={styles.markReadText}>Marcar leídas</Text>
               </TouchableOpacity>
             )}
 
@@ -121,33 +178,43 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
               </View>
               <Text style={styles.emptyTitle}>No tienes notificaciones pendientes</Text>
               <Text style={styles.emptySubtitle}>
-                Aquí recibirás alertas sobre comentarios, respuestas, interacciones y actividades.
+                Aquí recibirás alertas en tiempo real sobre me gustas, comentarios, respuestas y publicaciones compartidas.
               </Text>
             </View>
           ) : (
             notifications.map((notif) => {
               const isUnread = !notif.isRead;
+              const iconConf = renderIconConfig(notif.notificationType);
               return (
-                <View
+                <TouchableOpacity
                   key={notif.id || `${notif.createdAt}_${Math.random()}`}
+                  onPress={() => handleNotificationPress(notif)}
                   style={[
                     styles.notifCard,
                     isUnread ? styles.notifCardUnread : styles.notifCardRead,
                   ]}
+                  activeOpacity={0.82}
                 >
                   <View style={styles.notifHeaderRow}>
-                    <View style={styles.typeIconBox}>
-                      {renderIcon(notif.notificationType)}
+                    <View style={[styles.typeIconBox, { backgroundColor: iconConf.bg, borderColor: iconConf.borderColor, borderWidth: 1 }]}>
+                      {iconConf.icon}
                     </View>
                     <View style={styles.notifTitleCol}>
-                      <Text style={styles.notifCategoryTitle}>{notif.title}</Text>
+                      <Text style={styles.notifCategoryTitle} numberOfLines={1}>
+                        {notif.title}
+                      </Text>
                       <Text style={styles.timeText}>{formatTimeAgo(notif.createdAt)}</Text>
                     </View>
                     {isUnread && <View style={styles.unreadDot} />}
                   </View>
 
                   <Text style={styles.notifMessage}>{notif.message}</Text>
-                </View>
+
+                  <View style={styles.notifFooterRow}>
+                    <Text style={styles.notifTapHint}>Toca para ver interacción</Text>
+                    <ArrowRight color="#059669" size={13} />
+                  </View>
+                </TouchableOpacity>
               );
             })
           )}
@@ -322,5 +389,19 @@ const styles = StyleSheet.create({
     color: '#334155',
     lineHeight: 19,
     paddingLeft: 42,
+    marginBottom: 6,
+  },
+  notifFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    paddingLeft: 42,
+    paddingTop: 4,
+  },
+  notifTapHint: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '700',
   },
 });

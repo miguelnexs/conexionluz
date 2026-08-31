@@ -1,42 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mobileApi, PatientUser, getAuthToken, setAuthToken } from '../api/client';
 
 const USER_KEY = 'conexionluz:mobile_user';
-
-let memoryUser: PatientUser | null = null;
-
-function loadSavedUser(): PatientUser | null {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const saved = localStorage.getItem(USER_KEY);
-      if (saved && saved.trim()) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          memoryUser = parsed;
-          return memoryUser;
-        }
-      }
-    }
-  } catch (e) {
-    // Ignore storage errors
-  }
-  return memoryUser;
-}
-
-function saveSavedUser(user: PatientUser | null) {
-  memoryUser = user;
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      if (user) {
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
-      } else {
-        localStorage.removeItem(USER_KEY);
-      }
-    }
-  } catch (e) {
-    // Ignore storage errors
-  }
-}
+const TOKEN_KEY = 'conexionluz:mobile_token';
 
 interface AuthContextType {
   user: PatientUser | null;
@@ -44,7 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   loginWithGoogle: (credentialToken: string) => Promise<{ ok: boolean; error?: string }>;
-  register: (firstName: string, lastName: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  register: (firstName: string, lastName: string, username: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   setUser: (newUser: PatientUser | null | ((prev: PatientUser | null) => PatientUser | null)) => void;
@@ -53,33 +20,42 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Synchronous initialization: check saved user or fallback default user if token is present
-  const [user, setUserState] = useState<PatientUser | null>(() => {
-    const saved = loadSavedUser();
-    if (saved) return saved;
-    const token = getAuthToken();
-    if (token) {
-      const defaultUser: PatientUser = {
-        id: 1,
-        firstName: 'miguel angel',
-        lastName: 'valencia',
-        email: 'miguel@conexionluz.com',
-        avatarUrl: 'https://conexionluz.com/media/patients/profile/imagenjuan.png',
-      };
-      saveSavedUser(defaultUser);
-      return defaultUser;
-    }
-    return null;
-  });
+  const [user, setUserState] = useState<PatientUser | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  // Initialize Auth State from AsyncStorage
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
+        if (storedToken) {
+          setAuthToken(storedToken);
+          const storedUser = await AsyncStorage.getItem(USER_KEY);
+          if (storedUser) {
+            setUserState(JSON.parse(storedUser));
+          }
+          // Optionally refresh the user data from the server in the background
+          refreshUser();
+        }
+      } catch (e) {
+        console.error('Failed to load auth state', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    initAuth();
+  }, []);
 
-  const setUser = (
+  const setUser = async (
     newUser: PatientUser | null | ((prev: PatientUser | null) => PatientUser | null)
   ) => {
     setUserState((prev) => {
       const updated = typeof newUser === 'function' ? newUser(prev) : newUser;
-      saveSavedUser(updated);
+      if (updated) {
+        AsyncStorage.setItem(USER_KEY, JSON.stringify(updated)).catch(() => {});
+      } else {
+        AsyncStorage.removeItem(USER_KEY).catch(() => {});
+      }
       return updated;
     });
   };
@@ -94,26 +70,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  useEffect(() => {
-    refreshUser();
-  }, []);
-
   const login = async (username: string, password: string) => {
-    const res = await mobileApi.login(username, password);
-    if (res.ok && res.patient) {
-      setUser(res.patient);
-      return { ok: true };
+    setIsLoading(true);
+    try {
+      const res = await mobileApi.login(username, password);
+      if (res.ok && res.patient) {
+        if (res.token) {
+          await AsyncStorage.setItem(TOKEN_KEY, res.token);
+        }
+        setUser(res.patient);
+        return { ok: true };
+      }
+      return { ok: false, error: res.error || 'Credenciales inválidas' };
+    } catch (err: any) {
+      return { ok: false, error: err?.message || 'Error inesperado' };
+    } finally {
+      setIsLoading(false);
     }
-    const demoUser: PatientUser = {
-      id: 1,
-      firstName: username.split('@')[0] || 'Usuario',
-      lastName: 'Conexión Luz',
-      email: username,
-      avatarUrl: 'https://conexionluz.com/media/patients/profile/imagenjuan.png',
-    };
-    setAuthToken('demo-token-123');
-    setUser(demoUser);
-    return { ok: true };
   };
 
   const loginWithGoogle = async (credentialToken: string) => {
@@ -121,6 +94,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await mobileApi.googleLogin(credentialToken);
       if (res.ok && res.patient) {
+        if (res.token) {
+          await AsyncStorage.setItem(TOKEN_KEY, res.token);
+        }
         setUser(res.patient);
         return { ok: true };
       }
@@ -132,27 +108,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (firstName: string, lastName: string, email: string, password: string) => {
-    const res = await mobileApi.register(firstName, lastName, email, password);
-    if (res.ok && res.patient) {
-      setUser(res.patient);
-      return { ok: true };
+  const register = async (firstName: string, lastName: string, username: string, email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const res = await mobileApi.register(firstName, lastName, username, email, password);
+      if (res.ok && res.patient) {
+        if (res.token) {
+          await AsyncStorage.setItem(TOKEN_KEY, res.token);
+        }
+        setUser(res.patient);
+        return { ok: true };
+      }
+      return { ok: false, error: res.error || 'Error en el registro' };
+    } catch (err: any) {
+      return { ok: false, error: err?.message || 'Error inesperado' };
+    } finally {
+      setIsLoading(false);
     }
-    const newUser: PatientUser = {
-      id: Date.now(),
-      firstName,
-      lastName,
-      email,
-      avatarUrl: 'https://conexionluz.com/media/patients/profile/imagenjuan.png',
-    };
-    setAuthToken(`token-${Date.now()}`);
-    setUser(newUser);
-    return { ok: true };
   };
 
-  const logout = () => {
+  const logout = async () => {
     setAuthToken(null);
     setUser(null);
+    await AsyncStorage.removeItem(TOKEN_KEY);
   };
 
   return (

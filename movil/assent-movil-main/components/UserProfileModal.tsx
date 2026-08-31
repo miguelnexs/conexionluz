@@ -23,6 +23,8 @@ import {
   Shield,
   BookOpen,
 } from 'lucide-react-native';
+import { CustomVideoPlayer, isVideoMedia } from './CustomVideoPlayer';
+import { normalizeMediaUrl } from '../api/client';
 
 const { width } = Dimensions.get('window');
 
@@ -247,7 +249,11 @@ export function UserProfileModal({
                       <Text style={styles.postContent}>{post.content}</Text>
 
                       {post.image && (
-                        <Image source={{ uri: post.image }} style={styles.postImage} resizeMode="cover" />
+                        isVideoMedia(post.image) ? (
+                          <CustomVideoPlayer src={post.image} height={240} />
+                        ) : (
+                          <Image source={{ uri: normalizeMediaUrl(post.image) || post.image }} style={styles.postImage} resizeMode="cover" />
+                        )
                       )}
 
                       <View style={styles.postFooterRow}>
@@ -587,7 +593,7 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: '100%',
-    height: 160,
+    height: 240,
     borderRadius: 12,
     marginBottom: 10,
   },

@@ -10,9 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Send, MessageSquareText } from 'lucide-react-native';
 import { mobileApi, ChatMessageItem } from '../api/client';
 

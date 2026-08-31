@@ -28,6 +28,29 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="details" options={{ title: 'Detalles' }} />
+            <Stack.Screen name="conversatorios" options={{ headerShown: false }} />
+            <Stack.Screen name="cursos" options={{ headerShown: false }} />
+            <Stack.Screen name="curso-detalle" options={{ headerShown: false }} />
+            <Stack.Screen name="historias" options={{ headerShown: false }} />
+            <Stack.Screen name="historia-detalle" options={{ headerShown: false }} />
+            <Stack.Screen name="foro" options={{ headerShown: false }} />
+            <Stack.Screen name="foro-detalle" options={{ headerShown: false }} />
+            <Stack.Screen name="testimonios" options={{ headerShown: false }} />
+            <Stack.Screen name="test-detalle" options={{ headerShown: false }} />
+            <Stack.Screen name="ejercicio-detalle" options={{ headerShown: false }} />
+            <Stack.Screen name="relajacion-detalle" options={{ headerShown: false }} />
+            <Stack.Screen name="diario-emocional" options={{ headerShown: false }} />
+            <Stack.Screen name="progreso" options={{ headerShown: false }} />
+            <Stack.Screen name="comprar-lumis" options={{ headerShown: false }} />
+            <Stack.Screen name="agenda" options={{ headerShown: false }} />
+            <Stack.Screen name="mi-calendario" options={{ headerShown: false }} />
+            <Stack.Screen name="guias-de-luz" options={{ headerShown: false }} />
+            <Stack.Screen name="perfil-usuario" options={{ headerShown: false }} />
+            <Stack.Screen name="informacion" options={{ headerShown: false }} />
+            <Stack.Screen name="quienes-somos" options={{ headerShown: false }} />
+            <Stack.Screen name="faq" options={{ headerShown: false }} />
+            <Stack.Screen name="contacto" options={{ headerShown: false }} />
+            <Stack.Screen name="privacidad" options={{ headerShown: false }} />
           </Stack>
         </TabBarVisibilityProvider>
       </AuthProvider>

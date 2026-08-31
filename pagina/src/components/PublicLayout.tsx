@@ -5,7 +5,7 @@ import {
   UserRound, MessageCircle, LogIn, LogOut, Menu, BookOpen, MessageSquareText,
   Bell, Heart, CalendarPlus, ChevronRight, ChevronLeft, X, Info,
   ClipboardList, Dumbbell, NotebookPen, Wind, BarChart2, Activity,
-  HelpCircle, FileText, Shield, Newspaper, Building2, Send, UserPlus, Coins
+  HelpCircle, FileText, Shield, Newspaper, Building2, Send, UserPlus, Coins, Share2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '../api/client';
@@ -651,6 +651,7 @@ const PublicLayout = ({ children, contentClassName }: PublicLayoutProps) => {
                             notifications.map(notif => {
                               let Icon = MessageCircle;
                               if (notif.notificationType.includes('like')) Icon = Heart;
+                              if (notif.notificationType.includes('share')) Icon = Share2;
                               if (notif.notificationType === 'new_follower') Icon = UserPlus;
                               if (notif.notificationType === 'new_talk') Icon = Calendar;
                               return (

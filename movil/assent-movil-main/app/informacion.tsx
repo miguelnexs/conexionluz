@@ -8,7 +8,9 @@ import {
   Linking,
   Platform,
   StatusBar,
+  Animated,
   LayoutAnimation,
+  UIManager,
   Share,
   Alert,
   TextInput,
@@ -17,6 +19,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+  ArrowLeft,
   Globe,
   ExternalLink,
   Shield,
@@ -52,6 +55,7 @@ import {
   Eye,
   CheckCircle2,
   AlertTriangle,
+  XCircle,
   Share2,
 } from 'lucide-react-native';
 
@@ -473,7 +477,7 @@ const LEGAL_DOCS = [
   },
 ];
 
-export default function InformacionTabScreen() {
+export default function InformacionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tab?: string }>();
   const insets = useSafeAreaInsets();
@@ -543,11 +547,19 @@ export default function InformacionTabScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#064E3B" translucent={true} />
 
-      {/* ─── TOP HEADER BAR ─── */}
+      {/* ─── TOP NAVBAR ─── */}
       <View style={[styles.topNavbar, { paddingTop: topPadding + 6 }]}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.navBackBtn}
+          activeOpacity={0.8}
+        >
+          <ArrowLeft color="#FFFFFF" size={20} />
+        </TouchableOpacity>
+
         <View style={styles.navTitleContainer}>
-          <Text style={styles.navTitleText} numberOfLines={1}>Conexión Luz®</Text>
-          <Text style={styles.navSubtitleText} numberOfLines={1}>Información Institucional & Enlaces</Text>
+          <Text style={styles.navTitleText} numberOfLines={1}>Información Institucional</Text>
+          <Text style={styles.navSubtitleText} numberOfLines={1}>Conexión Luz® Ecosistema</Text>
         </View>
 
         <TouchableOpacity
@@ -706,7 +718,61 @@ export default function InformacionTabScreen() {
           </View>
         )}
 
-        {/* ═════════ TAB 2: PREGUNTAS FRECUENTES (FAQ) ═════════ */}
+        {/* ═════════ TAB 2: TODOS LOS ENLACES ═════════ */}
+        {activeTab === 'enlaces' && (
+          <View style={styles.tabBody}>
+            <View style={styles.infoBanner}>
+              <Sparkles color="#0D9488" size={20} />
+              <Text style={styles.infoBannerText}>
+                Explora el ecosistema completo de Conexión Luz®. Puedes acceder directamente a cualquier sección dentro de la app o visitar nuestra plataforma web.
+              </Text>
+            </View>
+
+            {ALL_LINKS.map((category, catIdx) => (
+              <View key={catIdx} style={styles.categoryContainer}>
+                <View style={styles.categoryHeader}>
+                  <Text style={styles.categoryTitle}>{category.categoryTitle}</Text>
+                  <Text style={styles.categoryDesc}>{category.categoryDesc}</Text>
+                </View>
+
+                <View style={styles.linksCard}>
+                  {category.items.map((item, itemIdx) => {
+                    const ItemIcon = item.icon;
+                    const isLast = itemIdx === category.items.length - 1;
+                    return (
+                      <TouchableOpacity
+                        key={itemIdx}
+                        onPress={() => handleOpenLink(item)}
+                        style={[styles.linkRow, !isLast && styles.linkRowBorder]}
+                        activeOpacity={0.75}
+                      >
+                        <View style={[styles.linkIconCircle, { backgroundColor: item.iconBg }]}>
+                          <ItemIcon color={item.iconColor} size={20} />
+                        </View>
+
+                        <View style={styles.linkInfo}>
+                          <View style={styles.linkTitleRow}>
+                            <Text style={styles.linkTitle}>{item.title}</Text>
+                            {item.badge && (
+                              <View style={[styles.linkBadge, { backgroundColor: item.badgeBg || '#0D9488' }]}>
+                                <Text style={styles.linkBadgeText}>{item.badge}</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={styles.linkSubtitle}>{item.subtitle}</Text>
+                        </View>
+
+                        <ChevronRight color="#94A3B8" size={18} />
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* ═════════ TAB 3: PREGUNTAS FRECUENTES (FAQ) ═════════ */}
         {activeTab === 'faq' && (
           <View style={styles.tabBody}>
             <View style={styles.infoBanner}>
@@ -763,7 +829,58 @@ export default function InformacionTabScreen() {
           </View>
         )}
 
-        {/* ═════════ TAB 3: CONTACTO DIRECTO ═════════ */}
+        {/* ═════════ TAB 4: POLÍTICAS Y LEGAL ═════════ */}
+        {activeTab === 'legal' && (
+          <View style={styles.tabBody}>
+            <View style={styles.legalNoticeBanner}>
+              <Shield color="#0D9488" size={22} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.legalNoticeTitle}>Compromiso Ético & Legal</Text>
+                <Text style={styles.legalNoticeText}>
+                  Operamos con estricto apego a las normas colombianas e internacionales de confidencialidad, protección de datos y código bioético en salud.
+                </Text>
+              </View>
+            </View>
+
+            {LEGAL_DOCS.map((doc, idx) => {
+              const DocIcon = doc.icon;
+              return (
+                <View key={idx} style={styles.legalDocCard}>
+                  <View style={styles.legalDocHeader}>
+                    <View style={[styles.legalDocIconBox, { backgroundColor: `${doc.color}15` }]}>
+                      <DocIcon color={doc.color} size={20} />
+                    </View>
+                    <Text style={styles.legalDocTitle}>{doc.title}</Text>
+                  </View>
+                  <Text style={styles.legalDocText}>{doc.text}</Text>
+                </View>
+              );
+            })}
+
+            {/* FULL LEGAL WEB BUTTONS */}
+            <View style={styles.legalWebBtnRow}>
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://conexionluz.com/#/terminos')}
+                style={styles.legalWebBtn}
+                activeOpacity={0.8}
+              >
+                <FileText color="#0284C7" size={16} />
+                <Text style={styles.legalWebBtnText}>Términos Completos</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://conexionluz.com/#/privacidad')}
+                style={styles.legalWebBtn}
+                activeOpacity={0.8}
+              >
+                <Lock color="#059669" size={16} />
+                <Text style={styles.legalWebBtnText}>Política de Privacidad</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ═════════ TAB 5: CONTACTO Y REDES ═════════ */}
         {activeTab === 'contacto' && (
           <View style={styles.tabBody}>
             <View style={styles.contactHeroCard}>
@@ -969,111 +1086,6 @@ export default function InformacionTabScreen() {
           </View>
         )}
 
-        {/* ═════════ TAB 4: POLÍTICA DE PRIVACIDAD ═════════ */}
-        {activeTab === 'legal' && (
-          <View style={styles.tabBody}>
-            <View style={styles.legalNoticeBanner}>
-              <Shield color="#0D9488" size={22} />
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.legalNoticeTitle}>Compromiso Ético & Legal</Text>
-                <Text style={styles.legalNoticeText}>
-                  Operamos con estricto apego a las normas colombianas e internacionales de confidencialidad, protección de datos y código bioético en salud.
-                </Text>
-              </View>
-            </View>
-
-            {LEGAL_DOCS.map((doc, idx) => {
-              const DocIcon = doc.icon;
-              return (
-                <View key={idx} style={styles.legalDocCard}>
-                  <View style={styles.legalDocHeader}>
-                    <View style={[styles.legalDocIconBox, { backgroundColor: `${doc.color}15` }]}>
-                      <DocIcon color={doc.color} size={20} />
-                    </View>
-                    <Text style={styles.legalDocTitle}>{doc.title}</Text>
-                  </View>
-                  <Text style={styles.legalDocText}>{doc.text}</Text>
-                </View>
-              );
-            })}
-
-            {/* FULL LEGAL WEB BUTTONS */}
-            <View style={styles.legalWebBtnRow}>
-              <TouchableOpacity
-                onPress={() => Linking.openURL('https://conexionluz.com/#/terminos')}
-                style={styles.legalWebBtn}
-                activeOpacity={0.8}
-              >
-                <FileText color="#0284C7" size={16} />
-                <Text style={styles.legalWebBtnText}>Términos Completos</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => Linking.openURL('https://conexionluz.com/#/privacidad')}
-                style={styles.legalWebBtn}
-                activeOpacity={0.8}
-              >
-                <Lock color="#059669" size={16} />
-                <Text style={styles.legalWebBtnText}>Política de Privacidad</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* ═════════ TAB 5: TODOS LOS ENLACES ═════════ */}
-        {activeTab === 'enlaces' && (
-          <View style={styles.tabBody}>
-            <View style={styles.infoBanner}>
-              <Sparkles color="#0D9488" size={20} />
-              <Text style={styles.infoBannerText}>
-                Explora el ecosistema completo de Conexión Luz®. Puedes acceder directamente a cualquier sección dentro de la app o visitar nuestra plataforma web.
-              </Text>
-            </View>
-
-            {ALL_LINKS.map((category, catIdx) => (
-              <View key={catIdx} style={styles.categoryContainer}>
-                <View style={styles.categoryHeader}>
-                  <Text style={styles.categoryTitle}>{category.categoryTitle}</Text>
-                  <Text style={styles.categoryDesc}>{category.categoryDesc}</Text>
-                </View>
-
-                <View style={styles.linksCard}>
-                  {category.items.map((item, itemIdx) => {
-                    const ItemIcon = item.icon;
-                    const isLast = itemIdx === category.items.length - 1;
-                    return (
-                      <TouchableOpacity
-                        key={itemIdx}
-                        onPress={() => handleOpenLink(item)}
-                        style={[styles.linkRow, !isLast && styles.linkRowBorder]}
-                        activeOpacity={0.75}
-                      >
-                        <View style={[styles.linkIconCircle, { backgroundColor: item.iconBg }]}>
-                          <ItemIcon color={item.iconColor} size={20} />
-                        </View>
-
-                        <View style={styles.linkInfo}>
-                          <View style={styles.linkTitleRow}>
-                            <Text style={styles.linkTitle}>{item.title}</Text>
-                            {item.badge && (
-                              <View style={[styles.linkBadge, { backgroundColor: item.badgeBg || '#0D9488' }]}>
-                                <Text style={styles.linkBadgeText}>{item.badge}</Text>
-                              </View>
-                            )}
-                          </View>
-                          <Text style={styles.linkSubtitle}>{item.subtitle}</Text>
-                        </View>
-
-                        <ChevronRight color="#94A3B8" size={18} />
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
         {/* ─── FOOTER BRANDING ─── */}
         <View style={styles.footerBranding}>
           <Text style={styles.footerLogo}>✨ Conexión Luz®</Text>
@@ -1107,19 +1119,27 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
+  navBackBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   navTitleContainer: {
     flex: 1,
+    marginLeft: 12,
   },
   navTitleText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: -0.2,
+    fontSize: 17,
+    fontWeight: '800',
   },
   navSubtitleText: {
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   navActionBtn: {
     width: 38,
@@ -1700,6 +1720,31 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     fontSize: 11,
   },
+  contactInfoBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 4,
+  },
+  contactInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  contactInfoTitle: {
+    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  contactInfoDesc: {
+    color: '#64748B',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  // FORM CARD
   formCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
@@ -1767,29 +1812,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
-  },
-  contactInfoBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginTop: 4,
-  },
-  contactInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  contactInfoTitle: {
-    color: '#0F172A',
-    fontSize: 13,
-    fontWeight: '800',
-    marginBottom: 2,
-  },
-  contactInfoDesc: {
-    color: '#64748B',
-    fontSize: 12,
-    lineHeight: 17,
   },
 
   // SOCIALS

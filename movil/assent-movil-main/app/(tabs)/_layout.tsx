@@ -26,6 +26,8 @@ export default function TabLayout() {
     <MaterialTopTabs
       tabBarPosition="bottom"
       screenOptions={{
+        tabBarShowLabel: false,
+        tabBarShowIcon: true,
         tabBarStyle: isTabBarVisible ? { 
           backgroundColor: '#FFFFFF', 
           borderTopWidth: 1, 
@@ -34,12 +36,17 @@ export default function TabLayout() {
           shadowColor: '#000',
           shadowOpacity: 0.05,
           shadowRadius: 6,
-          paddingBottom: 4,
-          height: 60,
+          height: 56,
           display: 'flex',
         } : {
           display: 'none',
           height: 0,
+        },
+        tabBarItemStyle: {
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: 56,
+          padding: 0,
         },
         tabBarActiveTintColor: '#0D9488',
         tabBarInactiveTintColor: '#64748B',
@@ -48,13 +55,6 @@ export default function TabLayout() {
           height: 3, 
           top: 0,
         },
-        tabBarLabelStyle: { 
-          fontSize: 9, 
-          fontWeight: '800', 
-          textTransform: 'uppercase',
-          letterSpacing: 0.2,
-          marginTop: -2,
-        },
         swipeEnabled: true,
         animationEnabled: true,
       }}
@@ -62,36 +62,36 @@ export default function TabLayout() {
       <MaterialTopTabs.Screen
         name="index"
         options={{
-          title: 'INICIO',
-          tabBarIcon: ({ color }) => <Home color={color} size={20} />,
+          tabBarShowLabel: false,
+          tabBarIcon: ({ color }) => <Home color={color} size={23} />,
         }}
       />
       <MaterialTopTabs.Screen
         name="comunidad"
         options={{
-          title: 'COMUNIDAD',
-          tabBarIcon: ({ color }) => <Users color={color} size={20} />,
+          tabBarShowLabel: false,
+          tabBarIcon: ({ color }) => <Users color={color} size={23} />,
         }}
       />
       <MaterialTopTabs.Screen
         name="profile"
         options={{
-          title: 'MI CUENTA',
-          tabBarIcon: ({ color }) => <User color={color} size={20} />,
+          tabBarShowLabel: false,
+          tabBarIcon: ({ color }) => <User color={color} size={23} />,
         }}
       />
       <MaterialTopTabs.Screen
         name="actividades"
         options={{
-          title: 'ACTIVIDADES',
-          tabBarIcon: ({ color }) => <Activity color={color} size={20} />,
+          tabBarShowLabel: false,
+          tabBarIcon: ({ color }) => <Activity color={color} size={23} />,
         }}
       />
       <MaterialTopTabs.Screen
         name="informacion"
         options={{
-          title: 'INFORMACIÓN',
-          tabBarIcon: ({ color }) => <Info color={color} size={20} />,
+          tabBarShowLabel: false,
+          tabBarIcon: ({ color }) => <Info color={color} size={23} />,
         }}
       />
     </MaterialTopTabs>

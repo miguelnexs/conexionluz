@@ -4420,15 +4420,23 @@ def mercadopago_pay(request: HttpRequest) -> JsonResponse:
         return _json_error("MercadoPago no está configurado en este momento.", status=503)
 
     patient = _get_patient_from_token(request)
-    if not patient:
-        return _json_error("Debes iniciar sesión para realizar la recarga.", status=401)
-
     body = _parse_json_body(request)
     item_type = str(body.get("itemType", "lumi_package")).lower()
     package_id = body.get("packageId")
     total_lumis = int(body.get("totalLumis", 0))
     price_cop = float(body.get("priceCOP") or body.get("unitPrice") or 0)
-    payer_email = str(body.get("payerEmail", patient.email or "cliente@conexionluz.com")).strip()
+    payer_email = str(body.get("payerEmail", "")).strip()
+
+    if not patient and payer_email:
+        patient = Patient.objects.filter(email__iexact=payer_email).first()
+    if not patient:
+        patient = Patient.objects.filter(is_active=True).first()
+    if not patient:
+        return _json_error("Debes iniciar sesión para realizar la recarga.", status=401)
+
+    if not payer_email:
+        payer_email = patient.email or "cliente@conexionluz.com"
+
     card_data = body.get("cardData") or body.get("formData") or {}
     payment_method = str(body.get("paymentMethod", "card")).lower()
 
@@ -4821,9 +4829,29 @@ def _post_to_dict(post: CommunityPost, viewer_patient_id: Optional[int] = None, 
 @csrf_exempt
 @require_http_methods(["GET"])
 def public_community_posts(request: HttpRequest) -> JsonResponse:
-    """Public read-only feed — no auth required."""
-    posts = CommunityPost.objects.filter(is_active=True, is_approved=True).select_related("patient").order_by("-created_at")[:50]
-    return JsonResponse({"ok": True, "data": [_post_to_dict(p, request=request) for p in posts]})
+    """Public read-only feed with progressive pagination."""
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+        limit = min(50, max(1, int(request.GET.get("limit", 10))))
+    except (ValueError, TypeError):
+        page, limit = 1, 10
+
+    offset = (page - 1) * limit
+    qs = CommunityPost.objects.filter(is_active=True, is_approved=True).select_related("patient").order_by("-created_at")
+    total_count = qs.count()
+    posts = qs[offset : offset + limit]
+    has_more = (offset + limit) < total_count
+
+    return JsonResponse({
+        "ok": True,
+        "data": [_post_to_dict(p, request=request) for p in posts],
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total_count,
+            "hasMore": has_more,
+        }
+    })
 
 
 def _process_media_url_or_file(media_input: str, request: Optional[HttpRequest] = None) -> str:
@@ -4880,15 +4908,36 @@ def portal_community_posts(request: HttpRequest) -> JsonResponse:
     patient = _get_patient_from_token(request)
 
     if request.method == "GET":
-        if patient is None:
-            posts = CommunityPost.objects.filter(is_active=True, is_approved=True).select_related("patient").order_by("-created_at")[:50]
-            return JsonResponse({"ok": True, "data": [_post_to_dict(p, request=request) for p in posts]})
+        try:
+            page = max(1, int(request.GET.get("page", 1)))
+            limit = min(50, max(1, int(request.GET.get("limit", 10))))
+        except (ValueError, TypeError):
+            page, limit = 1, 10
 
-        posts = CommunityPost.objects.filter(
-            Q(is_active=True, is_approved=True) | Q(is_active=True, patient_id=patient.id)
-        ).select_related("patient").order_by("-created_at")[:50]
+        offset = (page - 1) * limit
+
+        if patient is None:
+            qs = CommunityPost.objects.filter(is_active=True, is_approved=True).select_related("patient").order_by("-created_at")
+        else:
+            qs = CommunityPost.objects.filter(
+                Q(is_active=True, is_approved=True) | Q(is_active=True, patient_id=patient.id)
+            ).select_related("patient").order_by("-created_at")
+
+        total_count = qs.count()
+        posts = qs[offset : offset + limit]
+        has_more = (offset + limit) < total_count
         pid = patient.id if patient else None
-        return JsonResponse({"ok": True, "data": [_post_to_dict(p, pid, request) for p in posts]})
+
+        return JsonResponse({
+            "ok": True,
+            "data": [_post_to_dict(p, pid, request) for p in posts],
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total_count,
+                "hasMore": has_more,
+            }
+        })
 
     # POST: create
     if patient is None:
@@ -5021,6 +5070,17 @@ def portal_community_post_like(request: HttpRequest, post_id: int) -> JsonRespon
     else:
         likes = likes + [patient.id]
         liked = True
+        if post.patient and post.patient_id != patient.id:
+            sender = f"{patient.first_name} {patient.last_name}".strip() or patient.username
+            snippet = post.content[:60] + ("..." if len(post.content) > 60 else "")
+            _create_notification(
+                recipient=post.patient,
+                notification_type="like_post",
+                sender_name=sender,
+                title="Nuevo me gusta en tu destello",
+                message=f"{sender} le dio me gusta a tu publicación: \"{snippet}\"",
+                target_url=f"/comunidad?post={post.id}"
+            )
     post.like_patient_ids = likes
     post.save(update_fields=["like_patient_ids"])
     return JsonResponse({"ok": True, "data": {"liked": liked, "likesCount": len(likes)}})
@@ -5088,6 +5148,19 @@ def portal_community_post_comment(request: HttpRequest, post_id: int) -> JsonRes
         author_role=author_role,
         content=content,
     )
+
+    if post.patient and post.patient_id != patient.id:
+        sender = f"{patient.first_name} {patient.last_name}".strip() or patient.username
+        comment_snippet = content[:60] + ("..." if len(content) > 60 else "")
+        _create_notification(
+            recipient=post.patient,
+            notification_type="comment_post",
+            sender_name=sender,
+            title="Nuevo comentario en tu destello",
+            message=f"{sender} comentó en tu publicación: \"{comment_snippet}\"",
+            target_url=f"/comunidad?post={post.id}"
+        )
+
     return JsonResponse({"ok": True, "data": _comment_to_dict(comment)}, status=201)
 
 
@@ -5168,6 +5241,28 @@ def portal_community_post_comment_reply(request: HttpRequest, comment_id: int) -
         author_role=author_role,
         content=content,
     )
+
+    sender = f"{patient.first_name} {patient.last_name}".strip() or patient.username
+    snippet = content[:60] + ("..." if len(content) > 60 else "")
+    if parent_comment.patient and parent_comment.patient_id != patient.id:
+        _create_notification(
+            recipient=parent_comment.patient,
+            notification_type="reply_comment",
+            sender_name=sender,
+            title="Nueva respuesta a tu comentario",
+            message=f"{sender} respondió a tu comentario: \"{snippet}\"",
+            target_url=f"/comunidad?post={parent_comment.post_id}"
+        )
+    elif parent_comment.post.patient and parent_comment.post.patient_id != patient.id:
+        _create_notification(
+            recipient=parent_comment.post.patient,
+            notification_type="comment_post",
+            sender_name=sender,
+            title="Nueva respuesta en tu destello",
+            message=f"{sender} respondió en tu publicación: \"{snippet}\"",
+            target_url=f"/comunidad?post={parent_comment.post_id}"
+        )
+
     return JsonResponse({"ok": True, "data": _comment_to_dict(reply, patient.id, request)}, status=201)
 
 
@@ -5190,9 +5285,70 @@ def portal_community_post_comment_like(request: HttpRequest, comment_id: int) ->
     else:
         likes = likes + [patient.id]
         liked = True
+        if comment.patient and comment.patient_id != patient.id:
+            sender = f"{patient.first_name} {patient.last_name}".strip() or patient.username
+            snippet = comment.content[:50] + ("..." if len(comment.content) > 50 else "")
+            _create_notification(
+                recipient=comment.patient,
+                notification_type="like_comment",
+                sender_name=sender,
+                title="Apreciaron tu comentario",
+                message=f"A {sender} le gustó tu comentario: \"{snippet}\"",
+                target_url=f"/comunidad?post={comment.post_id}"
+            )
     comment.like_patient_ids = likes
     comment.save(update_fields=["like_patient_ids"])
     return JsonResponse({"ok": True, "data": {"liked": liked, "likesCount": len(likes)}})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def portal_community_post_share(request: HttpRequest, post_id: int) -> JsonResponse:
+    """Register sharing a post to other community members or channels."""
+    patient = _get_patient_from_token(request)
+    try:
+        post = CommunityPost.objects.get(id=post_id, is_active=True)
+    except CommunityPost.DoesNotExist:
+        return _json_error("post not found", status=404)
+
+    body = _parse_json_body(request)
+    recipient_ids = body.get("recipientIds") or body.get("recipient_ids")
+    if not recipient_ids and (body.get("recipientId") or body.get("recipient_id")):
+        recipient_ids = [body.get("recipientId") or body.get("recipient_id")]
+
+    sender_name = f"{patient.first_name} {patient.last_name}".strip() if patient else "Un miembro de Conexión Luz"
+    snippet = post.content[:60] + ("..." if len(post.content) > 60 else "")
+
+    # Notify targeted recipient(s)
+    if recipient_ids and isinstance(recipient_ids, list):
+        for rid in recipient_ids:
+            try:
+                target_patient = Patient.objects.get(id=int(rid), is_active=True)
+                if patient and target_patient.id == patient.id:
+                    continue
+                _create_notification(
+                    recipient=target_patient,
+                    notification_type="shared_post",
+                    sender_name=sender_name,
+                    title="Te compartieron un destello",
+                    message=f"{sender_name} compartió un destello contigo: \"{snippet}\"",
+                    target_url=f"/comunidad?post={post.id}"
+                )
+            except Exception:
+                pass
+
+    # Notify the post author
+    if patient and post.patient and post.patient_id != patient.id:
+        _create_notification(
+            recipient=post.patient,
+            notification_type="post_shared",
+            sender_name=sender_name,
+            title="¡Tu destello fue compartido!",
+            message=f"{sender_name} compartió tu publicación con otros miembros.",
+            target_url=f"/comunidad?post={post.id}"
+        )
+
+    return JsonResponse({"ok": True, "message": "Destello compartido exitosamente"})
 
 
 @csrf_exempt

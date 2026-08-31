@@ -18,12 +18,14 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
+import * as Linking from 'expo-linking';
 import Svg, { Path } from 'react-native-svg';
 
 WebBrowser.maybeCompleteAuthSession();
 
-// Google OAuth Client ID — debe coincidir con el configurado en SiteSettings del backend
-const GOOGLE_CLIENT_ID = '14270208474-n2rcnds6ksetn9m2vt0llm2fecijbnko.apps.googleusercontent.com';
+// Google OAuth Client IDs de Conexión Luz (Web y Android Nativos)
+const WEB_CLIENT_ID = '14270208474-n2rcnds6ksetn9m2vt0llm2fecijbnko.apps.googleusercontent.com';
+const ANDROID_CLIENT_ID = '14270208474-9kaff7sclhpq1k5bdpntib79eingdnfp.apps.googleusercontent.com';
 
 const GoogleIcon = () => (
   <Svg width="20" height="20" viewBox="0 0 24 24">
@@ -48,25 +50,35 @@ export function AuthWallScreen() {
   const [passwordInput, setPasswordInput] = useState('');
   const [firstNameInput, setFirstNameInput] = useState('');
   const [lastNameInput, setLastNameInput] = useState('');
+  const [usernameInput, setUsernameInput] = useState('');
 
-  // Google OAuth setup via expo-auth-session
+  const incomingUrl = Linking.useURL();
+
+  React.useEffect(() => {
+    if (incomingUrl) {
+      console.log('[AuthWall] Deep link entrante detectado:', incomingUrl);
+      const match = incomingUrl.match(/id_token=([^&]+)/) || incomingUrl.match(/access_token=([^&]+)/);
+      if (match && match[1]) {
+        handleGoogleCredential(match[1]);
+      }
+    }
+  }, [incomingUrl]);
+
+  // Google OAuth setup nativo con Client ID de Android
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: GOOGLE_CLIENT_ID,
-    iosClientId: GOOGLE_CLIENT_ID,
-    androidClientId: GOOGLE_CLIENT_ID,
-    webClientId: GOOGLE_CLIENT_ID,
+    androidClientId: ANDROID_CLIENT_ID,
+    webClientId: WEB_CLIENT_ID,
+    clientId: WEB_CLIENT_ID,
     scopes: ['profile', 'email'],
   });
 
   // Handle Google OAuth response
   React.useEffect(() => {
     if (response?.type === 'success') {
-      const { authentication } = response;
-      if (authentication?.idToken) {
-        handleGoogleCredential(authentication.idToken);
-      } else if (authentication?.accessToken) {
-        // Fallback: some flows return accessToken instead of idToken
-        handleGoogleCredential(authentication.accessToken);
+      const { authentication, params } = response;
+      const token = params?.id_token || authentication?.idToken || authentication?.accessToken;
+      if (token) {
+        handleGoogleCredential(token);
       } else {
         Alert.alert('Error', 'No se pudo obtener el token de Google.');
         setGoogleLoading(false);
@@ -81,6 +93,14 @@ export function AuthWallScreen() {
 
   async function handleGoogleCredential(token: string) {
     try {
+      // Cerrar la ventana flotante del navegador en Android e iOS
+      try {
+        WebBrowser.dismissBrowser();
+      } catch (e) {}
+      try {
+        WebBrowser.dismissAuthSession();
+      } catch (e) {}
+
       const res = await loginWithGoogle(token);
       if (res.ok) {
         try {
@@ -101,36 +121,21 @@ export function AuthWallScreen() {
   async function handleGooglePress() {
     setGoogleLoading(true);
     try {
-      // Generar la URI de redirección dinámica de Expo (https://auth.expo.io/@miguelnexs/assent-dashboard en Expo Go)
-      // Esta URI es la que cierra el navegador y devuelve el control a la App móvil
-      const redirectUri = AuthSession.makeRedirectUri({
-        scheme: 'conexionluz',
-      });
-
-      console.log('[GoogleAuth] Redirect URI para la App Móvil:', redirectUri);
-
-      const nonce = Math.random().toString(36).substring(2);
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-        `&response_type=id_token` +
-        `&scope=${encodeURIComponent('openid profile email')}` +
-        `&nonce=${nonce}`;
-
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-
-      if (result.type === 'success' && result.url) {
-        console.log('[GoogleAuth] WebBrowser retornó URL a la App:', result.url);
-        const match = result.url.match(/id_token=([^&]+)/) || result.url.match(/access_token=([^&]+)/);
-        const token = match ? match[1] : null;
-
-        if (token) {
-          await handleGoogleCredential(token);
-          return;
+      if (promptAsync) {
+        const res = await promptAsync();
+        if (res.type === 'success') {
+          const token = res.params?.id_token || res.authentication?.idToken || res.authentication?.accessToken;
+          if (token) {
+            await handleGoogleCredential(token);
+          } else {
+            setGoogleLoading(false);
+          }
+        } else {
+          setGoogleLoading(false);
         }
+      } else {
+        setGoogleLoading(false);
       }
-
-      setGoogleLoading(false);
     } catch (err: any) {
       console.error('[GoogleAuth] Error:', err);
       Alert.alert('Error', err?.message || 'No se pudo abrir el inicio de sesión de Google.');
@@ -160,9 +165,15 @@ export function AuthWallScreen() {
         Alert.alert('Campo requerido', 'Por favor ingresa tu nombre.');
         return;
       }
+      if (!usernameInput.trim()) {
+        setLoading(false);
+        Alert.alert('Campo requerido', 'Por favor ingresa un nombre de usuario.');
+        return;
+      }
       const res = await register(
         firstNameInput.trim(),
         lastNameInput.trim(),
+        usernameInput.trim(),
         emailInput.trim(),
         passwordInput.trim()
       );
@@ -266,6 +277,21 @@ export function AuthWallScreen() {
                     placeholder="Ej. Varela"
                     placeholderTextColor="#94A3B8"
                     style={styles.textInput}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Nombre de usuario</Text>
+                <View style={styles.inputBox}>
+                  <User color="#64748B" size={18} />
+                  <TextInput
+                    value={usernameInput}
+                    onChangeText={setUsernameInput}
+                    placeholder="Ej. sofia_varela"
+                    placeholderTextColor="#94A3B8"
+                    style={styles.textInput}
+                    autoCapitalize="none"
                   />
                 </View>
               </View>
